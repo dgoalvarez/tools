@@ -109,12 +109,6 @@ export const CONTRASTE = {
   copiado: { es: 'Copiado', en: 'Copied' },
   copiarEnlace: { es: 'Copiar el enlace de este cálculo', en: 'Copy the link to this check' },
 
-  // ---------- Sin JavaScript ----------
-  sinJs: {
-    es: 'Esta herramienta calcula en tu navegador, así que necesita JavaScript. Sin él, los controles de arriba se ven pero no responden.',
-    en: 'This tool computes in your browser, so it needs JavaScript. Without it the controls above are visible but inert.',
-  },
-
   // ---------- Veredictos ----------
   pasa: { es: 'Pasa', en: 'Pass' },
   noPasa: { es: 'No pasa', en: 'Fail' },

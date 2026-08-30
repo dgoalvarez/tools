@@ -1,0 +1,513 @@
+/**
+ * La herramienta de escala tipográfica.
+ *
+ * Genera la escala, sí — eso lo hace cualquiera. Lo que aquí importa es la
+ * tabla: a cuántos píxeles queda cada paso en las anchuras en las que la
+ * gente mira las páginas de verdad. Es donde se ve que un titular ya está
+ * al tope en un portátil mientras el cuerpo sigue en su mínimo.
+ *
+ * La aritmética vive en src/lib/scale.ts.
+ */
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Check, Copy, Link2 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { t, type Lang } from '@/i18n/config';
+import { ESCALA as E, NOMBRES_RAZON } from '@/i18n/scale';
+import {
+  ANCHOS_TABLA,
+  RAZONES,
+  aCss,
+  anchoParaFraccion,
+  buscarCruces,
+  construirEscala,
+  type Ajustes,
+} from '@/lib/scale';
+import { escribirParams, leerParams } from '@/lib/url-state';
+
+const INICIAL: Ajustes = {
+  baseMin: 16,
+  baseMax: 20,
+  razonMin: 1.2,
+  razonMax: 1.25,
+  arriba: 5,
+  abajo: 2,
+  anchoMin: 390,
+  anchoMax: 1920,
+  prefijo: 'step',
+};
+
+/** Las claves de la dirección, cortas para que el enlace no sea un muro. */
+const CLAVES: Record<keyof Ajustes, string> = {
+  baseMin: 'bn',
+  baseMax: 'bx',
+  razonMin: 'rn',
+  razonMax: 'rx',
+  arriba: 'u',
+  abajo: 'd',
+  anchoMin: 'wn',
+  anchoMax: 'wx',
+  prefijo: 'p',
+};
+
+interface Props {
+  lang: Lang;
+}
+
+export default function TypeScale({ lang }: Props) {
+  const tr = (clave: keyof typeof E) => t(E[clave], lang);
+
+  const [ajustes, setAjustes] = useState<Ajustes>(INICIAL);
+  const [enlaceLeido, setEnlaceLeido] = useState(false);
+  const [copiado, setCopiado] = useState<'css' | 'enlace' | null>(null);
+
+  const cambiar = useCallback(<K extends keyof Ajustes>(clave: K, valor: Ajustes[K]) => {
+    setAjustes((previo) => ({ ...previo, [clave]: valor }));
+    setCopiado(null);
+  }, []);
+
+  // ---------- la dirección ----------
+
+  useEffect(() => {
+    const params = leerParams();
+    const leidos: Partial<Ajustes> = {};
+
+    for (const [campo, clave] of Object.entries(CLAVES) as [keyof Ajustes, string][]) {
+      const crudo = params.get(clave);
+      if (crudo === null) continue;
+
+      if (campo === 'prefijo') {
+        // Solo lo que puede ser un nombre de variable CSS. Una dirección
+        // manipulada no debe poder inyectar nada en el bloque que se copia.
+        const limpio = crudo.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24);
+        if (limpio) leidos.prefijo = limpio;
+        continue;
+      }
+
+      const numero = Number(crudo);
+      if (!Number.isFinite(numero)) continue;
+
+      if (campo === 'arriba' || campo === 'abajo') {
+        leidos[campo] = Math.max(0, Math.min(12, Math.round(numero)));
+      } else if (campo === 'razonMin' || campo === 'razonMax') {
+        leidos[campo] = Math.max(0.5, Math.min(3, numero));
+      } else if (campo === 'anchoMin' || campo === 'anchoMax') {
+        leidos[campo] = Math.max(200, Math.min(3840, Math.round(numero)));
+      } else {
+        leidos[campo] = Math.max(4, Math.min(200, numero));
+      }
+    }
+
+    if (Object.keys(leidos).length) setAjustes((previo) => ({ ...previo, ...leidos }));
+    setEnlaceLeido(true);
+  }, []);
+
+  useEffect(() => {
+    if (!enlaceLeido) return;
+
+    const salida: Record<string, string | null> = {};
+    for (const [campo, clave] of Object.entries(CLAVES) as [keyof Ajustes, string][]) {
+      salida[clave] = ajustes[campo] === INICIAL[campo] ? null : String(ajustes[campo]);
+    }
+    escribirParams(salida);
+  }, [enlaceLeido, ajustes]);
+
+  // ---------- las cuentas ----------
+
+  const { pasos, cruces, css } = useMemo(() => {
+    // El ancho máximo tiene que quedar por encima del mínimo o la recta se
+    // vuelve del revés. Se corrige aquí y no en el campo, para que se pueda
+    // teclear un número intermedio sin que salte nada.
+    const seguros: Ajustes = {
+      ...ajustes,
+      anchoMax: Math.max(ajustes.anchoMin + 1, ajustes.anchoMax),
+    };
+    const pasos = construirEscala(seguros);
+    return { pasos, cruces: buscarCruces(pasos, seguros), css: aCss(pasos) };
+  }, [ajustes]);
+
+  const alReves = [...pasos].reverse();
+
+  async function copiar(que: 'css' | 'enlace') {
+    try {
+      await navigator.clipboard.writeText(que === 'css' ? css : window.location.href);
+      setCopiado(que);
+    } catch {
+      // Sin portapapeles queda el bloque a la vista y el enlace en la barra.
+    }
+  }
+
+  // ---------- pintado ----------
+
+  return (
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-start">
+      {/* ---------------- Controles ---------------- */}
+      <div className="grid gap-6">
+        <fieldset className="grid gap-3">
+          <legend className="mb-2 text-[var(--fs-small)] font-semibold text-ink">
+            {tr('ajustes')}
+          </legend>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Numero
+              id="base-min"
+              etiqueta={tr('baseMin')}
+              valor={ajustes.baseMin}
+              min={4}
+              max={200}
+              paso={0.5}
+              unidad="px"
+              onCambio={(v) => cambiar('baseMin', v)}
+            />
+            <Numero
+              id="base-max"
+              etiqueta={tr('baseMax')}
+              valor={ajustes.baseMax}
+              min={4}
+              max={200}
+              paso={0.5}
+              unidad="px"
+              onCambio={(v) => cambiar('baseMax', v)}
+            />
+          </div>
+          <p className="text-[var(--fs-small)] text-ink-soft">{tr('baseAyuda')}</p>
+
+          <Razon
+            id="razon-min"
+            etiqueta={tr('razonMin')}
+            valor={ajustes.razonMin}
+            lang={lang}
+            personalizada={tr('personalizada')}
+            onCambio={(v) => cambiar('razonMin', v)}
+          />
+          <Razon
+            id="razon-max"
+            etiqueta={tr('razonMax')}
+            valor={ajustes.razonMax}
+            lang={lang}
+            personalizada={tr('personalizada')}
+            onCambio={(v) => cambiar('razonMax', v)}
+          />
+          <p className="text-[var(--fs-small)] text-ink-soft">{tr('razonAyuda')}</p>
+        </fieldset>
+
+        <fieldset className="grid gap-3">
+          <legend className="mb-2 text-[var(--fs-small)] font-semibold text-ink">
+            {tr('pasos')}
+          </legend>
+          <div className="grid grid-cols-2 gap-3">
+            <Numero
+              id="arriba"
+              etiqueta={tr('arriba')}
+              valor={ajustes.arriba}
+              min={0}
+              max={12}
+              paso={1}
+              onCambio={(v) => cambiar('arriba', Math.round(v))}
+            />
+            <Numero
+              id="abajo"
+              etiqueta={tr('abajo')}
+              valor={ajustes.abajo}
+              min={0}
+              max={12}
+              paso={1}
+              onCambio={(v) => cambiar('abajo', Math.round(v))}
+            />
+          </div>
+        </fieldset>
+
+        <fieldset className="grid gap-3">
+          <legend className="mb-2 text-[var(--fs-small)] font-semibold text-ink">
+            {tr('ventana')}
+          </legend>
+          <div className="grid grid-cols-2 gap-3">
+            <Numero
+              id="ancho-min"
+              etiqueta={tr('anchoMin')}
+              valor={ajustes.anchoMin}
+              min={200}
+              max={3840}
+              paso={10}
+              unidad="px"
+              onCambio={(v) => cambiar('anchoMin', Math.round(v))}
+            />
+            <Numero
+              id="ancho-max"
+              etiqueta={tr('anchoMax')}
+              valor={ajustes.anchoMax}
+              min={200}
+              max={3840}
+              paso={10}
+              unidad="px"
+              onCambio={(v) => cambiar('anchoMax', Math.round(v))}
+            />
+          </div>
+          <p className="text-[var(--fs-small)] text-ink-soft">{tr('anchoAyuda')}</p>
+        </fieldset>
+
+        <div className="grid gap-1.5">
+          <Label htmlFor="prefijo">{tr('prefijo')}</Label>
+          <Input
+            id="prefijo"
+            value={ajustes.prefijo}
+            spellCheck={false}
+            autoComplete="off"
+            className="font-mono"
+            onChange={(e) =>
+              cambiar('prefijo', e.target.value.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24))
+            }
+          />
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => copiar('enlace')}
+          className="justify-self-start"
+        >
+          {copiado === 'enlace' ? <Check aria-hidden="true" /> : <Link2 aria-hidden="true" />}
+          {copiado === 'enlace' ? tr('copiado') : tr('copiarEnlace')}
+        </Button>
+      </div>
+
+      {/* ---------------- Resultados ---------------- */}
+      <div className="grid gap-8">
+        {cruces.length > 0 && (
+          <section className="rounded-lg border border-[var(--danger)] bg-surface p-5">
+            <h2 className="text-[length:var(--fs-h3)] font-semibold text-[var(--danger)]">
+              {tr('cruceTitulo')}
+            </h2>
+            <ul className="mt-3 grid gap-1 font-mono text-[var(--fs-small)] text-ink-muted">
+              {cruces.map((c) => (
+                <li key={`${c.menor}-${c.mayor}-${c.ancho}`}>
+                  {c.menor} {tr('cruceEn')} {c.mayor} {tr('aA')} {c.ancho} px
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-muted">
+              {tr('cruceCuerpo')}
+            </p>
+          </section>
+        )}
+
+        {/* -------- La muestra, con los clamp() de verdad -------- */}
+        <section>
+          <h2 className="text-[length:var(--fs-h3)] font-semibold text-ink">
+            {tr('muestraTitulo')}
+          </h2>
+          <p className="mt-1 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
+            {tr('muestraIntro')}
+          </p>
+
+          <div className="mt-4 grid gap-2 overflow-hidden rounded-lg border border-line bg-surface p-5">
+            {alReves.map((paso) => (
+              <div key={paso.indice} className="flex items-baseline gap-4">
+                <code className="w-16 shrink-0 font-mono text-[0.7rem] text-ink-soft tabular-nums">
+                  {paso.indice > 0 ? `+${paso.indice}` : paso.indice}
+                </code>
+                <span
+                  className="min-w-0 truncate leading-tight text-ink"
+                  style={{ fontSize: paso.valor }}
+                >
+                  {tr('muestraTexto')}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* -------- La tabla: el motivo de la herramienta -------- */}
+        <section>
+          <h2 className="text-[length:var(--fs-h3)] font-semibold text-ink">
+            {tr('tablaTitulo')}
+          </h2>
+          <p className="mt-1 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
+            {tr('tablaIntro')}
+          </p>
+
+          <div className="mt-4 overflow-x-auto rounded-lg border border-line bg-surface">
+            <table className="w-full border-collapse text-[var(--fs-small)] tabular-nums">
+              <thead>
+                <tr className="border-b border-line text-left">
+                  <th scope="col" className="p-3 font-medium text-ink-muted">
+                    {tr('columnaPaso')}
+                  </th>
+                  {ANCHOS_TABLA.map((ancho) => (
+                    <th key={ancho} scope="col" className="p-3 text-right font-medium text-ink-muted">
+                      {ancho}
+                    </th>
+                  ))}
+                  <th
+                    scope="col"
+                    className="p-3 text-right font-medium text-ink-muted"
+                    title={tr('llenoAyuda')}
+                  >
+                    {tr('columnaLlenoCorto')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {alReves.map((paso) => {
+                  const lleno = anchoParaFraccion(paso, 0.95, ajustes);
+                  return (
+                    <tr key={paso.indice} className="border-b border-line last:border-0">
+                      <th scope="row" className="p-3 text-left font-mono font-normal text-ink">
+                        {paso.nombre}
+                      </th>
+                      {paso.enTabla.map((px, i) => (
+                        <td key={ANCHOS_TABLA[i]} className="p-3 text-right text-ink-muted">
+                          {px.toFixed(1)}
+                        </td>
+                      ))}
+                      <td className="p-3 text-right text-ink-soft">
+                        {lleno === null ? tr('nunca') : `${lleno} px`}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="mt-3 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
+            {tr('llenoAyuda')}
+          </p>
+        </section>
+
+        {/* -------- El CSS -------- */}
+        <section>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-[length:var(--fs-h3)] font-semibold text-ink">
+              {tr('cssTitulo')}
+            </h2>
+            <Button variant="outline" size="sm" onClick={() => copiar('css')}>
+              {copiado === 'css' ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+              {copiado === 'css' ? tr('copiado') : tr('copiarCss')}
+            </Button>
+          </div>
+
+          <pre className="mt-4 overflow-x-auto rounded-lg border border-line bg-surface-2 p-4 font-mono text-[0.78rem] leading-relaxed text-ink">
+            <code>{css}</code>
+          </pre>
+
+          <p className="mt-3 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
+            {tr('cssRaiz')}
+          </p>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------- auxiliares
+
+function Numero({
+  id,
+  etiqueta,
+  valor,
+  min,
+  max,
+  paso,
+  unidad,
+  onCambio,
+}: {
+  id: string;
+  etiqueta: string;
+  valor: number;
+  min: number;
+  max: number;
+  paso: number;
+  unidad?: string;
+  onCambio: (valor: number) => void;
+}) {
+  return (
+    <div className="grid gap-1.5">
+      <Label htmlFor={id} className="text-[var(--fs-small)]">
+        {etiqueta}
+      </Label>
+      <div className="flex items-center gap-1.5">
+        <Input
+          id={id}
+          type="number"
+          min={min}
+          max={max}
+          step={paso}
+          value={valor}
+          className="tabular-nums"
+          onChange={(e) => {
+            const n = Number(e.target.value);
+            if (Number.isFinite(n)) onCambio(Math.max(min, Math.min(max, n)));
+          }}
+        />
+        {unidad && <span className="text-[var(--fs-small)] text-ink-soft">{unidad}</span>}
+      </div>
+    </div>
+  );
+}
+
+function Razon({
+  id,
+  etiqueta,
+  valor,
+  lang,
+  personalizada,
+  onCambio,
+}: {
+  id: string;
+  etiqueta: string;
+  valor: number;
+  lang: Lang;
+  personalizada: string;
+  onCambio: (valor: number) => void;
+}) {
+  const conocida = RAZONES.find((r) => Math.abs(r.valor - valor) < 0.0005);
+
+  return (
+    <div className="grid gap-1.5">
+      <Label htmlFor={id}>{etiqueta}</Label>
+      <div className="flex items-center gap-2">
+        <Input
+          id={id}
+          type="number"
+          min={0.5}
+          max={3}
+          step={0.001}
+          value={valor}
+          className="w-24 shrink-0 tabular-nums"
+          onChange={(e) => {
+            const n = Number(e.target.value);
+            if (Number.isFinite(n)) onCambio(Math.max(0.5, Math.min(3, n)));
+          }}
+        />
+        <Select
+          value={conocida ? String(conocida.valor) : 'personalizada'}
+          onValueChange={(v) => {
+            if (v !== 'personalizada') onCambio(Number(v));
+          }}
+        >
+          <SelectTrigger className="w-full" aria-label={etiqueta}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {!conocida && <SelectItem value="personalizada">{personalizada}</SelectItem>}
+            {RAZONES.map((r) => (
+              <SelectItem key={r.valor} value={String(r.valor)}>
+                {r.valor} · {t(NOMBRES_RAZON[r.clave], lang)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+}

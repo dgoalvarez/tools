@@ -50,6 +50,12 @@ export const UI = {
   madeBy: { es: 'Hecho por', en: 'Made by' },
   portfolioLink: { es: 'Ver el portafolio', en: 'View the portfolio' },
 
+  // ---------- Sin JavaScript ----------
+  sinJs: {
+    es: 'Esta herramienta calcula en tu navegador, así que necesita JavaScript. Sin él, los controles de arriba se ven pero no responden.',
+    en: 'This tool computes in your browser, so it needs JavaScript. Without it the controls above are visible but inert.',
+  },
+
   // ---------- Accesibilidad ----------
   skipToContent: { es: 'Saltar al contenido', en: 'Skip to content' },
   toLightMode: { es: 'Cambiar a modo claro', en: 'Switch to light mode' },

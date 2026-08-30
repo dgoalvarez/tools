@@ -61,6 +61,6 @@ export const TOOLS: Record<ToolKey, Tool> = {
       es: 'Genera una escala tipográfica fluida con clamp(), lista para copiar como variables CSS, y enseña a cuántos píxeles queda cada paso en 390, 768, 1360 y 1920. Avisa cuando dos pasos se cruzan a algún ancho.',
       en: 'Generate a fluid type scale with clamp(), ready to copy as CSS variables, and see what each step really measures at 390, 768, 1360 and 1920. It warns when two steps cross over at some width.',
     },
-    listo: false,
+    listo: true,
   },
 };

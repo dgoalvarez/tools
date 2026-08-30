@@ -14,6 +14,7 @@ import {
   obtenerTemporal,
   convertir,
   componerFrase,
+  componerLista,
   buscarCiudades,
   nombreDePais,
   zonaDeZip,
@@ -195,6 +196,56 @@ console.log('\n4. Las 11 de la noche en Colombia, vistas desde California');
   afirmar(
     tokio.destinos[0]!.saltoDeDia === 1,
     `en Tokio ya es el día siguiente (${tokio.destinos[0]!.fecha})`
+  );
+}
+
+console.log('\n4b. El mensaje con todas las horas');
+{
+  const varios = [
+    destino('Miami', 'America/New_York'),
+    destino('Tokio', 'Asia/Tokyo'),
+    destino('Madrid', 'Europe/Madrid'),
+  ];
+  const r = convertir(
+    Temporal,
+    { año: 2026, mes: 9, dia: 4, hora: 15, minuto: 0 },
+    BOGOTA,
+    'Bogotá',
+    varios,
+    'es'
+  );
+
+  const mensaje = componerLista(r.destinos, r.origen, 'es');
+  const lineas = mensaje.split('\n');
+  console.log(lineas.map((l) => '        ' + l).join('\n'));
+
+  afirmar(lineas.length === 5, 'una cabecera y cuatro líneas: la tuya y las tres');
+  afirmar(mensaje.includes('(tu hora)'), 'la primera línea se marca como la tuya');
+  afirmar(
+    mensaje.includes('Miami') && mensaje.includes('Tokio') && mensaje.includes('Madrid'),
+    'están las tres ciudades'
+  );
+  // Lo que no puede faltar: el aviso viaja DENTRO de la línea a la que le
+  // toca, no al final del mensaje, donde nadie sabría de quién es.
+  const lineaTokio = lineas.find((l) => l.includes('Tokio'))!;
+  afirmar(lineaTokio.includes('día siguiente'), `el aviso va en su línea (${lineaTokio.trim()})`);
+  const lineaMiami = lineas.find((l) => l.includes('Miami'))!;
+  afirmar(!lineaMiami.includes('día siguiente'), 'y no se cuela en las que no lo tienen');
+
+  const enIngles = componerLista(r.destinos, r.origen, 'en');
+  afirmar(enIngles.startsWith('Your appointment:'), 'y existe en inglés');
+  afirmar(enIngles.includes('(your time)'), 'con su marca de «tu hora»');
+
+  // La fecha corta es la de la lista. Tiene que decir el mismo día que la
+  // larga: si se desincronizan, la pantalla y el mensaje se contradicen.
+  const tokio = r.destinos.find((c) => c.destino.ciudad === 'Tokio')!;
+  afirmar(
+    tokio.fechaCorta.length > 0 && tokio.fechaCorta.length < tokio.fecha.length,
+    `la fecha corta es más corta que la larga (${tokio.fechaCorta} · ${tokio.fecha})`
+  );
+  afirmar(
+    tokio.fecha.includes('5') && tokio.fechaCorta.includes('5'),
+    'y las dos hablan del mismo día'
   );
 }
 

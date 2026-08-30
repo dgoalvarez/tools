@@ -41,12 +41,24 @@ export const HUSOS = {
     es: 'Allí todavía es el día anterior',
     en: 'That is still the previous day there',
   },
+  /**
+   * Los mismos avisos, en corto.
+   *
+   * En la lista comparten renglón con la fecha y la diferencia, y la
+   * frase larga no cabía. Lo que hace que se vea de lejos no es el texto
+   * sino la franja roja del borde de la fila, que no cuesta alto.
+   */
+  diaSiguienteCorto: { es: 'día siguiente', en: 'next day' },
+  diaAnteriorCorto: { es: 'día anterior', en: 'previous day' },
+  /** El rótulo de la fila del origen dentro de la lista. */
+  tuHora: { es: 'Tu hora', en: 'Your time' },
   misma: { es: 'la misma hora', en: 'same time' },
   adelanto: { es: 'por delante', en: 'ahead' },
   retraso: { es: 'por detrás', en: 'behind' },
 
   // ---------- La frase ----------
   copiarFrase: { es: 'Copiar la frase', en: 'Copy the sentence' },
+  copiarTodas: { es: 'Copiar las horas', en: 'Copy the times' },
   copiado: { es: 'Copiado', en: 'Copied' },
 
   // ---------- Los saltos de horario de verano ----------

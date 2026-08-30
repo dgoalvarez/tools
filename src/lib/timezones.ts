@@ -95,6 +95,8 @@ export interface Conversion {
   hora: string;
   /** El día de la semana y la fecha, en el idioma de la página. */
   fecha: string;
+  /** La misma, en corto: «dom 30 ago». Para la lista. */
+  fechaCorta: string;
   /** Horas de diferencia respecto al origen. Puede tener media hora. */
   diferencia: number;
   /**
@@ -165,6 +167,18 @@ function formatear(instante: Date, zona: string, lang: string) {
 
   const fecha = `${diaSemana} ${diaMes}`;
 
+  // La misma fecha en corto —«dom 30 ago»— para la lista, donde cada
+  // línea comparte renglón con la hora y la diferencia. La larga se queda
+  // para la frase que se copia, que se lee y no se escanea.
+  const fechaCorta = new Intl.DateTimeFormat(locale, {
+    timeZone: zona,
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  })
+    .format(instante)
+    .replace(/,/g, '');
+
   // `timeZoneName: 'short'` da «EDT» donde el sitio tiene abreviatura y
   // «GMT-5» donde no. Las dos cosas son lo que la gente reconoce.
   const conZona = new Intl.DateTimeFormat(locale, {
@@ -173,7 +187,7 @@ function formatear(instante: Date, zona: string, lang: string) {
   }).format(instante);
   const abreviatura = conZona.split(', ').pop() ?? '';
 
-  return { hora, fecha, abreviatura };
+  return { hora, fecha, fechaCorta, abreviatura };
 }
 
 /** El día del calendario en una zona, para saber si hay salto de día. */
@@ -305,6 +319,40 @@ export function componerFrase(conversion: Conversion, origen: Conversion, lang: 
       : `on ${conversion.fecha} (note: that is the ${conversion.saltoDeDia > 0 ? 'next' : 'previous'} day where you are)`;
 
   return `Your appointment is ${dia} at ${conversion.hora}, ${lugar} time (${origen.hora} in ${origen.destino.etiqueta}).`;
+}
+
+/**
+ * Todas las horas en un solo mensaje.
+ *
+ * Sustituye a las frases sueltas que había bajo cada ficha, y no solo por
+ * espacio: cuando se agenda con cinco personas lo que se manda es UN
+ * mensaje al grupo, no cinco frases iguales una detrás de otra. El aviso
+ * de que allí es otro día viaja dentro de la línea que le toca, que es
+ * donde hace falta.
+ *
+ * `componerFrase` se queda para una sola ciudad; las dos hacen falta.
+ */
+export function componerLista(destinos: Conversion[], origen: Conversion, lang: string): string {
+  const es = lang === 'es';
+
+  const linea = (c: Conversion, esOrigen: boolean) => {
+    const quien = esOrigen
+      ? `${c.destino.etiqueta} (${es ? 'tu hora' : 'your time'})`
+      : c.destino.etiqueta;
+
+    const aviso =
+      c.saltoDeDia === 0
+        ? ''
+        : es
+          ? ` (ojo: allí ya es el día ${c.saltoDeDia > 0 ? 'siguiente' : 'anterior'})`
+          : ` (note: that is the ${c.saltoDeDia > 0 ? 'next' : 'previous'} day there)`;
+
+    return `· ${quien} — ${c.fecha}, ${c.hora}${aviso}`;
+  };
+
+  const cabecera = es ? 'Tu cita:' : 'Your appointment:';
+
+  return [cabecera, linea(origen, true), ...destinos.map((c) => linea(c, false))].join('\n');
 }
 
 // ------------------------------------------------------------------ datos

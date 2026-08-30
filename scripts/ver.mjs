@@ -70,6 +70,31 @@ if (!existsSync(dist)) {
 const VISTAS = [
   { nombre: 'portada', ruta: 'es', ancho: 1440, alto: 900 },
   { nombre: 'husos', ruta: 'es/horarios', ancho: 1440, alto: 900 },
+  // Con ciudades de verdad: es donde se ve si la lista aguanta. Van por
+  // la dirección, que es como se comparte un cálculo en este sitio.
+  {
+    nombre: 'husos-llena',
+    ruta: 'es/horarios',
+    ancho: 1440,
+    alto: 900,
+    query:
+      'z=America/New_York,Europe/Madrid,Asia/Tokyo,Europe/London,America/Los_Angeles,Asia/Kolkata,Pacific/Auckland,America/Sao_Paulo',
+  },
+  {
+    nombre: 'husos-llena-claro',
+    ruta: 'es/horarios',
+    ancho: 1440,
+    alto: 900,
+    tema: 'light',
+    query: 'z=America/New_York,Asia/Tokyo,Asia/Kolkata,Europe/Madrid',
+  },
+  {
+    nombre: 'husos-estrecho',
+    ruta: 'es/horarios',
+    ancho: 485,
+    alto: 900,
+    query: 'z=America/New_York,Asia/Tokyo,Asia/Kolkata',
+  },
   { nombre: 'contraste', ruta: 'es/contraste', ancho: 1440, alto: 1000 },
   { nombre: 'escala', ruta: 'es/escala', ancho: 1440, alto: 1000 },
   { nombre: 'contraste-claro', ruta: 'es/contraste', ancho: 1440, alto: 1000, tema: 'light' },
@@ -168,7 +193,7 @@ try {
         // compara con undefined y no por verdadero: el primer paso es 0.
         `--virtual-time-budget=${vista.tour !== undefined ? 9000 + vista.tour * 1400 : 7000}`,
         `--screenshot=${archivo}`,
-        `http://localhost:${PUERTO}/${ruta}.html`,
+        `http://localhost:${PUERTO}/${ruta}.html${vista.query ? `?${vista.query}` : ''}`,
       ],
       { stdio: 'ignore' }
     );

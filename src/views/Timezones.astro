@@ -37,10 +37,11 @@ const { lang } = Astro.props;
     </p>
   </noscript>
 
-  <p
-    data-tour="precision"
-    class="mt-10 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft"
-  >
+  {/* La letra más pequeña del sitio, y a propósito: es lo que hay que
+      leer una vez y no volver a leer nunca. La atribución no se puede
+      quitar —la licencia CC BY la exige donde se usa la obra— pero sí
+      puede ocupar lo que le corresponde. */}
+  <p data-tour="precision" class="mt-8 max-w-[var(--measure)] text-[0.72rem] leading-relaxed text-ink-soft">
     {t(HUSOS.precisionCuerpo, lang)}{' '}
     <span class="whitespace-nowrap">
       {t(HUSOS.atribucion, lang)}{' '}

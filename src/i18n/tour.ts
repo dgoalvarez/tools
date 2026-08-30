@@ -66,27 +66,27 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
     },
     {
       ancla: 'resultados',
-      titulo: { es: 'La hora de cada uno', en: 'Everyone’s time' },
+      titulo: { es: 'Todas las horas en columna', en: 'Every time in one column' },
       cuerpo: {
-        es: 'Cada ficha trae la hora allí, la diferencia con la tuya y la abreviatura del huso —EST, CDT—, que es lo que la gente escribe en los correos.',
-        en: 'Each card carries the time there, the difference from yours, and the zone abbreviation — EST, CDT — which is what people write in emails.',
+        es: 'La tuya la primera, en color, y debajo una por ciudad. Están alineadas a propósito: comparar dos horas es mirar hacia abajo, no recordar una mientras buscas la otra. Cada fila trae además la diferencia y la abreviatura del huso —EST, CDT—, que es lo que la gente escribe en los correos.',
+        en: 'Yours first, in colour, and one row per city below. They line up on purpose: comparing two times is looking down the column, not remembering one while you hunt for the other. Each row also carries the difference and the zone abbreviation — EST, CDT — which is what people write in emails.',
       },
     },
     {
       ancla: 'salto',
       titulo: { es: 'El aviso que importa', en: 'The warning that matters' },
       cuerpo: {
-        es: 'Cuando allí ya es otro día, sale este aviso en rojo. Es el error que de verdad se comete al agendar: acertar la hora y equivocarse el día.',
-        en: 'When it is already another day there, this warning appears in red. It is the mistake people actually make when scheduling: getting the time right and the day wrong.',
+        es: 'Cuando allí ya es otro día, la fila se marca en rojo por el lado y lo dice al final. Es el error que de verdad se comete al agendar: acertar la hora y equivocarse el día.',
+        en: 'When it is already another day there, the row is marked red down its edge and says so at the end. It is the mistake people actually make when scheduling: getting the time right and the day wrong.',
       },
       opcional: true,
     },
     {
       ancla: 'frase',
-      titulo: { es: 'La frase, no la tabla', en: 'The sentence, not the table' },
+      titulo: { es: 'Un mensaje con todas', en: 'One message with all of them' },
       cuerpo: {
-        es: 'Lo que de verdad entrega la herramienta es esto: una frase escrita en su hora, con el aviso dentro si hace falta, lista para pegar donde sea. La tabla es el camino; esto es el destino.',
-        en: 'What the tool actually delivers is this: a sentence written in their time, with the warning inside it when needed, ready to paste anywhere. The table is the road; this is the destination.',
+        es: 'Copia las horas de todos en un solo mensaje, con el aviso de otro día dentro de la línea que le toca. Uno y no cinco: cuando se agenda con varias personas lo que se manda es un mensaje al grupo.',
+        en: 'Copies everyone’s time as a single message, with the other-day warning inside the line it belongs to. One and not five: when you schedule with several people, what you send is one message to the group.',
       },
       opcional: true,
     },

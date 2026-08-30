@@ -21,8 +21,9 @@ import { t, type Lang } from '@/i18n/config';
 import { HUSOS as H } from '@/i18n/timezones';
 import BuscadorLugar, { type TextosBuscador } from './BuscadorLugar';
 import {
-  componerFrase,
+  componerLista,
   convertir,
+  localeDe,
   nombreDePais,
   nombreDeZona,
   obtenerTemporal,
@@ -234,10 +235,31 @@ export default function Timezones({ lang }: Props) {
     }
   }
 
+  /**
+   * La diferencia, en corto: «+1 h», «−5,5 h», «misma hora».
+   *
+   * Era «1 h por delante», que se lee mejor suelto pero en la lista
+   * comparte renglón con la fecha corta y no cabía. El signo dice lo
+   * mismo con dos caracteres, y la frase larga sigue estando: va en el
+   * `title` de la fila, para quien pase el ratón.
+   */
   const diferenciaTexto = (horas: number) => {
     if (horas === 0) return tr('misma');
-    const absoluto = Math.abs(horas);
-    const cantidad = Number.isInteger(absoluto) ? absoluto : absoluto.toFixed(1);
+    // Las medias horas —India, Nepal— se escriben con coma en español y
+    // con punto en inglés. Lo decide el idioma, no el `toFixed`.
+    const cantidad = Math.abs(horas).toLocaleString(localeDe(lang), {
+      maximumFractionDigits: 1,
+    });
+    // El menos de verdad, no el guion: en cifras se lee mejor.
+    return `${horas > 0 ? '+' : '−'}${cantidad} h`;
+  };
+
+  /** La misma diferencia dicha entera, para el `title`. */
+  const diferenciaLarga = (horas: number) => {
+    if (horas === 0) return tr('misma');
+    const cantidad = Math.abs(horas).toLocaleString(localeDe(lang), {
+      maximumFractionDigits: 1,
+    });
     return `${cantidad} h ${horas > 0 ? tr('adelanto') : tr('retraso')}`;
   };
 
@@ -349,120 +371,120 @@ export default function Timezones({ lang }: Props) {
           </section>
         )}
 
-        {/* El origen, siempre a la vista: es contra lo que se compara todo. */}
-        {resultado && (
-          <div className="rounded-lg border border-line bg-surface-2 p-5">
-            <p className="truncate text-[var(--fs-small)] text-ink-soft">{origen.etiqueta}</p>
-            <p className="mt-1 text-[length:var(--fs-h2)] font-semibold text-ink">
-              {resultado.origen.hora}
-            </p>
-            <p className="text-[var(--fs-small)] text-ink-muted">{resultado.origen.fecha}</p>
-          </div>
-        )}
-
         <section data-tour="resultados">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-[length:var(--fs-h3)] font-semibold text-ink">
               {tr('resultados')}
             </h2>
 
-            {/* Quitar de una en una está bien para dos; para nueve no.
-                Aparece a partir de la segunda, que es cuando empieza a
-                hacer falta. */}
-            {destinos.length > 1 && (
-              <Button variant="ghost" size="sm" onClick={() => setDestinos([])}>
-                <TrashIcon aria-hidden="true" />
-                {tr('quitarTodas')}
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Un mensaje con todas, no una frase por ciudad. Cuando se
+                  agenda con cinco personas se manda un mensaje al grupo,
+                  no cinco frases iguales seguidas. */}
+              {destinos.length > 0 && resultado && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-tour="frase"
+                  onClick={() =>
+                    copiar('todas', componerLista(resultado.destinos, resultado.origen, lang))
+                  }
+                >
+                  {copiado === 'todas' ? (
+                    <CheckIcon aria-hidden="true" />
+                  ) : (
+                    <CopyIcon aria-hidden="true" />
+                  )}
+                  {copiado === 'todas' ? tr('copiado') : tr('copiarTodas')}
+                </Button>
+              )}
+
+              {/* Quitar de una en una está bien para dos; para nueve no.
+                  Aparece a partir de la segunda, que es cuando empieza a
+                  hacer falta. */}
+              {destinos.length > 1 && (
+                <Button variant="ghost" size="sm" onClick={() => setDestinos([])}>
+                  <TrashIcon aria-hidden="true" />
+                  {tr('quitarTodas')}
+                </Button>
+              )}
+            </div>
           </div>
 
-          {destinos.length === 0 ? (
+          {/*
+            Una sola caja con una fila por ciudad, y la tuya la primera.
+
+            Antes cada destino era una tarjeta de 260 px y el origen otra
+            aparte, encima. Con seis ciudades había que hacer scroll para
+            ver la cuarta, y comparar dos horas era recordar una mientras
+            se buscaba la otra. Aquí todas las horas caen en la misma
+            columna, la tuya incluida, y comparar es mirar hacia abajo.
+          */}
+          <div className="lista-horas mt-4">
+            {resultado && (
+              <div className="fila-hora origen">
+                <span className="lugar truncate" title={origen.etiqueta}>
+                  {origen.etiqueta}
+                </span>
+                <span className="meta truncate">{tr('tuHora')}</span>
+                <span className="hora">{resultado.origen.hora}</span>
+                <span className="cuando">{resultado.origen.fechaCorta}</span>
+              </div>
+            )}
+
+            {resultado?.destinos.map((c) => {
+              const debajo = [c.destino.region, nombreDePais(c.destino.pais, lang), c.abreviatura]
+                .filter(Boolean)
+                .join(' · ');
+
+              return (
+                <div
+                  key={c.destino.id}
+                  className={`fila-hora${c.saltoDeDia !== 0 ? ' salta' : ''}`}
+                >
+                  <span className="lugar truncate" title={c.destino.ciudad}>
+                    {c.destino.ciudad}
+                  </span>
+                  <span className="meta truncate" title={`${c.destino.zona} · ${debajo}`}>
+                    {debajo}
+                  </span>
+
+                  <span className="hora">{c.hora}</span>
+                  <span className="cuando" title={`${c.fecha} · ${diferenciaLarga(c.diferencia)}`}>
+                    {c.fechaCorta} · {diferenciaTexto(c.diferencia)}
+                    {/* El error que la herramienta existe para evitar. Va
+                        aquí y no en una caja aparte: en una caja costaba
+                        50 px por ciudad, y la franja roja del borde se ve
+                        igual de lejos sin costar ninguno. */}
+                    {c.saltoDeDia !== 0 && (
+                      <>
+                        {' · '}
+                        <span className="aviso-dia" data-tour="salto">
+                          {c.saltoDeDia > 0 ? tr('diaSiguienteCorto') : tr('diaAnteriorCorto')}
+                        </span>
+                      </>
+                    )}
+                  </span>
+
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => quitar(c.destino.id)}
+                    aria-label={`${tr('quitar')} ${c.destino.ciudad}`}
+                    title={tr('quitar')}
+                    className="quitar"
+                  >
+                    <XIcon aria-hidden="true" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+
+          {destinos.length === 0 && (
             <p className="mt-3 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
               {tr('vacio')}
             </p>
-          ) : (
-            <ul className="mt-4 grid gap-3">
-              {resultado?.destinos.map((c) => {
-                const frase = componerFrase(c, resultado.origen, lang);
-                const debajo = [c.destino.region, nombreDePais(c.destino.pais, lang)]
-                  .filter(Boolean)
-                  .join(' · ');
-
-                return (
-                  <li key={c.destino.id} className="rounded-lg border border-line bg-surface p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      {/* La ciudad arriba y la región debajo, cada una
-                          truncándose por su cuenta. En una sola línea, un
-                          nombre como «Santo Domingo de los Colorados, Santo
-                          Domingo» empujaba el botón de quitar fuera de la
-                          ficha. */}
-                      <div className="min-w-0">
-                        <p className="truncate font-medium text-ink" title={c.destino.ciudad}>
-                          {c.destino.ciudad}
-                        </p>
-                        {debajo && (
-                          <p
-                            className="truncate text-[var(--fs-small)] text-ink-muted"
-                            title={debajo}
-                          >
-                            {debajo}
-                          </p>
-                        )}
-                        <p className="truncate font-mono text-[0.7rem] text-ink-soft">
-                          {c.destino.zona} · {c.abreviatura}
-                        </p>
-                      </div>
-
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => quitar(c.destino.id)}
-                        aria-label={`${tr('quitar')} ${c.destino.ciudad}`}
-                        title={tr('quitar')}
-                        className="shrink-0"
-                      >
-                        <XIcon aria-hidden="true" />
-                      </Button>
-                    </div>
-
-                    <p className="mt-3 text-[length:var(--fs-h2)] font-semibold text-ink">
-                      {c.hora}
-                    </p>
-                    <p className="text-[var(--fs-small)] text-ink-muted">
-                      {c.fecha} · {diferenciaTexto(c.diferencia)}
-                    </p>
-
-                    {/* El aviso que evita el error que de verdad se comete. */}
-                    {c.saltoDeDia !== 0 && (
-                      <p
-                        data-tour="salto"
-                        className="mt-3 rounded-md border border-[var(--danger)] px-3 py-2 text-[var(--fs-small)] font-medium text-[var(--danger)]"
-                      >
-                        {c.saltoDeDia > 0 ? tr('diaSiguiente') : tr('diaAnterior')}
-                      </p>
-                    )}
-
-                    <div className="mt-4 border-t border-line pt-3" data-tour="frase">
-                      <p className="text-[var(--fs-small)] text-ink-muted">{frase}</p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-3"
-                        onClick={() => copiar(c.destino.id, frase)}
-                      >
-                        {copiado === c.destino.id ? (
-                          <CheckIcon aria-hidden="true" />
-                        ) : (
-                          <CopyIcon aria-hidden="true" />
-                        )}
-                        {copiado === c.destino.id ? tr('copiado') : tr('copiarFrase')}
-                      </Button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
           )}
         </section>
       </div>

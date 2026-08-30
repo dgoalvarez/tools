@@ -26,10 +26,11 @@ export const UI = {
   navHome: { es: 'Inicio', en: 'Home' },
   navTools: { es: 'Herramientas', en: 'Tools' },
   backHome: { es: 'Volver al inicio', en: 'Back to home' },
-  verTodas: { es: 'Ver todas', en: 'See all' },
+  verTodas: { es: 'Ver todas las herramientas', en: 'See all the tools' },
   todasLasHerramientas: { es: 'Todas las herramientas', en: 'All the tools' },
-  fijarMenu: { es: 'Dejar el menú abierto', en: 'Keep the menu open' },
-  soltarMenu: { es: 'Plegar el menú', en: 'Collapse the menu' },
+  irAHerramienta: { es: 'Ir a una herramienta', en: 'Go to a tool' },
+  /** El rótulo de la herramienta que está abierta, fijada arriba de la barra. */
+  abierta: { es: 'Abierta', en: 'Open' },
   cerrar: { es: 'Cerrar', en: 'Close' },
 
   // ---------- Portada ----------
@@ -78,8 +79,8 @@ export const UI = {
   switchLanguage: { es: 'View this page in English', en: 'Ver esta página en español' },
   // Describe la imagen que se comparte. Cuando cambie og.png, cambia esto.
   ogImageAlt: {
-    es: 'DGO · Herramientas gratuitas',
-    en: 'DGO · Free tools',
+    es: 'DGO Tools · «Small tools. Fewer tabs.» Herramientas de diseño y productividad, sin registro.',
+    en: 'DGO Tools · “Small tools. Fewer tabs.” Design and productivity tools, no signup.',
   },
 } satisfies Record<string, T>;
 

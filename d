@@ -8,12 +8,9 @@
      4. Los valores de cada tema
      5. Base
 
-   La tipografía viene del portafolio —la misma Switzer, autoalojada— y
-   el color viene del og.png: fondo, línea y teal están medidos de esa
-   imagen para que lo que se comparte y el sitio sean el mismo color.
-
-   Cada herramienta se pinta con el acento de su materia; el del sitio
-   es el teal de la marca.
+   La identidad viene del portafolio (misma Switzer, mismo verde),
+   pero la densidad no: esto son herramientas de trabajo, con tablas y
+   controles, no un portafolio con titulares de 8rem.
    ============================================================ */
 
 @import 'tailwindcss';
@@ -113,12 +110,6 @@
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
 
-  /* El acento de la página. Vale lo mismo que `--brand` salvo dentro de
-     una herramienta, que lo cambia por el de su materia. Así
-     `text-acento` o `border-acento` se pintan solos en cada página. */
-  --color-acento: var(--acento);
-  --color-acento-ink: var(--brand-ink);
-
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -135,15 +126,15 @@
    desincronizar.
 
    El anclaje no es una elección estética: tres de estos valores están
-   MEDIDOS del `public/og.png` —el fondo #10191b, la línea #262c2d y el
-   teal #31c5bc— para que la imagen que se comparte y el sitio al que
-   lleva sean exactamente el mismo color. Todo lo demás se deriva de ahí
-   en OKLCH y pasa AA sobre las tres superficies; la derivación vive en
+   MEDIDOS del `public/og.png` que hizo Diego —el fondo #10191b, la línea
+   #262c2d y el teal #31c5bc— para que la imagen que se comparte y el
+   sitio al que lleva sean el mismo color. Todo lo demás se deriva de ahí
+   en OKLCH y pasa AA sobre las tres superficies; la derivación está en
    `design/paleta-final.ts` y se puede volver a correr.
 
-   Los tres acentos por materia vienen de la dirección elegida: cada
+   Los tres acentos por materia son de la dirección elegida: cada
    herramienta se pinta con el suyo. El de tipografía es el teal de la
-   marca, así que hace además de acento del sitio. */
+   marca, así que también hace de acento del sitio. */
 
 :root {
   --l-bg: #f3f6f7;
@@ -249,18 +240,6 @@
   --acento-tipografia: var(--d-tipografia);
 }
 
-/* ---------- El acento de la página ----------
-   Cada herramienta se pinta con el acento de su materia. La página lo
-   declara una vez en su elemento raíz —`style="--acento: var(--acento-color)"`—
-   y todo lo demás lo hereda. Donde no se declara, manda el de la marca.
-
-   Es una variable y no una clase por una razón: cuando llegue la cuarta
-   herramienta, pintarla es añadir su color a la paleta y nombrarlo, sin
-   tocar ni una regla de este archivo. */
-:root {
-  --acento: var(--brand);
-}
-
 /* ---------- Base ---------- */
 
 @layer base {
@@ -298,32 +277,30 @@
 }
 
 /* ============================================================
-   La barra lateral
+   El riel de navegación
 
-   Es toda la navegación de una herramienta: la marca, la que está
-   abierta —fijada arriba—, las demás agrupadas por ámbito, y el idioma y
-   el tema abajo. La portada no la lleva: ahí manda una barra superior
-   fina, porque el home es la pantalla que se mira entera.
+   Es una franja de iconos pegada a la izquierda que se ensancha al pasar
+   por encima, al recibir el foco con el teclado, o cuando alguien la deja
+   fijada. Tres reglas de fondo:
 
-   Tres reglas de fondo:
-
-   1. Está siempre desplegada. La versión que se plegaba obligaba a pasar
-      el ratón por encima para leer un nombre, y eso no existe con
-      teclado ni en una tableta.
-   2. Va con `position: fixed` y el contenido se aparta con un relleno, no
-      con una columna. Así la herramienta se desplaza sin que la
-      navegación se vaya con ella.
-   3. En un móvil se convierte en una barra inferior de iconos: donde no
-      hay ratón, el pulgar llega antes abajo que arriba.
+   1. Al ensancharse se pone POR ENCIMA del contenido, no lo empuja. Si
+      empujara, toda la página bailaría cada vez que el ratón pasa cerca.
+   2. Los nombres de las herramientas están siempre en el HTML; plegado
+      solo los recorta el `overflow`. Quien usa un lector de pantalla no
+      puede «pasar por encima» de nada, así que los nombres tienen que
+      estar ahí siempre.
+   3. `:focus-within` lo abre. Sin eso, navegar con el tabulador sería ir a
+      ciegas por una columna de iconos.
    ============================================================ */
 
 :root {
-  --barra: clamp(272px, 20vw, 340px);
-  --barra-movil: 4.25rem;
+  --riel-plegado: 3.5rem;
+  --riel-abierto: 14.5rem;
+  --riel-movil: 4rem;
 }
 
 @layer components {
-  .barra-lateral {
+  .riel {
     position: fixed;
     inset-block: 0;
     inset-inline-start: 0;
@@ -331,171 +308,119 @@
 
     display: flex;
     flex-direction: column;
-    width: var(--barra);
+    gap: 0.5rem;
+
+    width: var(--riel-plegado);
+    padding: 0.75rem 0.5rem;
+    overflow: hidden;
 
     background: var(--surface);
     border-inline-end: 1px solid var(--line);
+
+    transition: width 160ms ease;
   }
 
-  /* Solo las páginas de herramienta llevan barra; la portada no. */
-  .con-barra {
-    padding-inline-start: var(--barra);
+  .riel:hover,
+  .riel:focus-within,
+  html[data-riel='fijo'] .riel {
+    width: var(--riel-abierto);
+    box-shadow: 0 0 0 1px var(--line);
   }
 
-  .barra-marca {
+  /* Quien prefiere que nada se mueva, que no se mueva. */
+  @media (prefers-reduced-motion: reduce) {
+    .riel {
+      transition: none;
+    }
+  }
+
+  /* El texto que solo se ve con el riel abierto. No se oculta con
+     `display` ni con `visibility`: se recorta, y así sigue existiendo
+     para los lectores de pantalla y para el buscador del navegador. */
+  .riel-texto {
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .riel-fila {
     display: flex;
     align-items: center;
-    min-height: 3.75rem;
-    padding-inline: 1.25rem;
-    border-block-end: 1px solid var(--line);
-    color: var(--ink);
-  }
+    gap: 0.625rem;
 
-  .barra-lista {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.4375rem;
-    padding: 0.875rem;
-    overflow-y: auto;
-  }
-
-  .barra-grupo {
-    margin: 0;
-    padding: 0.75rem 0.625rem 0.1875rem;
-    font-size: 0.66rem;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-  }
-
-  .barra-item {
-    display: flex;
-    gap: 0.75rem;
-    min-height: 2.75rem;
-    padding: 0.75rem;
-    border: 1px solid var(--line);
-    border-radius: 0.6875rem;
-    color: var(--ink-muted);
-    text-decoration: none;
-  }
-
-  .barra-item:hover {
-    border-color: color-mix(in srgb, var(--acento) 45%, var(--line));
-    color: var(--ink);
-  }
-
-  .barra-item .icono {
-    flex: none;
-    display: grid;
-    place-items: center;
-    width: 2.125rem;
-    height: 2.125rem;
-    border-radius: 0.5625rem;
-    background: color-mix(in srgb, var(--ink) 7%, transparent);
-    color: var(--ink-muted);
-  }
-
-  .barra-item .nombre {
-    font-size: 0.875rem;
-    font-weight: 500;
-    letter-spacing: -0.01em;
-  }
-
-  .barra-item .resumen {
-    display: block;
-    margin-block-start: 0.1875rem;
-    font-size: 0.75rem;
-    line-height: 1.45;
-    color: var(--ink-soft);
-  }
-
-  /* La abierta sube al primer sitio con su acento, y sale de su grupo:
-     cambia de posición, no se duplica. */
-  .barra-item[aria-current='page'] {
-    background: color-mix(in srgb, var(--acento) 13%, transparent);
-    border-color: color-mix(in srgb, var(--acento) 45%, transparent);
-    color: var(--ink);
-  }
-
-  .barra-item[aria-current='page'] .icono {
-    background: var(--acento);
-    color: var(--brand-ink);
-  }
-
-  .barra-item[aria-current='page'] .nombre {
-    font-weight: 600;
-    color: var(--ink);
-  }
-
-  .barra-item[aria-current='page'] .resumen {
-    color: var(--ink-muted);
-  }
-
-  .barra-corte {
-    height: 1px;
-    margin: 0.75rem 0.125rem 0.25rem;
-    background: var(--line);
-  }
-
-  .barra-pie {
-    display: flex;
-    gap: 0.4375rem;
-    padding: 0.6875rem 0.875rem;
-    border-block-start: 1px solid var(--line);
-  }
-
-  /* ---------- La barra superior de la portada ---------- */
-  .barra-superior {
-    display: flex;
-    align-items: center;
-    gap: 0.875rem;
-    padding-block: 1rem;
-    border-block-end: 1px solid var(--line);
-    color: var(--ink);
-  }
-
-  /* ---------- Piezas que comparten las dos ---------- */
-  .pastilla {
-    display: flex;
-    align-items: center;
-    gap: 0.4375rem;
+    /* El alto de un objetivo táctil cómodo, también en escritorio. */
     min-height: 2.5rem;
-    padding-inline: 0.8125rem;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    font-size: 0.84rem;
+    padding-inline: 0.625rem;
+    border-radius: var(--radius);
+
     color: var(--ink-muted);
+    font-size: var(--fs-small);
     text-decoration: none;
     white-space: nowrap;
   }
 
-  .pastilla:hover {
-    border-color: color-mix(in srgb, var(--acento) 45%, var(--line));
+  .riel-fila > svg {
+    flex: none;
+  }
+
+  .riel-fila:hover {
+    background: var(--surface-2);
     color: var(--ink);
   }
 
-  .pastilla kbd {
-    font: inherit;
-    font-size: 0.72rem;
+  .riel-fila[aria-current='page'] {
+    background: color-mix(in srgb, var(--brand) 12%, transparent);
+    color: var(--brand);
     font-weight: 500;
-    padding: 0.125rem 0.375rem;
-    border: 1px solid var(--line);
-    border-radius: 0.3125rem;
+  }
+
+  .riel-marca {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+
+  .riel-grupo {
+    margin-block-start: 0.75rem;
+    padding-inline: 0.625rem;
+
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: var(--ink-soft);
   }
 
+  .riel-pie {
+    margin-block-start: auto;
+    padding-block-start: 0.5rem;
+    border-block-start: 1px solid var(--line);
+  }
+
+  /* El contenido deja sitio al riel plegado; cuando está fijado, al
+     abierto. Es la única vez que el riel mueve la página, y solo porque
+     alguien lo ha pedido a propósito. */
+  .contenido {
+    padding-inline-start: var(--riel-plegado);
+    transition: padding-inline-start 160ms ease;
+  }
+
+  html[data-riel='fijo'] .contenido {
+    padding-inline-start: var(--riel-abierto);
+  }
+
   /* ---------- En móvil, una barra abajo ----------
-     El nombre se queda; lo que se va es el resumen, que no cabe. */
+     Donde no hay ratón, «pasar por encima» no existe. Y el pulgar llega
+     antes abajo que arriba. */
   @media (width < 48rem) {
-    .barra-lateral {
+    .riel {
       inset-block: auto 0;
       inset-inline: 0;
       width: auto;
-      height: var(--barra-movil);
+      height: var(--riel-movil);
 
       flex-direction: row;
+      justify-content: space-around;
       gap: 0;
       padding: 0.25rem 0.5rem;
 
@@ -503,67 +428,39 @@
       border-block-start: 1px solid var(--line);
     }
 
-    .barra-lista {
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-around;
-      padding: 0;
-      overflow: visible;
+    .riel:hover,
+    .riel:focus-within,
+    html[data-riel='fijo'] .riel {
+      width: auto;
+      box-shadow: none;
     }
 
-    .barra-item {
+    .riel-fila {
       flex-direction: column;
-      align-items: center;
-      gap: 0.1875rem;
+      gap: 0.125rem;
       min-height: 0;
-      padding: 0.375rem 0.5rem;
-      border-color: transparent;
-      background: none;
-      text-align: center;
+      padding-inline: 0.5rem;
+      font-size: 0.65rem;
     }
 
-    .barra-item .nombre {
-      font-size: 0.66rem;
-    }
-
-    .barra-item[aria-current='page'] {
-      background: none;
-      border-color: transparent;
-    }
-
-    .barra-item[aria-current='page'] .nombre {
-      color: var(--acento);
-    }
-
-    .barra-item .icono {
-      width: 1.5rem;
-      height: 1.5rem;
-      background: none;
-    }
-
-    .barra-item[aria-current='page'] .icono {
-      background: none;
-      color: var(--acento);
-    }
-
-    .barra-marca,
-    .barra-grupo,
-    .barra-corte,
-    .barra-pie,
-    .barra-item .resumen,
-    .solo-escritorio {
+    /* La marca, los grupos y el botón de fijar no pintan nada en una
+       barra de cinco iconos. */
+    .riel-marca,
+    .riel-grupo,
+    .riel-solo-escritorio {
       display: none;
     }
 
-    .con-barra {
+    .contenido,
+    html[data-riel='fijo'] .contenido {
       padding-inline-start: 0;
-      padding-block-end: calc(var(--barra-movil) + 0.5rem);
+      padding-block-end: calc(var(--riel-movil) + 0.5rem);
     }
   }
 
   /* ---------- El lanzador ---------- */
   .bento::backdrop {
-    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
     backdrop-filter: blur(3px);
   }
 
@@ -594,7 +491,6 @@
     }
   }
 }
-
 
 /* ============================================================
    Las barras del selector de color

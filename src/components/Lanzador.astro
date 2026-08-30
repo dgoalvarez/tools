@@ -1,0 +1,85 @@
+---
+/**
+ * El lanzador: todas las herramientas de un vistazo, sobre la página.
+ *
+ * Es un `<dialog>` nativo, así que se cierra con Escape, atrapa el foco
+ * mientras está abierto y lo devuelve al botón al cerrarse — las tres
+ * cosas sin escribir una línea de JavaScript.
+ *
+ * Lo abren el botón de la barra y el atajo ⌘K / Ctrl+K. Sin JavaScript el
+ * botón no aparece y la navegación sigue funcionando con los enlaces de
+ * la barra, que es lo que tiene que pasar.
+ */
+import Icono from './Icono.astro';
+import { UI } from '../i18n/ui';
+import { TOOLS } from '../i18n/tools';
+import { AMBITOS, MATERIAS, TAREAS, ORDEN_AMBITOS, ambitoPrincipal, ACENTO_POR_MATERIA } from '../i18n/labels';
+import { t, type Lang } from '../i18n/config';
+import { route, TOOL_KEYS } from '../i18n/routes';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+
+const grupos = ORDEN_AMBITOS.map((ambito) => ({
+  ambito,
+  herramientas: TOOL_KEYS.filter((key) => ambitoPrincipal(TOOLS[key].etiquetas) === ambito),
+})).filter((grupo) => grupo.herramientas.length > 0);
+---
+
+<dialog class="bento" data-bento-dialog aria-labelledby="bento-titulo">
+  <div class="flex items-center justify-between gap-4 border-b border-line px-6 py-4">
+    <h2 id="bento-titulo" class="text-[length:var(--fs-h3)] font-semibold text-ink">
+      {t(UI.todasLasHerramientas, lang)}
+    </h2>
+    <button
+      type="button"
+      class="grid size-9 cursor-pointer place-items-center rounded-md text-ink-muted hover:bg-surface-2 hover:text-ink"
+      data-bento-cerrar
+    >
+      <Icono nombre="cerrar" titulo={t(UI.cerrar, lang)} />
+    </button>
+  </div>
+
+  <div class="grid gap-6 p-6">
+    {
+      grupos.map((grupo) => (
+        <section>
+          <h3 class="text-[0.66rem] font-medium tracking-[0.12em] text-ink-soft uppercase">
+            {t(AMBITOS[grupo.ambito], lang)}
+          </h3>
+          <ul class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {grupo.herramientas.map((key) => {
+              const tool = TOOLS[key];
+              return (
+                <li class="h-full">
+                  <a
+                    href={route(key, lang)}
+                    class="group flex h-full gap-3 rounded-xl border border-line p-4 hover:border-[var(--acento)]"
+                    style={`--acento: ${ACENTO_POR_MATERIA[tool.etiquetas.materia]}`}
+                  >
+                    <Icono nombre={tool.icono} class="mt-0.5 shrink-0 text-[var(--acento)]" />
+                    <span class="min-w-0">
+                      <span class="block font-medium text-ink group-hover:text-[var(--acento)]">
+                        {t(tool.name, lang)}
+                      </span>
+                      <span class="mt-1 block text-[var(--fs-small)] text-ink-muted">
+                        {t(tool.summary, lang)}
+                      </span>
+                      <span class="mt-2 block text-[0.68rem] tracking-[0.06em] text-ink-soft uppercase">
+                        {t(MATERIAS[tool.etiquetas.materia], lang)} ·{' '}
+                        {t(TAREAS[tool.etiquetas.tarea], lang)}
+                      </span>
+                    </span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))
+    }
+  </div>
+</dialog>

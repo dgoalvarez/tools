@@ -1,0 +1,100 @@
+---
+/**
+ * La barra lateral de una herramienta.
+ *
+ * Está siempre desplegada, y ese es el cambio que importa respecto a lo
+ * que había: el riel que se abría al pasar por encima obligaba a un gesto
+ * que no existe con teclado ni en una tableta.
+ *
+ * La herramienta abierta se fija arriba, bajo su propio rótulo y con el
+ * acento de su materia, y **sale de su grupo**: cambia de sitio, no
+ * aparece dos veces. Con la barra al lado no hacen falta migas de pan: la
+ * ruta ya está a la vista.
+ *
+ * Es HTML de verdad —enlaces, no botones— porque es navegación: tiene que
+ * funcionar aunque el JavaScript no llegue.
+ */
+import Icono from './Icono.astro';
+import Marca from './Marca.astro';
+import ThemeToggle from './ThemeToggle';
+import { UI } from '../i18n/ui';
+import { TOOLS } from '../i18n/tools';
+import { AMBITOS, ORDEN_AMBITOS, ambitoPrincipal } from '../i18n/labels';
+import { t, otherLang, LANG_NAME, type Lang } from '../i18n/config';
+import { route, TOOL_KEYS, type ToolKey } from '../i18n/routes';
+
+interface Props {
+  lang: Lang;
+  /** La herramienta abierta: la que se fija arriba. */
+  abierta: ToolKey;
+}
+
+const { lang, abierta } = Astro.props;
+const other = otherLang(lang);
+
+/** Las demás, agrupadas por ámbito. La abierta ya no está en su grupo. */
+const grupos = ORDEN_AMBITOS.map((ambito) => ({
+  ambito,
+  herramientas: TOOL_KEYS.filter(
+    (key) => key !== abierta && ambitoPrincipal(TOOLS[key].etiquetas) === ambito
+  ),
+})).filter((grupo) => grupo.herramientas.length > 0);
+---
+
+<nav class="barra-lateral" aria-label={t(UI.navTools, lang)}>
+  <a href={route('home', lang)} class="barra-marca hover:text-[var(--acento)]">
+    <Marca />
+  </a>
+
+  <div class="barra-lista">
+    <p class="barra-grupo">{t(UI.abierta, lang)}</p>
+    <a href={route(abierta, lang)} class="barra-item" aria-current="page">
+      <span class="icono"><Icono nombre={TOOLS[abierta].icono} tamano={19} /></span>
+      <span class="min-w-0">
+        <span class="nombre">{t(TOOLS[abierta].name, lang)}</span>
+        <span class="resumen">{t(TOOLS[abierta].summary, lang)}</span>
+      </span>
+    </a>
+
+    <div class="barra-corte"></div>
+
+    {
+      grupos.map((grupo) => (
+        <>
+          <p class="barra-grupo">{t(AMBITOS[grupo.ambito], lang)}</p>
+          {grupo.herramientas.map((key) => (
+            <a href={route(key, lang)} class="barra-item">
+              <span class="icono">
+                <Icono nombre={TOOLS[key].icono} tamano={19} />
+              </span>
+              <span class="min-w-0">
+                <span class="nombre">{t(TOOLS[key].name, lang)}</span>
+                <span class="resumen">{t(TOOLS[key].summary, lang)}</span>
+              </span>
+            </a>
+          ))}
+        </>
+      ))
+    }
+  </div>
+
+  <div class="barra-pie">
+    <a
+      href={route(abierta, other)}
+      class="pastilla"
+      lang={other}
+      hreflang={other}
+      title={t(UI.switchLanguage, lang)}
+    >
+      {LANG_NAME[other]}
+    </a>
+
+    <ThemeToggle client:load toDark={t(UI.toDarkMode, lang)} toLight={t(UI.toLightMode, lang)} />
+
+    {/* Sin JavaScript este botón no haría nada, así que nace oculto y es
+        el script quien lo enseña. */}
+    <button type="button" class="pastilla ml-auto cursor-pointer" data-bento hidden>
+      <Icono nombre="lupa" tamano={16} titulo={t(UI.verTodas, lang)} />
+    </button>
+  </div>
+</nav>

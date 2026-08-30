@@ -41,15 +41,15 @@ export default function ThemeToggle({ toDark, toLight }: Props) {
   }
 
   return (
-    <button type="button" onClick={toggle} className="riel-fila w-full cursor-pointer">
-      <MoonIcon aria-hidden="true" size={20} className="dark:hidden" />
-      <SunIcon aria-hidden="true" size={20} className="hidden dark:block" />
+    <button type="button" onClick={toggle} className="pastilla cursor-pointer">
+      <MoonIcon aria-hidden="true" size={17} className="dark:hidden" />
+      <SunIcon aria-hidden="true" size={17} className="hidden dark:block" />
 
       {/* Dos etiquetas, y el CSS elige. En modo claro el botón lleva a
           oscuro, y al revés: decirlo bien importa porque es lo único que
           oye quien no ve el icono. */}
-      <span className="riel-texto dark:hidden">{toDark}</span>
-      <span className="riel-texto hidden dark:inline">{toLight}</span>
+      <span className="sr-only dark:hidden">{toDark}</span>
+      <span className="sr-only hidden dark:inline">{toLight}</span>
     </button>
   );
 }

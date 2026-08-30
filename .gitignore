@@ -25,3 +25,10 @@ Thumbs.db
 *.log
 npm-debug.log*
 .geonames/
+
+# Maquetas de las propuestas de diseño (el entregable es el lienzo publicado)
+design/
+
+# El lienzo de propuestas se publica, no se versiona (3 MB)
+home-y-navegacion-cuatro-direcciones.html
+dgo-tools-editorial-oscuro.html

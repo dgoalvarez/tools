@@ -19,9 +19,8 @@ import reloj from '@phosphor-icons/core/regular/clock.svg?raw';
 import contraste from '@phosphor-icons/core/regular/circle-half.svg?raw';
 import tipografia from '@phosphor-icons/core/regular/text-aa.svg?raw';
 import rejilla from '@phosphor-icons/core/regular/squares-four.svg?raw';
-import panel from '@phosphor-icons/core/regular/sidebar-simple.svg?raw';
+import lupa from '@phosphor-icons/core/regular/magnifying-glass.svg?raw';
 import cerrar from '@phosphor-icons/core/regular/x.svg?raw';
-import marca from '@phosphor-icons/core/regular/toolbox.svg?raw';
 
 /**
  * Se queda solo lo de dentro del `<svg>`: la envoltura la pone
@@ -40,9 +39,8 @@ export const ICONOS = {
   tipografia: interior(tipografia),
 
   // --- de la propia interfaz ---
-  marca: interior(marca),
   rejilla: interior(rejilla),
-  panel: interior(panel),
+  lupa: interior(lupa),
   cerrar: interior(cerrar),
 } satisfies Record<string, string>;
 

@@ -1,13 +1,23 @@
 ---
 /**
- * Estructura común de todas las páginas: <head>, riel, contenido y pie.
+ * Estructura común de todas las páginas: <head>, navegación, contenido
+ * y pie.
+ *
+ * La navegación no es la misma en todas: la portada lleva una barra
+ * superior fina, porque es la pantalla que se mira entera, y cada
+ * herramienta lleva la barra lateral, que es a la vez su menú y la señal
+ * de dónde está. Por eso aquí se elige una u otra según la página.
  *
  * Cada página existe en un solo idioma, declarado en <html lang>, y apunta
  * a su equivalente en el otro mediante hreflang.
  */
-import Rail from '../components/Rail.astro';
+import BarraLateral from '../components/BarraLateral.astro';
+import BarraSuperior from '../components/BarraSuperior.astro';
+import Lanzador from '../components/Lanzador.astro';
 import Footer from '../components/Footer.astro';
 import { UI } from '../i18n/ui';
+import { TOOLS } from '../i18n/tools';
+import { ACENTO_POR_MATERIA } from '../i18n/labels';
 import { t, otherLang, OG_LOCALE, DEFAULT_LANG, LANGS, type Lang } from '../i18n/config';
 import { route, type PageKey } from '../i18n/routes';
 import '../styles/global.css';
@@ -20,6 +30,17 @@ interface Props {
 }
 
 const { lang, page, title, description } = Astro.props;
+
+/** La herramienta abierta, o null en la portada. */
+const herramienta = page === 'home' ? null : page;
+
+/**
+ * El acento de la página. Cada herramienta se pinta con el de su materia
+ * y todo lo demás lo hereda; la portada usa el de la marca.
+ */
+const acento = herramienta
+  ? ACENTO_POR_MATERIA[TOOLS[herramienta].etiquetas.materia]
+  : 'var(--brand)';
 
 const site = Astro.site!;
 const canonical = new URL(route(page, lang), site).href;
@@ -85,8 +106,8 @@ const ogImage = new URL('/og.png', site).href;
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:type" content="image/png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:image:width" content="2400" />
+    <meta property="og:image:height" content="1260" />
     <meta property="og:image:alt" content={t(UI.ogImageAlt, lang)} />
     <meta property="og:locale" content={OG_LOCALE[lang]} />
     <meta property="og:locale:alternate" content={OG_LOCALE[otherLang(lang)]} />
@@ -123,7 +144,7 @@ const ogImage = new URL('/og.png', site).href;
     </script>
   </head>
 
-  <body>
+  <body style={`--acento: ${acento}`}>
     <a
       href="#main"
       class="sr-only rounded-md bg-primary px-3 py-2 text-primary-foreground focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50"
@@ -131,14 +152,21 @@ const ogImage = new URL('/og.png', site).href;
       {t(UI.skipToContent, lang)}
     </a>
 
-    <Rail lang={lang} page={page} />
+    {
+      herramienta ? (
+        <BarraLateral lang={lang} abierta={herramienta} />
+      ) : (
+        <BarraSuperior lang={lang} />
+      )
+    }
 
     {/*
-      El riel va por encima con `position: fixed`, así que el contenido se
-      aparta con un relleno y no con una columna: al ensancharse el menú, la
-      página no se mueve.
+      La barra lateral va por encima con `position: fixed`, así que el
+      contenido se aparta con un relleno y no con una columna: la
+      herramienta se desplaza sin llevarse la navegación con ella. La
+      portada no aparta nada porque no tiene barra al lado.
     */}
-    <div class="contenido flex min-h-dvh flex-col">
+    <div class:list={['flex min-h-dvh flex-col', herramienta && 'con-barra']}>
       <main id="main" class="flex-1">
         <slot />
       </main>
@@ -146,8 +174,10 @@ const ogImage = new URL('/og.png', site).href;
       <Footer lang={lang} />
     </div>
 
+    <Lanzador lang={lang} />
+
     <script>
-      import '../scripts/rail';
+      import '../scripts/nav';
     </script>
   </body>
 </html>

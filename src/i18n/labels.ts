@@ -49,6 +49,24 @@ export const MATERIAS = {
 
 export type MateriaKey = keyof typeof MATERIAS;
 
+/**
+ * El acento con el que se pinta cada herramienta, por su materia.
+ *
+ * Los valores viven en `src/styles/global.css`, uno por tema, y están
+ * comprobados: todos pasan AA sobre las tres superficies del sitio. Aquí
+ * solo se dice cuál le toca a cada materia.
+ *
+ * Al añadir una herramienta de una materia nueva hay que derivar su
+ * acento con `design/paleta-final.ts` y darlo de alta allí; mientras
+ * tanto, la que no tenga el suyo se pinta con el de la marca.
+ */
+export const ACENTO_POR_MATERIA: Record<MateriaKey, string> = {
+  tiempo: 'var(--acento-tiempo)',
+  color: 'var(--acento-color)',
+  tipografia: 'var(--acento-tipografia)',
+  lugares: 'var(--brand)',
+};
+
 // ------------------------------------------------------------------- tarea
 
 export const TAREAS = {

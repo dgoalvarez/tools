@@ -42,7 +42,7 @@ const actual = (key: ToolKey | 'home') => (page === key ? 'page' : undefined);
 
 <nav class="riel" aria-label={t(UI.navTools, lang)}>
   <a href={route('home', lang)} class="riel-fila riel-marca" aria-current={actual('home')}>
-    <span aria-hidden="true" class="grid size-5 place-items-center text-brand">◆</span>
+    <Icono nombre="marca" class="text-brand" />
     <span class="riel-texto">{t(UI.brand, lang)}</span>
   </a>
 

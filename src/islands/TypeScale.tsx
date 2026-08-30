@@ -9,7 +9,7 @@
  * La aritmética vive en src/lib/scale.ts.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Check, Copy, Link2 } from 'lucide-react';
+import { CheckIcon, CopyIcon, LinkIcon } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -375,7 +375,7 @@ export default function TypeScale({ lang }: Props) {
           onClick={() => copiar('enlace')}
           className="justify-self-start"
         >
-          {copiado === 'enlace' ? <Check aria-hidden="true" /> : <Link2 aria-hidden="true" />}
+          {copiado === 'enlace' ? <CheckIcon aria-hidden="true" /> : <LinkIcon aria-hidden="true" />}
           {copiado === 'enlace' ? tr('copiado') : tr('copiarEnlace')}
         </Button>
       </div>
@@ -522,7 +522,7 @@ export default function TypeScale({ lang }: Props) {
               {tr('cssTitulo')}
             </h2>
             <Button variant="outline" size="sm" onClick={() => copiar('css')}>
-              {copiado === 'css' ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+              {copiado === 'css' ? <CheckIcon aria-hidden="true" /> : <CopyIcon aria-hidden="true" />}
               {copiado === 'css' ? tr('copiado') : tr('copiarCss')}
             </Button>
           </div>

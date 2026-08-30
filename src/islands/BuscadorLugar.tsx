@@ -8,7 +8,7 @@
  * postales, y al revés.
  */
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { PlusIcon } from '@phosphor-icons/react';
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -133,7 +133,7 @@ export default function BuscadorLugar({
                 onClick={() => elegir(s)}
                 className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[var(--fs-small)] hover:bg-surface-2"
               >
-                <Plus aria-hidden="true" className="size-3.5 shrink-0 text-ink-soft" />
+                <PlusIcon aria-hidden="true" size={14} className="shrink-0 text-ink-soft" />
                 <span className="min-w-0 flex-1 truncate text-ink">{s.etiqueta}</span>
                 <span className="shrink-0 font-mono text-[0.7rem] text-ink-soft">
                   {nombreDeZona(s.zona)}

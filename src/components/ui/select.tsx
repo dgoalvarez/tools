@@ -4,7 +4,10 @@ import * as React from "react"
 import { Select as SelectPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
-import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
+// Phosphor en vez de lucide: es la librería de iconos del proyecto. Este
+// archivo lo generó la CLI de shadcn; si se vuelve a generar, hay que
+// volver a cambiar esta línea.
+import { CaretDownIcon as ChevronDownIcon, CheckIcon, CaretUpIcon as ChevronUpIcon } from "@phosphor-icons/react"
 
 function Select({
   ...props

@@ -12,7 +12,7 @@
  * códigos postales se descargan solo cuando alguien los usa.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Clock, Copy, MapPin, X } from 'lucide-react';
+import { CheckIcon, ClockIcon, CopyIcon, MapPinIcon, XIcon } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -258,7 +258,7 @@ export default function Timezones({ lang }: Props) {
 
           <div className="flex justify-start">
             <Button variant="ghost" size="xs" onClick={ponerAhora}>
-              <Clock aria-hidden="true" />
+              <ClockIcon aria-hidden="true" />
               {tr('ahora')}
             </Button>
           </div>
@@ -310,7 +310,7 @@ export default function Timezones({ lang }: Props) {
             onClick={anadirMiUbicacion}
             className="justify-self-start"
           >
-            <MapPin aria-hidden="true" />
+            <MapPinIcon aria-hidden="true" />
             {tr('miUbicacion')}
           </Button>
         </section>
@@ -380,7 +380,7 @@ export default function Timezones({ lang }: Props) {
                         aria-label={`${tr('quitar')} ${c.destino.etiqueta}`}
                         title={tr('quitar')}
                       >
-                        <X aria-hidden="true" />
+                        <XIcon aria-hidden="true" />
                       </Button>
                     </div>
 
@@ -407,9 +407,9 @@ export default function Timezones({ lang }: Props) {
                         onClick={() => copiar(c.destino.id, frase)}
                       >
                         {copiado === c.destino.id ? (
-                          <Check aria-hidden="true" />
+                          <CheckIcon aria-hidden="true" />
                         ) : (
-                          <Copy aria-hidden="true" />
+                          <CopyIcon aria-hidden="true" />
                         )}
                         {copiado === c.destino.id ? tr('copiado') : tr('copiarFrase')}
                       </Button>

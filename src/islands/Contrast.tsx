@@ -10,7 +10,7 @@
  * es pegar un enlace.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowLeftRight } from 'lucide-react';
+import { ArrowsLeftRightIcon } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import SelectorColor from './SelectorColor';
@@ -195,7 +195,7 @@ export default function Contrast({ lang }: Props) {
             title={tr('intercambiar')}
             aria-label={tr('intercambiar')}
           >
-            <ArrowLeftRight aria-hidden="true" />
+            <ArrowsLeftRightIcon aria-hidden="true" />
           </Button>
         </div>
 

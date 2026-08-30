@@ -9,7 +9,7 @@
  * Vive dentro del riel, así que se pinta con sus mismas clases: un botón
  * de shadcn ahí dentro se vería como un injerto.
  */
-import { Moon, Sun } from 'lucide-react';
+import { MoonIcon, SunIcon } from '@phosphor-icons/react';
 
 const KEY = 'dgo-tools-theme';
 
@@ -42,8 +42,8 @@ export default function ThemeToggle({ toDark, toLight }: Props) {
 
   return (
     <button type="button" onClick={toggle} className="riel-fila w-full cursor-pointer">
-      <Moon aria-hidden="true" className="size-5 dark:hidden" strokeWidth={1.75} />
-      <Sun aria-hidden="true" className="hidden size-5 dark:block" strokeWidth={1.75} />
+      <MoonIcon aria-hidden="true" size={20} className="dark:hidden" />
+      <SunIcon aria-hidden="true" size={20} className="hidden dark:block" />
 
       {/* Dos etiquetas, y el CSS elige. En modo claro el botón lleva a
           oscuro, y al revés: decirlo bien importa porque es lo único que

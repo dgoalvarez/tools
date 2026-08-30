@@ -12,7 +12,7 @@
  * se puede usar sin mirar los números.
  */
 import { useState } from 'react';
-import { Pipette } from 'lucide-react';
+import { EyedropperIcon } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,7 +84,7 @@ export default function SelectorColor({
               title={tr('cuentagotas')}
               aria-label={tr('cuentagotas')}
             >
-              <Pipette aria-hidden="true" />
+              <EyedropperIcon aria-hidden="true" />
             </Button>
           )}
         </div>

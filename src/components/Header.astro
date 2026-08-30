@@ -38,7 +38,7 @@ const other = otherLang(lang);
           <a
             href={route(key, lang)}
             aria-current={page === key ? 'page' : undefined}
-            class="text-[var(--fs-small)] text-ink-muted hover:text-brand aria-[current=page]:text-brand"
+            class="text-[var(--fs-small)] text-ink-muted hover:text-brand [&[aria-current=page]]:text-brand"
           >
             {t(TOOLS[key].name, lang)}
           </a>

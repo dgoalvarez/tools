@@ -1,15 +1,16 @@
 ---
 /**
- * La portada: una rejilla bento con las herramientas agrupadas por ámbito.
+ * La portada.
  *
- * Se ordena por para qué sirve cada una y no por de qué trata, porque quien
- * llega buscando «algo para agendar citas» entiende «Productividad» y no
- * tiene por qué entender «Tiempo». La materia y la tarea van en la ficha,
- * como etiquetas: informan si te fijas y no estorban si no.
+ * Sin barra lateral y sin tope de 1152 px: es la pantalla que se mira
+ * entera, así que el relleno crece con la ventana en vez de dejar una
+ * franja muerta a los lados.
  *
- * Dentro de cada grupo, la primera herramienta ocupa el doble. No es
- * decoración: una rejilla donde todo mide igual obliga a leerlo todo para
- * elegir, y una donde algo destaca deja empezar por ahí.
+ * Las tarjetas miden todas lo mismo y cada una se pinta con el acento de
+ * su materia. El halo de color va al 16 % por un motivo medido, no
+ * estético: al 42 % la etiqueta de ámbito que va encima se quedaba en
+ * 1,45:1. El color de la tarjeta lo lleva ahora el borde, que no tiene
+ * texto delante.
  *
  * Todo sale de src/i18n/tools.ts y src/i18n/labels.ts. Añadir una
  * herramienta ahí la añade aquí sin tocar este archivo.
@@ -18,7 +19,7 @@ import Base from '../layouts/Base.astro';
 import Icono from '../components/Icono.astro';
 import { UI } from '../i18n/ui';
 import { TOOLS } from '../i18n/tools';
-import { AMBITOS, MATERIAS, TAREAS, ORDEN_AMBITOS, ambitoPrincipal } from '../i18n/labels';
+import { MATERIAS, TAREAS, ACENTO_POR_MATERIA } from '../i18n/labels';
 import { t, type Lang } from '../i18n/config';
 import { route, TOOL_KEYS } from '../i18n/routes';
 
@@ -27,11 +28,6 @@ interface Props {
 }
 
 const { lang } = Astro.props;
-
-const grupos = ORDEN_AMBITOS.map((ambito) => ({
-  ambito,
-  herramientas: TOOL_KEYS.filter((key) => ambitoPrincipal(TOOLS[key].etiquetas) === ambito),
-})).filter((grupo) => grupo.herramientas.length > 0);
 ---
 
 <Base
@@ -40,67 +36,75 @@ const grupos = ORDEN_AMBITOS.map((ambito) => ({
   title={t(UI.homeTitle, lang)}
   description={t(UI.siteDescription, lang)}
 >
-  <div class="mx-auto max-w-6xl px-[var(--pad-x)] py-[var(--pad-y)]">
-    <header class="max-w-[var(--measure)]">
-      <h1 class="text-[length:var(--fs-title)] leading-[1.1] font-semibold tracking-tight text-ink">
-        {t(UI.tagline, lang)}
+  <div class="mx-auto max-w-[1680px] px-[var(--pad-x)]">
+    <section
+      class="flex flex-wrap items-end gap-x-[clamp(2rem,4vw,6rem)] gap-y-8 py-[clamp(3rem,5.6vw,7rem)]"
+    >
+      <h1
+        class="m-0 flex-[1_1_32rem] text-[length:clamp(3rem,5.6vw,6.75rem)] leading-[0.94] font-semibold tracking-[-0.048em] text-ink text-balance"
+      >
+        {t(UI.taglineInicio, lang)}{' '}
+        <em class="text-[var(--acento)] not-italic">{t(UI.taglineAcento, lang)}</em>
       </h1>
-      <p class="mt-3 text-ink-muted">{t(UI.homeIntro, lang)}</p>
-    </header>
 
-    <div class="mt-12 grid gap-10">
+      <div class="flex flex-[0_1_21rem] flex-col gap-3.5">
+        <p class="m-0 text-[0.72rem] font-medium tracking-[0.1em] text-ink-soft uppercase">
+          {t(UI.sello, lang)}
+        </p>
+        <p class="m-0 text-[1rem] leading-relaxed text-ink-muted">{t(UI.homeIntro, lang)}</p>
+      </div>
+    </section>
+
+    <p
+      class="m-0 mb-[1.125rem] flex items-center gap-3.5 text-[0.72rem] font-medium tracking-[0.12em] text-ink-soft uppercase after:h-px after:flex-1 after:bg-line after:content-['']"
+    >
+      {t(UI.navTools, lang)}
+    </p>
+
+    {/* Todas del mismo alto: lo garantiza la rejilla, y el alto mínimo
+        crece con la ventana para que en un monitor ganen alto y no solo
+        anchura. */}
+    <ul class="grid gap-[clamp(0.875rem,1.4vw,1.375rem)] pb-[clamp(1.75rem,3vw,3rem)] md:grid-cols-3">
       {
-        grupos.map((grupo) => (
-          <section>
-            <h2 class="text-[0.68rem] font-semibold tracking-[0.06em] text-ink-soft uppercase">
-              {t(AMBITOS[grupo.ambito], lang)}
-            </h2>
+        TOOL_KEYS.map((key) => {
+          const tool = TOOLS[key];
+          return (
+            <li class="h-full" style={`--acento: ${ACENTO_POR_MATERIA[tool.etiquetas.materia]}`}>
+              <a
+                href={route(key, lang)}
+                class="group relative flex h-full min-h-[clamp(15.75rem,19vw,23rem)] flex-col gap-3 overflow-hidden rounded-2xl border border-[color-mix(in_srgb,var(--acento)_28%,var(--line))] bg-[linear-gradient(160deg,var(--surface-2),var(--surface)_62%)] p-6 before:pointer-events-none before:absolute before:inset-[-40%_55%_55%_-20%] before:bg-[radial-gradient(closest-side,var(--acento),transparent)] before:opacity-[0.16] before:content-['']"
+              >
+                <span class="relative text-[0.72rem] font-medium tracking-[0.1em] text-ink-muted uppercase">
+                  {t(MATERIAS[tool.etiquetas.materia], lang)}
+                </span>
 
-            <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {grupo.herramientas.map((key, i) => {
-                const tool = TOOLS[key];
-                return (
-                  <li class={i === 0 ? 'sm:col-span-2' : ''}>
-                    <a
-                      href={route(key, lang)}
-                      class="group flex h-full flex-col rounded-xl border border-line bg-surface p-5 transition-colors hover:border-brand"
-                    >
-                      <Icono nombre={tool.icono} tamano={22} class="text-brand" />
+                <span class="relative grid size-11 place-items-center rounded-xl bg-[var(--acento)] text-[var(--brand-ink)]">
+                  <Icono nombre={tool.icono} tamano={24} />
+                </span>
 
-                      <h3 class="mt-4 text-[length:var(--fs-h3)] font-semibold tracking-tight text-ink group-hover:text-brand">
-                        {t(tool.name, lang)}
-                      </h3>
-                      <p class="mt-1.5 flex-1 text-[var(--fs-small)] text-ink-muted">
-                        {t(tool.summary, lang)}
-                      </p>
+                <h2 class="relative m-0 text-[length:clamp(1.4rem,1.7vw,1.875rem)] font-semibold tracking-[-0.032em] text-ink">
+                  {t(tool.name, lang)}
+                </h2>
 
-                      <div class="mt-4 flex flex-wrap items-center gap-1.5 text-[0.7rem]">
-                        <span class="rounded-full border border-line px-2 py-0.5 text-ink-soft">
-                          {t(MATERIAS[tool.etiquetas.materia], lang)}
-                        </span>
-                        <span class="rounded-full border border-line px-2 py-0.5 text-ink-soft">
-                          {t(TAREAS[tool.etiquetas.tarea], lang)}
-                        </span>
+                <span class="relative flex-1 text-[0.9rem] leading-relaxed text-ink-muted">
+                  {t(tool.summary, lang)}
+                </span>
 
-                        <span class="ml-auto font-medium text-brand group-hover:underline">
-                          {tool.listo ? (
-                            <>
-                              {t(UI.openTool, lang)}
-                              <span aria-hidden="true"> →</span>
-                            </>
-                          ) : (
-                            <span class="text-ink-soft">{t(UI.soonBadge, lang)}</span>
-                          )}
-                        </span>
-                      </div>
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        ))
+                <span class="relative flex items-center gap-2 text-[0.72rem] font-medium tracking-[0.06em] text-ink-soft uppercase">
+                  {t(TAREAS[tool.etiquetas.tarea], lang)}
+                  {tool.listo ? (
+                    <span class="ml-auto text-[var(--acento)] group-hover:underline">
+                      {t(UI.openTool, lang)} <span aria-hidden="true">→</span>
+                    </span>
+                  ) : (
+                    <span class="ml-auto">{t(UI.soonBadge, lang)}</span>
+                  )}
+                </span>
+              </a>
+            </li>
+          );
+        })
       }
-    </div>
+    </ul>
   </div>
 </Base>

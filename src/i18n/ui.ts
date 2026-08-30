@@ -11,10 +11,15 @@ export const UI = {
   siteName: { es: 'Herramientas', en: 'Tools' },
   /** La marca. Es lo que se ve; el nombre completo no aparece en el sitio. */
   brand: { es: 'DGO', en: 'DGO' },
-  tagline: {
-    es: 'Herramientas que hacen una cosa y la hacen bien.',
-    en: 'Tools that do one thing and do them well.',
-  },
+  /**
+   * El titular de la portada, partido en dos porque la segunda mitad va
+   * en el color de acento. Se parte aquí y no con una marca dentro del
+   * texto para que traducirlo no obligue a traducir también el HTML.
+   */
+  taglineInicio: { es: 'Una cosa,', en: 'One thing,' },
+  taglineAcento: { es: 'y hecha bien.', en: 'done well.' },
+  /** La línea pequeña que acompaña al titular. */
+  sello: { es: 'Tres herramientas · sin cuentas', en: 'Three tools · no accounts' },
   /** El <title> de la portada. El de cada herramienta es su nombre + la marca. */
   homeTitle: { es: 'Herramientas · DGO', en: 'Tools · DGO' },
   siteDescription: {
@@ -35,8 +40,8 @@ export const UI = {
 
   // ---------- Portada ----------
   homeIntro: {
-    es: 'Se calculan en tu navegador. Sin cuentas y sin cookies.',
-    en: 'They run in your browser. No accounts, no cookies.',
+    es: 'Todo se calcula en tu navegador. Nada se guarda, nada se envía, y el estado vive en la dirección: compartir un cálculo es pegar un enlace.',
+    en: 'Everything runs in your browser. Nothing is stored, nothing is sent, and the state lives in the address: sharing a result is pasting a link.',
   },
   openTool: { es: 'Abrir', en: 'Open' },
 

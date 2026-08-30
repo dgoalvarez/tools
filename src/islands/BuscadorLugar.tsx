@@ -115,9 +115,14 @@ export default function BuscadorLugar({
         autoComplete="off"
         placeholder="Miami · 33101"
       />
-      <p className="text-[var(--fs-small)] text-ink-soft">
-        {buscando ? textos.cargando : (aviso ?? textos.ayuda)}
-      </p>
+      {/* La línea de ayuda solo aparece si hay algo que decir. El origen
+          va dentro de un acordeón y repetir ahí la misma indicación que en
+          el buscador de destinos sería decir dos veces lo mismo. */}
+      {(buscando || aviso || textos.ayuda) && (
+        <p className={aviso ? 'text-[var(--fs-small)] text-[var(--danger)]' : 'text-[var(--fs-small)] text-ink-soft'}>
+          {buscando ? textos.cargando : (aviso ?? textos.ayuda)}
+        </p>
+      )}
 
       {sugerencias.length > 0 && (
         <ul className="grid gap-1 rounded-lg border border-line bg-surface p-1.5">

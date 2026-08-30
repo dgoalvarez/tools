@@ -2,12 +2,18 @@
 /**
  * La página de la herramienta de husos horarios.
  *
- * Igual que las otras dos: `client:load` para que el HTML salga ya pintado
- * del servidor, y un aviso para quien no tenga JavaScript.
+ * `client:load` para que el HTML salga ya pintado del servidor y no haya un
+ * hueco en blanco mientras carga el JavaScript.
+ *
+ * Todo lo que explica la herramienta —y no cambia una decisión mientras se
+ * usa— vive plegado en el «¿Cómo funciona?». La atribución a GeoNames está
+ * ahí y solo ahí: es la única página que usa esos datos.
  */
 import Tool from '../layouts/Tool.astro';
 import Timezones from '../islands/Timezones';
+import ComoFunciona from '../components/ComoFunciona.astro';
 import { UI } from '../i18n/ui';
+import { HUSOS } from '../i18n/timezones';
 import { t, type Lang } from '../i18n/config';
 
 interface Props {
@@ -27,4 +33,32 @@ const { lang } = Astro.props;
       {t(UI.sinJs, lang)}
     </p>
   </noscript>
+
+  <ComoFunciona lang={lang}>
+    <div>
+      <h3>{t(HUSOS.precisionTitulo, lang)}</h3>
+      <p class="mt-1">{t(HUSOS.precisionCuerpo, lang)}</p>
+    </div>
+
+    <div>
+      <h3>{t(HUSOS.ubicacionTitulo, lang)}</h3>
+      <p class="mt-1">{t(HUSOS.ubicacionCuerpo, lang)}</p>
+    </div>
+
+    <div>
+      <h3>{t(HUSOS.saltosTitulo, lang)}</h3>
+      <p class="mt-1">{t(HUSOS.saltosCuerpo, lang)}</p>
+    </div>
+
+    <div>
+      <h3>{t(HUSOS.datosTitulo, lang)}</h3>
+      <p class="mt-1">
+        {t(HUSOS.datosCuerpo, lang)}
+        {' '}
+        <a href="https://www.geonames.org" rel="noopener">GeoNames</a>
+        {' · '}
+        <a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener">CC BY 4.0</a>
+      </p>
+    </div>
+  </ComoFunciona>
 </Tool>

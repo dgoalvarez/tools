@@ -57,6 +57,14 @@ export const UI = {
   madeBy: { es: 'Hecho por', en: 'Made by' },
   portfolioLink: { es: 'Ver el portafolio', en: 'View the portfolio' },
 
+  // ---------- Divulgación progresiva ----------
+  /**
+   * El título del cajón donde se pliega todo lo que explica una
+   * herramienta. Va en forma de pregunta a propósito: nombra la duda que
+   * tiene quien lo abriría, en vez de anunciar una sección.
+   */
+  comoFunciona: { es: '¿Cómo funciona?', en: 'How does it work?' },
+
   // ---------- Sin JavaScript ----------
   sinJs: {
     es: 'Esta herramienta calcula en tu navegador, así que necesita JavaScript. Sin él, los controles de arriba se ven pero no responden.',

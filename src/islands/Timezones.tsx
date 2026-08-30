@@ -12,7 +12,7 @@
  * códigos postales se descargan solo cuando alguien los usa.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Clock, Copy, Link2, MapPin, X } from 'lucide-react';
+import { Check, Clock, Copy, MapPin, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,10 +43,17 @@ interface Props {
   lang: Lang;
 }
 
-/** La fecha y la hora de hoy, redondeada a la media hora siguiente. */
-function ahoraRedondeado() {
+/**
+ * La fecha y la hora de este momento.
+ *
+ * Antes esto redondeaba a la media hora siguiente, pensando en que las
+ * citas se ponen en horas redondas. El resultado era que pulsar «Ahora» a
+ * las 10:15 escribía 10:30, y nadie entendía qué había hecho el botón. Un
+ * botón que se llama «Ahora» pone «ahora»; redondear, si alguien quiere,
+ * lo hace escribiendo.
+ */
+function ahoraMismo() {
   const d = new Date();
-  d.setMinutes(d.getMinutes() > 30 ? 60 : 30, 0, 0);
   const dos = (n: number) => String(n).padStart(2, '0');
   return {
     fecha: `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`,
@@ -67,7 +74,7 @@ function zonaValida(zona: string): boolean {
 export default function Timezones({ lang }: Props) {
   const tr = (clave: keyof typeof H) => t(H[clave], lang);
 
-  const inicial = useRef(ahoraRedondeado());
+  const inicial = useRef(ahoraMismo());
   const [fecha, setFecha] = useState(inicial.current.fecha);
   const [hora, setHora] = useState(inicial.current.hora);
   const [origen, setOrigen] = useState(ORIGEN_INICIAL);
@@ -207,7 +214,7 @@ export default function Timezones({ lang }: Props) {
   }
 
   function ponerAhora() {
-    const ahora = ahoraRedondeado();
+    const ahora = ahoraMismo();
     setFecha(ahora.fecha);
     setHora(ahora.hora);
   }
@@ -249,23 +256,39 @@ export default function Timezones({ lang }: Props) {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[var(--fs-small)] text-ink-soft">
-              {tr('zonaOrigen')} <span className="font-medium text-ink">{origen.etiqueta}</span>
-            </p>
+          <div className="flex justify-start">
             <Button variant="ghost" size="xs" onClick={ponerAhora}>
               <Clock aria-hidden="true" />
               {tr('ahora')}
             </Button>
           </div>
 
-          <BuscadorLugar
-            id="origen"
-            textos={{ ...textosBuscador, etiqueta: tr('cambiarOrigen') }}
-            pedirCiudades={pedirCiudades}
-            pedirZips={pedirZips}
-            onElegir={(c) => setOrigen({ zona: c.zona, etiqueta: c.etiqueta })}
-          />
+          {/*
+            De dónde es esa hora casi nunca se cambia: quien agenda lo hace
+            desde su propia zona un día tras otro. Plegado, el resumen dice
+            cuál es —que es el 99 % de las veces lo único que hace falta
+            saber— y abrirlo cuesta una pulsación las pocas veces que no.
+          */}
+          <details className="rounded-lg border border-line">
+            <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2.5 text-[var(--fs-small)] marker:content-none">
+              <span className="text-ink-soft">
+                {tr('zonaOrigen')} <span className="font-medium text-ink">{origen.etiqueta}</span>
+              </span>
+              <span className="text-ink-soft underline underline-offset-2">
+                {tr('cambiar')}
+              </span>
+            </summary>
+
+            <div className="border-t border-line p-3">
+              <BuscadorLugar
+                id="origen"
+                textos={{ ...textosBuscador, etiqueta: tr('cambiarOrigen'), ayuda: '' }}
+                pedirCiudades={pedirCiudades}
+                pedirZips={pedirZips}
+                onElegir={(c) => setOrigen({ zona: c.zona, etiqueta: c.etiqueta })}
+              />
+            </div>
+          </details>
         </section>
 
         <section className="grid gap-3">
@@ -281,24 +304,16 @@ export default function Timezones({ lang }: Props) {
             onElegir={(c) => anadirDestino(c.etiqueta, c.zona)}
           />
 
-          <div>
-            <Button variant="outline" size="sm" onClick={anadirMiUbicacion}>
-              <MapPin aria-hidden="true" />
-              {tr('miUbicacion')}
-            </Button>
-            <p className="mt-2 text-[var(--fs-small)] text-ink-soft">{tr('miUbicacionAyuda')}</p>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={anadirMiUbicacion}
+            className="justify-self-start"
+          >
+            <MapPin aria-hidden="true" />
+            {tr('miUbicacion')}
+          </Button>
         </section>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => copiar('enlace', window.location.href)}
-          className="justify-self-start"
-        >
-          {copiado === 'enlace' ? <Check aria-hidden="true" /> : <Link2 aria-hidden="true" />}
-          {copiado === 'enlace' ? tr('copiado') : tr('copiarEnlace')}
-        </Button>
       </div>
 
       {/* ---------------- Resultados ---------------- */}
@@ -410,15 +425,6 @@ export default function Timezones({ lang }: Props) {
               {tr('fraseAyuda')}
             </p>
           )}
-        </section>
-
-        <section className="rounded-lg border border-line p-5">
-          <h2 className="text-[var(--fs-small)] font-semibold text-ink">
-            {tr('precisionTitulo')}
-          </h2>
-          <p className="mt-2 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
-            {tr('precisionCuerpo')}
-          </p>
         </section>
       </div>
     </div>

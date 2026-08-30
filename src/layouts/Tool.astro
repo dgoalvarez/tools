@@ -1,0 +1,41 @@
+---
+/**
+ * El envoltorio común de una herramienta: título, qué resuelve, y hueco
+ * para la herramienta en sí.
+ *
+ * El nombre y la descripción no se escriben aquí ni en cada página: salen
+ * de src/i18n/tools.ts, que es de donde salen también las tarjetas de la
+ * portada. Así no puede haber una herramienta que se llame de dos formas.
+ */
+import Base from './Base.astro';
+import { UI } from '../i18n/ui';
+import { TOOLS } from '../i18n/tools';
+import { t, type Lang } from '../i18n/config';
+import type { ToolKey } from '../i18n/routes';
+
+interface Props {
+  lang: Lang;
+  tool: ToolKey;
+}
+
+const { lang, tool } = Astro.props;
+const meta = TOOLS[tool];
+
+const name = t(meta.name, lang);
+const description = t(meta.description, lang);
+---
+
+<Base lang={lang} page={tool} title={`${name} · ${t(UI.titleSuffix, lang)}`} description={description}>
+  <div class="mx-auto max-w-6xl px-[var(--pad-x)] py-[var(--pad-y)]">
+    <header class="max-w-[var(--measure)]">
+      <h1 class="text-[length:var(--fs-title)] leading-[1.1] font-semibold tracking-tight text-ink">
+        {name}
+      </h1>
+      <p class="mt-3 text-ink-muted">{t(meta.summary, lang)}</p>
+    </header>
+
+    <div class="mt-10">
+      <slot />
+    </div>
+  </div>
+</Base>

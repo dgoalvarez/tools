@@ -1,0 +1,60 @@
+---
+/**
+ * La portada: qué es esto y las tres herramientas.
+ *
+ * Las tarjetas salen de src/i18n/tools.ts y sus direcciones de
+ * src/i18n/routes.ts. Añadir una herramienta a esos dos archivos la añade
+ * aquí sin tocar esta página.
+ */
+import Base from '../layouts/Base.astro';
+import { UI } from '../i18n/ui';
+import { TOOLS } from '../i18n/tools';
+import { t, type Lang } from '../i18n/config';
+import { route, TOOL_KEYS } from '../i18n/routes';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<Base
+  lang={lang}
+  page="home"
+  title={t(UI.titleSuffix, lang)}
+  description={t(UI.siteDescription, lang)}
+>
+  <div class="mx-auto max-w-6xl px-[var(--pad-x)] py-[var(--pad-y)]">
+    <header class="max-w-[var(--measure)]">
+      <h1 class="text-[length:var(--fs-title)] leading-[1.1] font-semibold tracking-tight text-ink">
+        {t(UI.tagline, lang)}
+      </h1>
+      <p class="mt-4 text-ink-muted">{t(UI.homeIntro, lang)}</p>
+    </header>
+
+    <ul class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {
+        TOOL_KEYS.map((key) => (
+          <li class="h-full">
+            <a
+              href={route(key, lang)}
+              class="group flex h-full flex-col rounded-lg border border-line bg-surface p-5 transition-colors hover:border-brand"
+            >
+              <h2 class="text-[length:var(--fs-h3)] font-semibold tracking-tight text-ink group-hover:text-brand">
+                {t(TOOLS[key].name, lang)}
+              </h2>
+              <p class="mt-2 flex-1 text-[var(--fs-small)] text-ink-muted">
+                {t(TOOLS[key].summary, lang)}
+              </p>
+              <p class="mt-4 text-[var(--fs-small)] font-medium text-brand">
+                {t(UI.openTool, lang)}
+                <span aria-hidden="true"> →</span>
+              </p>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</Base>

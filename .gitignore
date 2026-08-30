@@ -1,0 +1,26 @@
+# dependencias
+node_modules/
+
+# build
+dist/
+.astro/
+.vercel/
+
+# entorno
+.env
+.env.production
+
+# sistema operativo
+.DS_Store
+Thumbs.db
+
+# editores
+.vscode/
+.idea/
+
+# ajustes locales de Claude Code (rutas de esta máquina)
+.claude/settings.local.json
+
+# logs
+*.log
+npm-debug.log*

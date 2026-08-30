@@ -1,0 +1,255 @@
+/* ============================================================
+   Estilos globales · tools.dgoalvarez.com
+
+   Orden del archivo:
+     1. Importaciones de Tailwind y shadcn
+     2. Switzer, autoalojada
+     3. El puente entre los tokens de Diego y los que espera shadcn
+     4. Los valores de cada tema
+     5. Base
+
+   La identidad viene del portafolio (misma Switzer, mismo verde),
+   pero la densidad no: esto son herramientas de trabajo, con tablas y
+   controles, no un portafolio con titulares de 8rem.
+   ============================================================ */
+
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+/* ---------- Tipografía ----------
+   Switzer autoalojada (ver public/fonts/LEEME.md). Solo los tres pesos
+   que el sitio usa. `swap` muestra el texto con la fuente del sistema
+   mientras llega la real, en vez de dejar un hueco en blanco. */
+
+@font-face {
+  font-family: 'Switzer';
+  src: url('/fonts/switzer-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Switzer';
+  src: url('/fonts/switzer-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Switzer';
+  src: url('/fonts/switzer-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------- El tema oscuro ----------
+   Dos formas de estar en oscuro, y las dos tienen que valer:
+
+     · `data-theme="dark"` en <html>  — alguien lo eligió a mano
+     · el sistema lo pide y nadie eligió lo contrario
+
+   La segunda es la que hace que el sitio se vea bien sin JavaScript.
+   Casi todo el color sale de variables, así que la variante `dark:` se
+   usa poco; pero cuando se use, tiene que cubrir los dos casos. */
+
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme='light']), :root:not([data-theme='light']) *) {
+      @slot;
+    }
+  }
+}
+
+/* ---------- Puente hacia shadcn ----------
+   Los componentes de shadcn leen --background, --primary, --border…
+   Aquí se declaran en función de los tokens de Diego, para que hereden
+   la identidad del sitio en vez de traer la gris de fábrica.
+
+   Ojo con dos nombres que chocan: en el portafolio `--accent` es el
+   verde de marca y `--muted` es un color de texto; en shadcn los dos
+   son fondos. Por eso aquí el verde se llama `--brand` y el texto
+   secundario `--ink-muted`. */
+
+@theme inline {
+  --font-sans: Switzer, system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--brand);
+  --color-primary-foreground: var(--brand-ink);
+  --color-secondary: var(--surface-2);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--ink-soft);
+  --color-accent: var(--surface-2);
+  --color-accent-foreground: var(--ink);
+  --color-destructive: var(--danger);
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-ring: var(--brand);
+
+  /* Los propios, para el CSS escrito a mano. */
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-soft: var(--ink-soft);
+  --color-brand: var(--brand);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* ---------- Los valores ----------
+   Los colores se escriben una sola vez, con prefijo `--l-` (claro) y
+   `--d-` (oscuro). Debajo hay dos bloques que solo eligen cuál de los
+   dos juegos está activo. Así no hay dos listas que se puedan
+   desincronizar.
+
+   Los seis primeros son exactamente los del portafolio. Los demás
+   —superficies, estados— son propios: una herramienta necesita niveles
+   que un portafolio no. Todos pasan AA sobre su fondo. */
+
+:root {
+  --l-bg: #f6f7f6;
+  --l-surface: #ffffff;
+  --l-surface-2: #eceeed;
+  --l-ink: #101314;
+  --l-ink-muted: #3d4548;
+  --l-ink-soft: #656e71;
+  --l-line: #e0e3e2;
+  --l-brand: #0a5f5a;
+  --l-brand-ink: #f6f7f6;
+  --l-danger: #a4271c;
+
+  --d-bg: #101314;
+  --d-surface: #171b1c;
+  --d-surface-2: #1e2324;
+  --d-ink: #f2f4f3;
+  --d-ink-muted: #b5bbbb;
+  --d-ink-soft: #7c8589;
+  --d-line: #262c2d;
+  --d-brand: #0e8c84;
+  --d-brand-ink: #101314;
+  --d-danger: #ff8a7a;
+
+  /* Radio más corto que el de fábrica (0.625rem): controles de
+     herramienta, no tarjetas de portafolio. */
+  --radius: 0.5rem;
+
+  /* Escala tipográfica propia. La del portafolio llega a 8.2rem en el
+     titular; aquí el titular más grande es 2.75rem, porque debajo hay
+     tablas que leer y no una portada que impresionar. */
+  --fs-title: clamp(1.85rem, 3.2vw, 2.75rem);
+  --fs-h2: clamp(1.2rem, 1.6vw, 1.5rem);
+  --fs-h3: clamp(1.02rem, 1.2vw, 1.15rem);
+  --fs-body: clamp(0.95rem, 0.9vw, 1rem);
+  --fs-small: 0.8125rem;
+
+  --pad-x: clamp(20px, 4vw, 56px);
+  --pad-y: clamp(28px, 3.5vw, 56px);
+  --measure: 68ch;
+
+  /* Tema claro por defecto. `color-scheme` va con cada tema, no fijo en
+     <html>: es lo que decide de qué color pinta el navegador las barras
+     de desplazamiento y los campos nativos. */
+  color-scheme: light;
+  --bg: var(--l-bg);
+  --surface: var(--l-surface);
+  --surface-2: var(--l-surface-2);
+  --ink: var(--l-ink);
+  --ink-muted: var(--l-ink-muted);
+  --ink-soft: var(--l-ink-soft);
+  --line: var(--l-line);
+  --brand: var(--l-brand);
+  --brand-ink: var(--l-brand-ink);
+  --danger: var(--l-danger);
+}
+
+/* Sin elección explícita, manda el sistema. Esto es lo que hace que el
+   sitio se vea bien aunque el JavaScript no llegue a ejecutarse. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: var(--d-bg);
+    --surface: var(--d-surface);
+    --surface-2: var(--d-surface-2);
+    --ink: var(--d-ink);
+    --ink-muted: var(--d-ink-muted);
+    --ink-soft: var(--d-ink-soft);
+    --line: var(--d-line);
+    --brand: var(--d-brand);
+    --brand-ink: var(--d-brand-ink);
+    --danger: var(--d-danger);
+  }
+}
+
+/* Y si alguien eligió, manda su elección. */
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: var(--d-bg);
+  --surface: var(--d-surface);
+  --surface-2: var(--d-surface-2);
+  --ink: var(--d-ink);
+  --ink-muted: var(--d-ink-muted);
+  --ink-soft: var(--d-ink-soft);
+  --line: var(--d-line);
+  --brand: var(--d-brand);
+  --brand-ink: var(--d-brand-ink);
+  --danger: var(--d-danger);
+}
+
+/* ---------- Base ---------- */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+    /* El fondo también en <html>: evita franjas del color equivocado
+       al hacer overscroll en móvil. */
+    background: var(--bg);
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-size: var(--fs-body);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* El foco tiene que verse siempre: estas herramientas se manejan con
+     teclado tanto como con ratón. */
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--brand);
+    color: var(--brand-ink);
+  }
+}

@@ -1,0 +1,52 @@
+---
+/**
+ * El cuerpo de una herramienta que todavía no existe.
+ *
+ * La página se publica desde el primer día, con su dirección definitiva,
+ * por tres razones: la dirección no cambiará cuando la herramienta llegue
+ * —quien la guarde hoy la tendrá mañana—, el sitemap y los hreflang se
+ * validan enteros, y las alarmas de compilación quedan probadas con las
+ * ocho rutas reales y no con una.
+ */
+import Tool from '../layouts/Tool.astro';
+import { UI } from '../i18n/ui';
+import { TOOLS } from '../i18n/tools';
+import { t, type Lang } from '../i18n/config';
+import { route, type ToolKey } from '../i18n/routes';
+
+interface Props {
+  lang: Lang;
+  tool: ToolKey;
+}
+
+const { lang, tool } = Astro.props;
+---
+
+<Tool lang={lang} tool={tool}>
+  <div class="max-w-[var(--measure)] rounded-lg border border-line bg-surface p-6">
+    <p
+      class="inline-flex items-center rounded-full border border-line px-2.5 py-0.5 text-[var(--fs-small)] font-medium text-brand"
+    >
+      {t(UI.soonBadge, lang)}
+    </p>
+
+    <h2 class="mt-4 text-[length:var(--fs-h2)] font-semibold tracking-tight text-ink">
+      {t(UI.soonHeading, lang)}
+    </h2>
+
+    <p class="mt-2 text-ink-muted">{t(UI.soonBody, lang)}</p>
+
+    <p class="mt-5 text-[var(--fs-small)]">
+      <a
+        href={route('home', lang)}
+        class="text-ink-muted underline underline-offset-2 hover:text-brand"
+      >
+        {t(UI.backHome, lang)}
+      </a>
+    </p>
+  </div>
+
+  <p class="mt-8 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
+    {t(TOOLS[tool].description, lang)}
+  </p>
+</Tool>

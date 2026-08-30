@@ -1,0 +1,40 @@
+---
+/**
+ * Pie: la promesa de privacidad y la firma.
+ *
+ * La promesa va aquí, a la vista, y no en una página de política: no hay
+ * nada que politizar cuando no se recoge nada.
+ *
+ * Cuando llegue la herramienta de husos horarios, la atribución a GeoNames
+ * (CC BY 4.0) va en este archivo. Es obligatoria, no opcional.
+ */
+import { UI } from '../i18n/ui';
+import { t, type Lang } from '../i18n/config';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const year = new Date().getFullYear();
+---
+
+<footer class="mt-16 border-t border-line">
+  <div
+    class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-[var(--pad-x)] py-6 text-[var(--fs-small)] text-ink-soft"
+  >
+    <p class="max-w-[46ch]">{t(UI.privacyNote, lang)}</p>
+
+    <p>
+      {t(UI.madeBy, lang)}{' '}
+      <a
+        href="https://dgoalvarez.com"
+        class="text-ink-muted underline underline-offset-2 hover:text-brand"
+      >
+        Diego Alvarez
+      </a>
+      <span aria-hidden="true"> · </span>
+      <span>{year}</span>
+    </p>
+  </div>
+</footer>

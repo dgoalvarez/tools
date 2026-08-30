@@ -1,0 +1,47 @@
+# tools.dgoalvarez.com
+
+# Buscadores tradicionales: acceso completo.
+User-agent: *
+Allow: /
+
+# Rastreadores de motores generativos (ChatGPT, Claude, Perplexity, Gemini…).
+# Se permiten a propósito: estas herramientas son públicas y gratuitas, y
+# hoy parte de las búsquedas de «calculadora de contraste» o «convertir
+# husos horarios» ocurren dentro de un asistente.
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+Sitemap: https://tools.dgoalvarez.com/sitemap-index.xml

@@ -1,0 +1,36 @@
+---
+/**
+ * La página de la herramienta de contraste.
+ *
+ * El título, la descripción y las etiquetas <meta> los pone `Tool.astro` a
+ * partir de src/i18n/tools.ts. Aquí solo se monta la isla.
+ *
+ * Va con `client:load` y no con `client:only` a propósito: así el HTML sale
+ * ya pintado del servidor y no hay un hueco en blanco mientras carga el
+ * JavaScript. El estado inicial es el mismo en el servidor y en el
+ * navegador —los colores por defecto— así que la hidratación no encuentra
+ * ninguna diferencia; lo que venga en el enlace se aplica justo después.
+ */
+import Tool from '../layouts/Tool.astro';
+import Contrast from '../islands/Contrast';
+import { CONTRASTE } from '../i18n/contrast';
+import { t, type Lang } from '../i18n/config';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<Tool lang={lang} tool="contrast">
+  <Contrast client:load lang={lang} />
+
+  <noscript>
+    <p
+      class="mt-6 max-w-[var(--measure)] rounded-lg border border-line bg-surface-2 p-4 text-[var(--fs-small)] text-ink-muted"
+    >
+      {t(CONTRASTE.sinJs, lang)}
+    </p>
+  </noscript>
+</Tool>

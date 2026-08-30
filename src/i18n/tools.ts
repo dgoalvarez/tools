@@ -18,6 +18,12 @@ interface Tool {
   summary: T;
   /** Dos o tres líneas: qué problema resuelve. Va en <meta description>. */
   description: T;
+  /**
+   * Si la herramienta ya existe o su página todavía dice «próximamente».
+   * La portada lo enseña: prometer tres cosas y tener una es una forma
+   * barata de perder a alguien en la primera visita.
+   */
+  listo: boolean;
 }
 
 export const TOOLS: Record<ToolKey, Tool> = {
@@ -31,6 +37,7 @@ export const TOOLS: Record<ToolKey, Tool> = {
       es: 'Convierte una hora a los husos de quien tenga que estar en la cita, por ciudad o por código ZIP de Estados Unidos, y te da la frase lista para copiar. Avisa cuando la hora cae en otro día, que es el error que de verdad se comete al agendar.',
       en: 'Convert a time to the zones of everyone who has to be in the meeting, by city or by US ZIP code, and get the sentence ready to copy. It warns when the time lands on another day, which is the mistake people actually make when scheduling.',
     },
+    listo: false,
   },
   contrast: {
     name: { es: 'Contraste', en: 'Contrast' },
@@ -42,6 +49,7 @@ export const TOOLS: Record<ToolKey, Tool> = {
       es: 'Comprueba el contraste de un color de texto sobre su fondo con WCAG 2.2 y con APCA, explica por qué los dos veredictos pueden no coincidir, y propone el color más cercano que sí aprueba.',
       en: 'Check the contrast of a text colour over its background with WCAG 2.2 and with APCA, understand why the two verdicts can disagree, and get the nearest colour that does pass.',
     },
+    listo: true,
   },
   scale: {
     name: { es: 'Escala tipográfica', en: 'Type scale' },
@@ -53,5 +61,6 @@ export const TOOLS: Record<ToolKey, Tool> = {
       es: 'Genera una escala tipográfica fluida con clamp(), lista para copiar como variables CSS, y enseña a cuántos píxeles queda cada paso en 390, 768, 1360 y 1920. Avisa cuando dos pasos se cruzan a algún ancho.',
       en: 'Generate a fluid type scale with clamp(), ready to copy as CSS variables, and see what each step really measures at 390, 768, 1360 and 1920. It warns when two steps cross over at some width.',
     },
+    listo: false,
   },
 };

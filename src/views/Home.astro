@@ -47,10 +47,18 @@ const { lang } = Astro.props;
               <p class="mt-2 flex-1 text-[var(--fs-small)] text-ink-muted">
                 {t(TOOLS[key].summary, lang)}
               </p>
-              <p class="mt-4 text-[var(--fs-small)] font-medium text-brand">
-                {t(UI.openTool, lang)}
-                <span aria-hidden="true"> →</span>
-              </p>
+              {
+                TOOLS[key].listo ? (
+                  <p class="mt-4 text-[var(--fs-small)] font-medium text-brand">
+                    {t(UI.openTool, lang)}
+                    <span aria-hidden="true"> →</span>
+                  </p>
+                ) : (
+                  <p class="mt-4 text-[var(--fs-small)] font-medium text-ink-soft">
+                    {t(UI.soonBadge, lang)}
+                  </p>
+                )
+              }
             </a>
           </li>
         ))

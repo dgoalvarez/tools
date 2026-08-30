@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/check-routes.mjs && astro check && astro build && node scripts/check-pages.mjs && node scripts/check-csp.mjs",
+    "build": "node scripts/check-routes.mjs && astro check && astro build && node scripts/check-pages.mjs && node scripts/check-tour.mjs && node scripts/check-csp.mjs",
     "check": "astro check",
     "preview": "astro preview",
     "astro": "astro",
@@ -24,6 +24,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "culori": "^4.0.2",
+    "driver.js": "1.8.0",
     "radix-ui": "^1.6.7",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

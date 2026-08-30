@@ -5,13 +5,16 @@
  * `client:load` para que el HTML salga ya pintado del servidor y no haya un
  * hueco en blanco mientras carga el JavaScript.
  *
- * Todo lo que explica la herramienta —y no cambia una decisión mientras se
- * usa— vive plegado en el «¿Cómo funciona?». La atribución a GeoNames está
- * ahí y solo ahí: es la única página que usa esos datos.
+ * Todo lo que explicaba la herramienta vivía plegado en un «¿Cómo
+ * funciona?» al final. Ahora lo cuenta el paso a paso del botón «?», que
+ * lo explica señalando el control en vez de describirlo aquí abajo.
+ *
+ * Lo único que no se ha movido es la atribución a GeoNames, y no por
+ * gusto: la licencia CC BY obliga a atribuir donde se usa la obra, y el
+ * paso a paso necesita JavaScript. Tiene que estar impresa en la página.
  */
 import Tool from '../layouts/Tool.astro';
 import Timezones from '../islands/Timezones';
-import ComoFunciona from '../components/ComoFunciona.astro';
 import { UI } from '../i18n/ui';
 import { HUSOS } from '../i18n/timezones';
 import { t, type Lang } from '../i18n/config';
@@ -34,31 +37,24 @@ const { lang } = Astro.props;
     </p>
   </noscript>
 
-  <ComoFunciona lang={lang}>
-    <div>
-      <h3>{t(HUSOS.precisionTitulo, lang)}</h3>
-      <p class="mt-1">{t(HUSOS.precisionCuerpo, lang)}</p>
-    </div>
-
-    <div>
-      <h3>{t(HUSOS.ubicacionTitulo, lang)}</h3>
-      <p class="mt-1">{t(HUSOS.ubicacionCuerpo, lang)}</p>
-    </div>
-
-    <div>
-      <h3>{t(HUSOS.saltosTitulo, lang)}</h3>
-      <p class="mt-1">{t(HUSOS.saltosCuerpo, lang)}</p>
-    </div>
-
-    <div>
-      <h3>{t(HUSOS.datosTitulo, lang)}</h3>
-      <p class="mt-1">
-        {t(HUSOS.datosCuerpo, lang)}
-        {' '}
-        <a href="https://www.geonames.org" rel="noopener">GeoNames</a>
-        {' · '}
-        <a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener">CC BY 4.0</a>
-      </p>
-    </div>
-  </ComoFunciona>
+  <p
+    data-tour="precision"
+    class="mt-10 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft"
+  >
+    {t(HUSOS.precisionCuerpo, lang)}{' '}
+    <span class="whitespace-nowrap">
+      {t(HUSOS.atribucion, lang)}{' '}
+      <a
+        href="https://www.geonames.org"
+        rel="noopener"
+        class="underline underline-offset-2 hover:text-brand">GeoNames</a
+      >
+      <span aria-hidden="true"> · </span>
+      <a
+        href="https://creativecommons.org/licenses/by/4.0/"
+        rel="license noopener"
+        class="underline underline-offset-2 hover:text-brand">CC BY 4.0</a
+      >
+    </span>
+  </p>
 </Tool>

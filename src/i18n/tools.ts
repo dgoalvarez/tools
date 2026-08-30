@@ -39,18 +39,25 @@ interface Tool {
 export const TOOLS: Record<ToolKey, Tool> = {
   timezones: {
     name: { es: 'Husos horarios', en: 'Time zones' },
+    // Describe el error que evita, no la mecánica. Convertir horas lo hace
+    // cualquiera; lo que se agradece a las once de la noche es que alguien
+    // te avise de que allí ya es mañana.
     summary: {
-      es: 'Una hora, varias ciudades, y el aviso de cuándo cae en otro día.',
-      en: 'One time, several cities, and a warning when it lands on another day.',
+      es: 'Di tu hora en la hora del otro, sin equivocarte de día.',
+      en: 'Say your time in their time, without getting the day wrong.',
     },
     description: {
-      es: 'Convierte una hora a los husos de quien tenga que estar en la cita, por ciudad o por código ZIP de Estados Unidos, y te da la frase lista para copiar. Avisa cuando la hora cae en otro día, que es el error que de verdad se comete al agendar.',
-      en: 'Convert a time to the zones of everyone who has to be in the meeting, by city or by US ZIP code, and get the sentence ready to copy. It warns when the time lands on another day, which is the mistake people actually make when scheduling.',
+      es: 'Escribe la hora de la cita en tu zona y léela en la de cada persona que tenga que estar. Busca por ciudad —en español o en inglés— o por código ZIP, que es lo que distingue los siete estados de Estados Unidos partidos entre dos husos. Avisa en rojo cuando allí ya es otro día, y te da la frase escrita en su hora, lista para pegar.',
+      en: 'Type the meeting time in your zone and read it in everyone else’s. Search by city — in English or Spanish — or by ZIP code, which is what tells apart the seven US states split across two zones. It warns in red when it is already another day there, and hands you the sentence written in their time, ready to paste.',
     },
     listo: true,
     // Sale bajo Productividad, que es donde la busca quien agenda; la
     // atención al cliente es su otro uso y aparece en la ficha.
-    etiquetas: { ambito: ['productividad', 'atencionCliente'], materia: 'tiempo', tarea: 'convertir' },
+    etiquetas: {
+      ambito: ['productividad', 'atencionCliente'],
+      materia: 'tiempo',
+      tarea: 'convertir',
+    },
     icono: 'reloj',
   },
   contrast: {

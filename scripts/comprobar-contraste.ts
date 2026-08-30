@@ -32,7 +32,10 @@ for (const [t, b, esperado] of [
   ['#000000', '#ffffff', 21.0],
 ] as const) {
   const r = medirWcag(t, b, normal);
-  afirmar(Math.abs(r.razon - esperado) < 0.006, `${t} sobre ${b} = ${r.razon.toFixed(2)} (WebAIM: ${esperado})`);
+  afirmar(
+    Math.abs(r.razon - esperado) < 0.006,
+    `${t} sobre ${b} = ${r.razon.toFixed(2)} (WebAIM: ${esperado})`
+  );
 }
 
 console.log('\n2. El umbral cambia con el tamaño del texto');
@@ -79,7 +82,10 @@ for (const [t, b] of [
   const comprobado = medirWcag(s.hex, b, normal);
   const tonoOriginal = aOklch(t)!.h ?? 0;
   const tonoNuevo = aOklch(s.hex)!.h ?? 0;
-  const desvio = Math.min(Math.abs(tonoOriginal - tonoNuevo), 360 - Math.abs(tonoOriginal - tonoNuevo));
+  const desvio = Math.min(
+    Math.abs(tonoOriginal - tonoNuevo),
+    360 - Math.abs(tonoOriginal - tonoNuevo)
+  );
 
   afirmar(
     comprobado.pasaAA,
@@ -91,7 +97,10 @@ for (const [t, b] of [
 console.log('\n5. Si ya pasa, no sugiere nada');
 {
   const w = medirWcag('#101314', '#f6f7f6', normal);
-  afirmar(sugerirColor('#101314', '#f6f7f6', w.umbralAA) === null, 'un par que aprueba no recibe sugerencia');
+  afirmar(
+    sugerirColor('#101314', '#f6f7f6', w.umbralAA) === null,
+    'un par que aprueba no recibe sugerencia'
+  );
 }
 
 console.log('\n6. La transparencia se compone sobre el fondo');
@@ -108,12 +117,24 @@ console.log('\n7. Hay desacuerdo cuando lo hay, y no cuando no');
   const chico = { px: 14, peso: 400 };
   const w = medirWcag('#767676', '#ffffff', chico);
   const a = medirApca('#767676', '#ffffff', chico);
-  console.log(`      #767676 sobre #ffffff a 14 px: WCAG ${w.pasaAA ? 'pasa' : 'no pasa'} (${w.razon.toFixed(2)}), APCA ${a.estado} (${a.lc.toFixed(1)} Lc, mínimo ${a.minimoPx} px)`);
-  afirmar(hayDesacuerdo(w, a) === (w.pasaAA !== (a.estado === 'pasa')), 'el desacuerdo se detecta correctamente');
+  console.log(
+    `      #767676 sobre #ffffff a 14 px: WCAG ${w.pasaAA ? 'pasa' : 'no pasa'} (${w.razon.toFixed(2)}), APCA ${a.estado} (${a.lc.toFixed(1)} Lc, mínimo ${a.minimoPx} px)`
+  );
+  afirmar(
+    hayDesacuerdo(w, a) === (w.pasaAA !== (a.estado === 'pasa')),
+    'el desacuerdo se detecta correctamente'
+  );
 }
 
 console.log('\n8. Formatos de entrada');
-for (const s of ['#0a5f5a', '0a5f5a', 'rgb(10 95 90)', 'hsl(177 81% 21%)', 'oklch(0.44 0.073 188)', 'teal']) {
+for (const s of [
+  '#0a5f5a',
+  '0a5f5a',
+  'rgb(10 95 90)',
+  'hsl(177 81% 21%)',
+  'oklch(0.44 0.073 188)',
+  'teal',
+]) {
   afirmar(leerColor(s) !== null, `«${s}» se reconoce -> ${leerColor(s)?.hex}`);
 }
 afirmar(leerColor('no soy un color') === null, '«no soy un color» se rechaza');
@@ -124,7 +145,10 @@ console.log('\n9. Las barras del selector de color');
   for (const espacio of ESPACIOS) {
     const canales = canalesDe('#0a5f5a', espacio);
 
-    afirmar(canales.length === 3, `${espacio}: tres canales (${canales.map((c) => c.clave).join(' ')})`);
+    afirmar(
+      canales.length === 3,
+      `${espacio}: tres canales (${canales.map((c) => c.clave).join(' ')})`
+    );
 
     // Si mover una barra hasta donde ya estaba cambiara el color, cada
     // toque la desplazaría un poco y sería imposible ajustar nada.
@@ -156,8 +180,14 @@ console.log('\n9. Las barras del selector de color');
     conCanal('#0a5f5a', 'oklch', 'l', 80) === '#85cdc7',
     'subir la luminosidad en OKLCH aclara sin virar el tono'
   );
-  afirmar(conCanal('#0a5f5a', 'rgb', 'r', 255) === '#ff5f5a', 'subir el rojo al máximo hace lo que dice');
-  afirmar(canalesDe('esto no es un color', 'oklch').length === 0, 'un color inválido no devuelve canales');
+  afirmar(
+    conCanal('#0a5f5a', 'rgb', 'r', 255) === '#ff5f5a',
+    'subir el rojo al máximo hace lo que dice'
+  );
+  afirmar(
+    canalesDe('esto no es un color', 'oklch').length === 0,
+    'un color inválido no devuelve canales'
+  );
 }
 
 console.log(fallos === 0 ? '\nTODO CORRECTO\n' : `\n${fallos} FALLOS\n`);

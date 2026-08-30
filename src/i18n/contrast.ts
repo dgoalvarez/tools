@@ -87,7 +87,10 @@ export const CONTRASTE = {
   },
 
   // ---------- La sugerencia ----------
-  sugerenciaTitulo: { es: 'El color más cercano que sí pasa', en: 'The nearest colour that does pass' },
+  sugerenciaTitulo: {
+    es: 'El color más cercano que sí pasa',
+    en: 'The nearest colour that does pass',
+  },
   sugerenciaComo: {
     es: 'Se mueve solo la luminosidad en OKLCH; el tono y el croma se conservan, así que sigue siendo el mismo color.',
     en: 'Only the lightness moves, in OKLCH; hue and chroma stay put, so it is still the same colour.',
@@ -126,6 +129,15 @@ export const CONTRASTE = {
 
   // ---------- El selector ----------
   espacio: { es: 'Espacio de color', en: 'Colour space' },
+  /** El cuarto modo: el cuadrado de saturación y brillo con el tono. */
+  visual: { es: 'Visual', en: 'Visual' },
+  planoEtiqueta: {
+    es: 'Cuadro de saturación y brillo. Muévete con las flechas.',
+    en: 'Saturation and brightness square. Move with the arrow keys.',
+  },
+  saturacion: { es: 'saturación', en: 'saturation' },
+  brillo: { es: 'brillo', en: 'brightness' },
+  tono: { es: 'Tono', en: 'Hue' },
   ajustarCon: { es: 'Ajustar con barras', en: 'Adjust with sliders' },
 } satisfies Record<string, T>;
 

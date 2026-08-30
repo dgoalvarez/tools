@@ -11,6 +11,7 @@
  * portada. Así no puede haber una herramienta que se llame de dos formas.
  */
 import Base from './Base.astro';
+import Tour from '../islands/Tour';
 import { UI } from '../i18n/ui';
 import { TOOLS } from '../i18n/tools';
 import { t, type Lang } from '../i18n/config';
@@ -44,6 +45,13 @@ const description = t(meta.description, lang);
       <p class="m-0 max-w-[46ch] text-[0.95rem] leading-relaxed text-ink-muted">
         {t(meta.summary, lang)}
       </p>
+
+      {/* El paso a paso, en la esquina. Sustituye al cajón de «¿Cómo
+          funciona?» que vivía abajo del todo: explicaba los controles
+          lejos de los controles, y por eso casi nadie lo abría. */}
+      <div class="ml-auto">
+        <Tour client:load lang={lang} tool={tool} />
+      </div>
     </header>
 
     <div class="mt-[clamp(1.25rem,2vw,2.125rem)]">

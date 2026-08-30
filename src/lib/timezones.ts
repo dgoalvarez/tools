@@ -71,8 +71,17 @@ export type FuenteDestino = 'ciudad' | 'zip' | 'navegador' | 'zona';
 export interface Destino {
   /** Estable mientras el destino esté en la lista. */
   id: string;
-  /** Lo que se le enseña a quien usa la herramienta: «Miami, Florida». */
+  /** «Miami, Florida». Es lo que va en la frase que se copia. */
   etiqueta: string;
+  /** El primer renglón de la ficha: «Miami». */
+  ciudad: string;
+  /**
+   * El segundo: «Florida». Vacío cuando el destino se reconstruye desde
+   * un enlace, donde solo viaja la zona y el nombre sale de ella.
+   */
+  region: string;
+  /** El código ISO de dos letras, o vacío. */
+  pais: string;
   /** El identificador IANA. */
   zona: string;
   fuente: FuenteDestino;
@@ -229,7 +238,15 @@ export function convertir(
 
   const enOrigen = formatear(instante, zonaOrigen, lang);
   const origen: Conversion = {
-    destino: { id: 'origen', etiqueta: etiquetaOrigen, zona: zonaOrigen, fuente: 'zona' },
+    destino: {
+      id: 'origen',
+      etiqueta: etiquetaOrigen,
+      ciudad: etiquetaOrigen,
+      region: '',
+      pais: '',
+      zona: zonaOrigen,
+      fuente: 'zona',
+    },
     ...enOrigen,
     diferencia: 0,
     saltoDeDia: 0,
@@ -296,9 +313,17 @@ export interface DatosCiudades {
   generado: string;
   fuente: string;
   zonas: string[];
-  regiones: string[];
-  /** [nombre, nombreSinTildes, país, índiceRegión, índiceZona] */
-  ciudades: [string, string, string, number, number][];
+  /** [nombre, enEspañol, enInglés]. Vacío cuando se escribe igual. */
+  regiones: [string, string, string][];
+  /**
+   * [nombre, sinTildes, país, índiceRegión, índiceZona, enEspañol, enInglés]
+   *
+   * Los dos últimos van vacíos cuando el nombre se escribe igual en ese
+   * idioma, que es lo normal: solo 982 ciudades tienen nombre propio en
+   * español y 826 en inglés. Guardar «Madrid» dos veces serían bytes que
+   * alguien descarga para nada.
+   */
+  ciudades: [string, string, string, number, number, string, string][];
 }
 
 export interface DatosZips {
@@ -318,9 +343,30 @@ export function normalizar(texto: string): string {
 }
 
 export interface Coincidencia {
-  etiqueta: string;
-  zona: string;
+  /** El nombre en el idioma de la página: «Londres» o «London». */
+  ciudad: string;
+  /** La región, también traducida. Vacía si el lugar no tiene. */
+  region: string;
+  /** El código ISO de dos letras. El nombre lo pone Intl.DisplayNames. */
   pais: string;
+  zona: string;
+  /**
+   * «Londres, Inglaterra». Es lo que va en la frase que se copia, donde
+   * una sola línea tiene que decirlo todo. En pantalla no se usa: ahí van
+   * la ciudad y la región en dos renglones, que es lo que impide que un
+   * nombre largo reviente la ficha.
+   */
+  etiqueta: string;
+}
+
+/** El nombre de un país en el idioma de la página, o su código. */
+export function nombreDePais(codigo: string, lang: string): string {
+  try {
+    return new Intl.DisplayNames([lang], { type: 'region' }).of(codigo) ?? codigo;
+  } catch {
+    // Un código que no existe, o un navegador sin DisplayNames.
+    return codigo;
+  }
 }
 
 /**
@@ -334,6 +380,7 @@ export interface Coincidencia {
 export function buscarCiudades(
   datos: DatosCiudades,
   consulta: string,
+  lang: string,
   limite = 8
 ): Coincidencia[] {
   const busqueda = normalizar(consulta);
@@ -342,16 +389,31 @@ export function buscarCiudades(
   const empiezan: Coincidencia[] = [];
   const contienen: Coincidencia[] = [];
 
-  for (const [nombre, ascii, pais, region, zona] of datos.ciudades) {
-    const contra = normalizar(ascii || nombre);
-    const posicion = contra.indexOf(busqueda);
+  for (const [nombre, ascii, pais, region, zona, es, en] of datos.ciudades) {
+    // Se busca contra los cuatro nombres a la vez, no contra el del
+    // idioma de la página: quien escribe «Londres» en la página en inglés
+    // también tiene que encontrarla. La posición que cuenta es la mejor
+    // de las cuatro, para que «lond» ponga Londres antes que Nueva
+    // Londres.
+    let posicion = -1;
+    for (const candidato of [nombre, ascii, es, en]) {
+      if (!candidato) continue;
+      const donde = normalizar(candidato).indexOf(busqueda);
+      if (donde !== -1 && (posicion === -1 || donde < posicion)) posicion = donde;
+    }
     if (posicion === -1) continue;
 
-    const nombreRegion = datos.regiones[region];
+    const enEspanol = lang === 'es';
+    const ciudad = (enEspanol ? es : en) || nombre;
+    const fila = datos.regiones[region];
+    const nombreRegion = fila ? (enEspanol ? fila[1] : fila[2]) || fila[0] : '';
+
     const coincidencia: Coincidencia = {
-      etiqueta: nombreRegion ? `${nombre}, ${nombreRegion}` : nombre,
-      zona: datos.zonas[zona]!,
+      ciudad,
+      region: nombreRegion,
       pais,
+      zona: datos.zonas[zona]!,
+      etiqueta: nombreRegion ? `${ciudad}, ${nombreRegion}` : ciudad,
     };
 
     if (posicion === 0) empiezan.push(coincidencia);

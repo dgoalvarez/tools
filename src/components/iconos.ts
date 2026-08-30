@@ -21,6 +21,8 @@ import tipografia from '@phosphor-icons/core/regular/text-aa.svg?raw';
 import rejilla from '@phosphor-icons/core/regular/squares-four.svg?raw';
 import lupa from '@phosphor-icons/core/regular/magnifying-glass.svg?raw';
 import cerrar from '@phosphor-icons/core/regular/x.svg?raw';
+import casa from '@phosphor-icons/core/regular/house.svg?raw';
+import mas from '@phosphor-icons/core/regular/dots-three.svg?raw';
 
 /**
  * Se queda solo lo de dentro del `<svg>`: la envoltura la pone
@@ -42,6 +44,8 @@ export const ICONOS = {
   rejilla: interior(rejilla),
   lupa: interior(lupa),
   cerrar: interior(cerrar),
+  casa: interior(casa),
+  mas: interior(mas),
 } satisfies Record<string, string>;
 
 export type IconoKey = keyof typeof ICONOS;

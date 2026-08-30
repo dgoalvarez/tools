@@ -377,3 +377,42 @@ export function conCanal(hex: string, espacio: Espacio, clave: string, valor: nu
 
   return aHex({ ...base, mode: espacio, [clave]: valor * espec.escala });
 }
+
+// ------------------------------------------------------- el cuadro visual
+
+/**
+ * El cuadrado de saturación y brillo con la barra de tono: el selector de
+ * cualquier herramienta de diseño, y el que más gente reconoce.
+ *
+ * Va en HSV y no en HSL porque el cuadrado clásico es HSV: en HSV, la
+ * esquina de arriba a la derecha es el color puro y el borde de abajo es
+ * negro, que es exactamente lo que dibujan los dos degradados superpuestos.
+ * En HSL ese mismo cuadrado tendría blanco arriba y negro abajo con el
+ * color en medio, y no se parecería a lo que la gente espera.
+ */
+const aHsv = converter('hsv');
+
+export interface Visual {
+  /** 0–360. */
+  tono: number;
+  /** 0–1, de izquierda a derecha del cuadro. */
+  saturacion: number;
+  /** 0–1, de abajo arriba del cuadro. */
+  brillo: number;
+}
+
+export function visualDe(hex: string): Visual {
+  const c = aHsv(hex);
+  return {
+    // Un gris no tiene tono: culori devuelve undefined y el cuadro se
+    // quedaría en blanco. Cero es tan arbitrario como cualquiera y al
+    // menos deja empezar a moverlo.
+    tono: c?.h ?? 0,
+    saturacion: c?.s ?? 0,
+    brillo: c?.v ?? 0,
+  };
+}
+
+export function desdeVisual({ tono, saturacion, brillo }: Visual): string {
+  return aHex({ mode: 'hsv', h: tono, s: saturacion, v: brillo });
+}

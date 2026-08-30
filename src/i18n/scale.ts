@@ -44,6 +44,15 @@ export const ESCALA = {
     es: 'La anchura de ventana a la que ese paso ya casi ha terminado de crecer. Si los titulares llegan mucho antes que el cuerpo, la jerarquía se descompensa en los tamaños intermedios.',
     en: 'The viewport width at which that step has almost finished growing. If headings get there long before the body does, the hierarchy falls out of balance at the in-between sizes.',
   },
+  // ---------- Saltarse pasos ----------
+  apagar: { es: 'Saltarse este paso', en: 'Skip this step' },
+  encender: { es: 'Volver a usar este paso', en: 'Use this step again' },
+  esLaBase: { es: '· base', en: '· base' },
+  saltadosAyuda: {
+    es: 'Los pasos apagados siguen a la vista para que se vea el hueco que dejan, pero no salen en el CSS ni en la tabla, y los nombres del esquema se recolocan entre los que quedan.',
+    en: 'Switched-off steps stay visible so you can see the gap they leave, but they are left out of the CSS and the table, and the scheme’s names shuffle across whatever remains.',
+  },
+
   nunca: { es: 'no crece', en: 'does not grow' },
 
   // ---------- La muestra ----------

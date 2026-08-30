@@ -11,17 +11,21 @@
  * la barra, que es lo que tiene que pasar.
  */
 import Icono from './Icono.astro';
+import ThemeToggle from './ThemeToggle';
 import { UI } from '../i18n/ui';
 import { TOOLS } from '../i18n/tools';
 import { AMBITOS, MATERIAS, TAREAS, ORDEN_AMBITOS, ambitoPrincipal, ACENTO_POR_MATERIA } from '../i18n/labels';
-import { t, type Lang } from '../i18n/config';
-import { route, TOOL_KEYS } from '../i18n/routes';
+import { t, otherLang, LANG_NAME, type Lang } from '../i18n/config';
+import { route, TOOL_KEYS, type PageKey } from '../i18n/routes';
 
 interface Props {
   lang: Lang;
+  /** La página abierta: el enlace de idioma tiene que llevar a la misma. */
+  pagina: PageKey;
 }
 
-const { lang } = Astro.props;
+const { lang, pagina } = Astro.props;
+const other = otherLang(lang);
 
 const grupos = ORDEN_AMBITOS.map((ambito) => ({
   ambito,
@@ -81,5 +85,29 @@ const grupos = ORDEN_AMBITOS.map((ambito) => ({
         </section>
       ))
     }
+  </div>
+
+  {/* En un móvil la barra de abajo es solo iconos de herramienta: ni la
+      marca ni el pie de la barra caben en 4,25 rem de alto. Idioma y tema
+      viven aquí, que es adonde lleva el «Más» de esa barra. Sin esto, en
+      un móvil y dentro de una herramienta no había manera de cambiar
+      ninguno de los dos. */}
+  <div class="flex flex-wrap items-center gap-2 border-t border-line px-6 py-4">
+    <a href={route('home', lang)} class="pastilla">
+      <Icono nombre="casa" tamano={16} />
+      {t(UI.navHome, lang)}
+    </a>
+
+    <a
+      href={route(pagina, other)}
+      class="pastilla"
+      lang={other}
+      hreflang={other}
+      title={t(UI.switchLanguage, lang)}
+    >
+      {LANG_NAME[other]}
+    </a>
+
+    <ThemeToggle client:load toDark={t(UI.toDarkMode, lang)} toLight={t(UI.toLightMode, lang)} />
   </div>
 </dialog>

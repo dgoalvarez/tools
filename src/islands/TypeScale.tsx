@@ -38,6 +38,15 @@ import {
 } from '@/lib/scale';
 import { escribirParams, leerParams } from '@/lib/url-state';
 
+/**
+ * Lo que sale al abrir la herramienta.
+ *
+ * Antes salía `--step-0`, `--step-1`… que no le dice nada a nadie. Ahora
+ * sale el esquema de Tailwind con el prefijo «text», o sea `--text-sm`,
+ * `--text-base`, `--text-lg`: nombres que se reconocen sin que nadie los
+ * explique, y que con 5 pasos arriba y 2 abajo dan exactamente la rampa
+ * que Tailwind trae de serie.
+ */
 const INICIAL: Ajustes = {
   baseMin: 16,
   baseMax: 20,
@@ -47,15 +56,21 @@ const INICIAL: Ajustes = {
   abajo: 2,
   anchoMin: 390,
   anchoMax: 1920,
-  prefijo: 'step',
-  nombres: {},
+  prefijo: 'text',
+  nombres: aplicarEsquema(
+    ESQUEMAS.find((e) => e.clave === 'tailwind')!,
+    2,
+    5
+  ),
+  omitidos: [],
 };
 
 /**
  * Las claves de la dirección, cortas para que el enlace no sea un muro.
- * `nombres` no está aquí: no es un número y se serializa aparte.
+ * `nombres` y `omitidos` no están aquí: no son números y se serializan
+ * aparte.
  */
-const CLAVES: Record<Exclude<keyof Ajustes, 'nombres'>, string> = {
+const CLAVES: Record<Exclude<keyof Ajustes, 'nombres' | 'omitidos'>, string> = {
   baseMin: 'bn',
   baseMax: 'bx',
   razonMin: 'rn',
@@ -71,6 +86,15 @@ const CLAVES: Record<Exclude<keyof Ajustes, 'nombres'>, string> = {
 function nombresATexto(nombres: Record<string, string>): string {
   const pares = Object.entries(nombres).filter(([, v]) => v);
   return pares.map(([i, n]) => `${i}:${n}`).join(',');
+}
+
+/** Los pasos apagados en la dirección: «2,4». */
+function textoAOmitidos(texto: string): number[] {
+  return texto
+    .split(',')
+    .slice(0, 25)
+    .filter((n) => /^-?\d{1,2}$/.test(n))
+    .map(Number);
 }
 
 function textoANombres(texto: string): Record<string, string> {
@@ -112,8 +136,11 @@ export default function TypeScale({ lang }: Props) {
     const enlaceNombres = params.get('n');
     if (enlaceNombres) leidos.nombres = textoANombres(enlaceNombres);
 
+    const enlaceOmitidos = params.get('x');
+    if (enlaceOmitidos) leidos.omitidos = textoAOmitidos(enlaceOmitidos);
+
     for (const [campo, clave] of Object.entries(CLAVES) as [
-      Exclude<keyof Ajustes, 'nombres'>,
+      Exclude<keyof Ajustes, 'nombres' | 'omitidos'>,
       string,
     ][]) {
       const crudo = params.get(clave);
@@ -150,12 +177,18 @@ export default function TypeScale({ lang }: Props) {
 
     const salida: Record<string, string | null> = {};
     for (const [campo, clave] of Object.entries(CLAVES) as [
-      Exclude<keyof Ajustes, 'nombres'>,
+      Exclude<keyof Ajustes, 'nombres' | 'omitidos'>,
       string,
     ][]) {
       salida[clave] = ajustes[campo] === INICIAL[campo] ? null : String(ajustes[campo]);
     }
-    salida.n = nombresATexto(ajustes.nombres) || null;
+    salida.n =
+      nombresATexto(ajustes.nombres) === nombresATexto(INICIAL.nombres)
+        ? null
+        : nombresATexto(ajustes.nombres) || null;
+    salida.x = ajustes.omitidos.length
+      ? [...ajustes.omitidos].sort((a, b) => a - b).join(',')
+      : null;
     escribirParams(salida);
   }, [enlaceLeido, ajustes]);
 
@@ -195,8 +228,39 @@ export default function TypeScale({ lang }: Props) {
     if (!esquema) return;
     setAjustes((previo) => ({
       ...previo,
-      nombres: aplicarEsquema(esquema, previo.abajo, previo.arriba),
+      nombres: aplicarEsquema(esquema, previo.abajo, previo.arriba, previo.omitidos),
     }));
+    setCopiado(null);
+  }
+
+  /**
+   * Enciende o apaga un paso.
+   *
+   * Al apagarlo, si había un esquema puesto, se vuelve a repartir: los
+   * nombres tienen que correrse hacia el hueco. Si no, saltarse el +2
+   * dejaría `--text-lg` y luego `--text-3xl`, y habría que arreglarlo a
+   * mano, que es justo lo que la función viene a ahorrar.
+   */
+  function alternarPaso(indice: number) {
+    setAjustes((previo) => {
+      const omitidos = previo.omitidos.includes(indice)
+        ? previo.omitidos.filter((i) => i !== indice)
+        : [...previo.omitidos, indice];
+
+      const esquema = ESQUEMAS.find(
+        (e) =>
+          JSON.stringify(aplicarEsquema(e, previo.abajo, previo.arriba, previo.omitidos)) ===
+          JSON.stringify(previo.nombres)
+      );
+
+      return {
+        ...previo,
+        omitidos,
+        nombres: esquema
+          ? aplicarEsquema(esquema, previo.abajo, previo.arriba, omitidos)
+          : previo.nombres,
+      };
+    });
     setCopiado(null);
   }
 
@@ -204,7 +268,7 @@ export default function TypeScale({ lang }: Props) {
   const esquemaActual =
     ESQUEMAS.find(
       (e) =>
-        JSON.stringify(aplicarEsquema(e, ajustes.abajo, ajustes.arriba)) ===
+        JSON.stringify(aplicarEsquema(e, ajustes.abajo, ajustes.arriba, ajustes.omitidos)) ===
         JSON.stringify(ajustes.nombres)
     )?.clave ?? '';
 
@@ -224,11 +288,12 @@ export default function TypeScale({ lang }: Props) {
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-start">
       {/* ---------------- Controles ---------------- */}
-      <div className="grid gap-6">
-        <fieldset className="grid gap-3">
-          <legend className="mb-2 text-[var(--fs-small)] font-semibold text-ink">
+      <div className="grid gap-4">
+        <fieldset className="tarjeta-control" data-tour="base">
+          <legend className="sr-only">{tr('ajustes')}</legend>
+          <p className="titulo" aria-hidden="true">
             {tr('ajustes')}
-          </legend>
+          </p>
 
           <div className="grid grid-cols-2 gap-3">
             <Numero
@@ -254,29 +319,32 @@ export default function TypeScale({ lang }: Props) {
           </div>
           <p className="text-[var(--fs-small)] text-ink-soft">{tr('baseAyuda')}</p>
 
-          <Razon
-            id="razon-min"
-            etiqueta={tr('razonMin')}
-            valor={ajustes.razonMin}
-            lang={lang}
-            personalizada={tr('personalizada')}
-            onCambio={(v) => cambiar('razonMin', v)}
-          />
-          <Razon
-            id="razon-max"
-            etiqueta={tr('razonMax')}
-            valor={ajustes.razonMax}
-            lang={lang}
-            personalizada={tr('personalizada')}
-            onCambio={(v) => cambiar('razonMax', v)}
-          />
-          <p className="text-[var(--fs-small)] text-ink-soft">{tr('razonAyuda')}</p>
+          <div className="grid gap-3" data-tour="razon">
+            <Razon
+              id="razon-min"
+              etiqueta={tr('razonMin')}
+              valor={ajustes.razonMin}
+              lang={lang}
+              personalizada={tr('personalizada')}
+              onCambio={(v) => cambiar('razonMin', v)}
+            />
+            <Razon
+              id="razon-max"
+              etiqueta={tr('razonMax')}
+              valor={ajustes.razonMax}
+              lang={lang}
+              personalizada={tr('personalizada')}
+              onCambio={(v) => cambiar('razonMax', v)}
+            />
+            <p className="text-[var(--fs-small)] text-ink-soft">{tr('razonAyuda')}</p>
+          </div>
         </fieldset>
 
-        <fieldset className="grid gap-3">
-          <legend className="mb-2 text-[var(--fs-small)] font-semibold text-ink">
+        <fieldset className="tarjeta-control" data-tour="pasos">
+          <legend className="sr-only">{tr('pasos')}</legend>
+          <p className="titulo" aria-hidden="true">
             {tr('pasos')}
-          </legend>
+          </p>
           <div className="grid grid-cols-2 gap-3">
             <Numero
               id="arriba"
@@ -299,10 +367,11 @@ export default function TypeScale({ lang }: Props) {
           </div>
         </fieldset>
 
-        <fieldset className="grid gap-3">
-          <legend className="mb-2 text-[var(--fs-small)] font-semibold text-ink">
+        <fieldset className="tarjeta-control" data-tour="ventana">
+          <legend className="sr-only">{tr('ventana')}</legend>
+          <p className="titulo" aria-hidden="true">
             {tr('ventana')}
-          </legend>
+          </p>
           <div className="grid grid-cols-2 gap-3">
             <Numero
               id="ancho-min"
@@ -328,10 +397,11 @@ export default function TypeScale({ lang }: Props) {
           <p className="text-[var(--fs-small)] text-ink-soft">{tr('anchoAyuda')}</p>
         </fieldset>
 
-        <fieldset className="grid gap-3">
-          <legend className="mb-2 text-[var(--fs-small)] font-semibold text-ink">
+        <fieldset className="tarjeta-control" data-tour="nombres">
+          <legend className="sr-only">{tr('nombresTitulo')}</legend>
+          <p className="titulo" aria-hidden="true">
             {tr('nombresTitulo')}
-          </legend>
+          </p>
 
           <div className="grid gap-1.5">
             <Label htmlFor="esquema">{tr('esquema')}</Label>
@@ -375,7 +445,11 @@ export default function TypeScale({ lang }: Props) {
           onClick={() => copiar('enlace')}
           className="justify-self-start"
         >
-          {copiado === 'enlace' ? <CheckIcon aria-hidden="true" /> : <LinkIcon aria-hidden="true" />}
+          {copiado === 'enlace' ? (
+            <CheckIcon aria-hidden="true" />
+          ) : (
+            <LinkIcon aria-hidden="true" />
+          )}
           {copiado === 'enlace' ? tr('copiado') : tr('copiarEnlace')}
         </Button>
       </div>
@@ -414,8 +488,8 @@ export default function TypeScale({ lang }: Props) {
           </section>
         )}
 
-        {/* -------- La muestra, con los clamp() de verdad -------- */}
-        <section>
+        {/* -------- La rampa, con los clamp() de verdad -------- */}
+        <section data-tour="rampa">
           <h2 className="text-[length:var(--fs-h3)] font-semibold text-ink">
             {tr('muestraTitulo')}
           </h2>
@@ -423,33 +497,78 @@ export default function TypeScale({ lang }: Props) {
             {tr('muestraIntro')}
           </p>
 
-          <div className="mt-4 grid gap-2 overflow-hidden rounded-lg border border-line bg-surface p-5">
+          <div className="mt-4 grid gap-1 overflow-hidden rounded-lg border border-line bg-surface p-5">
             {alReves.map((paso) => (
-              <div key={paso.indice} className="flex items-baseline gap-4">
-                <code className="w-16 shrink-0 font-mono text-[0.7rem] text-ink-soft tabular-nums">
-                  {paso.indice > 0 ? `+${paso.indice}` : paso.indice}
+              <div
+                key={paso.indice}
+                className={`flex items-baseline gap-4 rounded-md px-2 py-1.5 ${
+                  paso.omitido ? 'opacity-45' : ''
+                }`}
+              >
+                {/*
+                  El interruptor de saltarse el paso.
+
+                  El paso apagado NO desaparece de la rampa: se queda en
+                  gris. Hay que poder ver el hueco que se acaba de abrir
+                  para juzgar si el salto entre los dos vecinos quedó bien,
+                  y eso no se ve si lo que sobra se borra.
+                */}
+                <input
+                  type="checkbox"
+                  checked={!paso.omitido}
+                  onChange={() => alternarPaso(paso.indice)}
+                  data-tour={paso.indice === 0 ? 'saltar' : undefined}
+                  aria-label={`${paso.nombre} · ${tr(paso.omitido ? 'encender' : 'apagar')}`}
+                  title={tr(paso.omitido ? 'encender' : 'apagar')}
+                  className="mt-1 size-4 shrink-0 cursor-pointer accent-[var(--acento)]"
+                />
+
+                <code className="w-40 shrink-0 truncate font-mono text-[0.72rem] text-ink-soft">
+                  {paso.nombre}
                 </code>
+
                 <span
-                  className="min-w-0 truncate leading-tight text-ink"
+                  className="min-w-0 flex-1 truncate leading-tight text-ink"
                   style={{ fontSize: paso.valor }}
                 >
                   {tr('muestraTexto')}
                 </span>
+
+                {/* De qué tamaño es esto: el par que genera el clamp(). Sin
+                    esto la rampa se veía pero no se sabía en qué números
+                    estaba. */}
+                <span className="shrink-0 text-right font-mono text-[0.72rem] text-ink-soft tabular-nums">
+                  {paso.minPx.toFixed(0)} → {paso.maxPx.toFixed(0)} px
+                  {paso.indice === 0 && (
+                    <span className="ml-2 text-[var(--acento)]">{tr('esLaBase')}</span>
+                  )}
+                </span>
               </div>
             ))}
           </div>
+
+          {ajustes.omitidos.length > 0 && (
+            <p className="mt-3 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
+              {tr('saltadosAyuda')}
+            </p>
+          )}
         </section>
 
-        {/* -------- La tabla: el motivo de la herramienta -------- */}
-        <section>
-          <h2 className="text-[length:var(--fs-h3)] font-semibold text-ink">
-            {tr('tablaTitulo')}
-          </h2>
-          <p className="mt-1 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
-            {tr('tablaIntro')}
-          </p>
+        {/* -------- La tabla: el motivo de la herramienta --------
+            Plegada, y no porque importe poco: importa mucho, pero solo
+            cuando ya se ha decidido la escala. Abierta desde el principio
+            eran cuarenta números encima de la rampa. */}
+        <details data-tour="tabla" className="rounded-lg border border-line">
+          <summary className="cursor-pointer px-4 py-3 marker:content-none">
+            <span className="text-[length:var(--fs-h3)] font-semibold text-ink">
+              {tr('tablaTitulo')}
+            </span>
+            <span className="mt-0.5 block max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
+              {tr('tablaIntro')}
+            </span>
+          </summary>
 
-          <div className="mt-4 overflow-x-auto rounded-lg border border-line bg-surface">
+          <div className="overflow-x-auto border-t border-line bg-surface">
             <table className="w-full border-collapse text-[var(--fs-small)] tabular-nums">
               <thead>
                 <tr className="border-b border-line text-left">
@@ -457,7 +576,11 @@ export default function TypeScale({ lang }: Props) {
                     {tr('columnaPaso')}
                   </th>
                   {ANCHOS_TABLA.map((ancho) => (
-                    <th key={ancho} scope="col" className="p-3 text-right font-medium text-ink-muted">
+                    <th
+                      key={ancho}
+                      scope="col"
+                      className="p-3 text-right font-medium text-ink-muted"
+                    >
                       {ancho}
                     </th>
                   ))}
@@ -471,70 +594,85 @@ export default function TypeScale({ lang }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {alReves.map((paso) => {
-                  const lleno = anchoParaFraccion(paso, 0.95, ajustes);
-                  return (
-                    <tr key={paso.indice} className="border-b border-line last:border-0">
-                      {/* El nombre se edita aquí y no en una lista aparte:
+                {alReves
+                  .filter((paso) => !paso.omitido)
+                  .map((paso) => {
+                    const lleno = anchoParaFraccion(paso, 0.95, ajustes);
+                    return (
+                      <tr key={paso.indice} className="border-b border-line last:border-0">
+                        {/* El nombre se edita aquí y no en una lista aparte:
                           es donde ya se está mirando cada paso, y ahorra
                           repetir la escala entera en otro sitio. */}
-                      <th scope="row" className="p-2 text-left font-normal">
-                        <span className="sr-only">{paso.nombre}</span>
-                        <span className="flex items-center font-mono text-ink">
-                          <span aria-hidden="true" className="pl-1 text-ink-soft">
-                            --{ajustes.prefijo}-
+                        <th scope="row" className="p-2 text-left font-normal">
+                          <span className="sr-only">{paso.nombre}</span>
+                          <span className="flex items-center font-mono text-ink">
+                            <span aria-hidden="true" className="pl-1 text-ink-soft">
+                              --{ajustes.prefijo}-
+                            </span>
+                            <input
+                              type="text"
+                              value={ajustes.nombres[String(paso.indice)] ?? String(paso.indice)}
+                              spellCheck={false}
+                              autoComplete="off"
+                              aria-label={`${tr('nombreDe')} ${paso.indice}`}
+                              className="w-24 rounded-md border border-transparent bg-transparent px-1 py-1 hover:border-line focus:border-line focus:outline-none"
+                              onChange={(e) => renombrar(paso.indice, e.target.value)}
+                            />
                           </span>
-                          <input
-                            type="text"
-                            value={ajustes.nombres[String(paso.indice)] ?? String(paso.indice)}
-                            spellCheck={false}
-                            autoComplete="off"
-                            aria-label={`${tr('nombreDe')} ${paso.indice}`}
-                            className="w-24 rounded-md border border-transparent bg-transparent px-1 py-1 hover:border-line focus:border-line focus:outline-none"
-                            onChange={(e) => renombrar(paso.indice, e.target.value)}
-                          />
-                        </span>
-                      </th>
-                      {paso.enTabla.map((px, i) => (
-                        <td key={ANCHOS_TABLA[i]} className="p-3 text-right text-ink-muted">
-                          {px.toFixed(1)}
+                        </th>
+                        {paso.enTabla.map((px, i) => (
+                          <td key={ANCHOS_TABLA[i]} className="p-3 text-right text-ink-muted">
+                            {px.toFixed(1)}
+                          </td>
+                        ))}
+                        <td className="p-3 text-right text-ink-soft">
+                          {lleno === null ? tr('nunca') : `${lleno} px`}
                         </td>
-                      ))}
-                      <td className="p-3 text-right text-ink-soft">
-                        {lleno === null ? tr('nunca') : `${lleno} px`}
-                      </td>
-                    </tr>
-                  );
-                })}
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>
 
-          <p className="mt-3 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
+          <p className="border-t border-line px-4 py-3 text-[var(--fs-small)] text-ink-soft">
             {tr('llenoAyuda')}
           </p>
-        </section>
+        </details>
 
-        {/* -------- El CSS -------- */}
-        <section>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-[length:var(--fs-h3)] font-semibold text-ink">
+        {/* -------- El CSS, también plegado --------
+            Es el final del camino, no el principio: se abre cuando la
+            escala ya está decidida y hay algo que llevarse. */}
+        <details data-tour="css" className="rounded-lg border border-line">
+          <summary className="cursor-pointer px-4 py-3 marker:content-none">
+            <span className="text-[length:var(--fs-h3)] font-semibold text-ink">
               {tr('cssTitulo')}
-            </h2>
-            <Button variant="outline" size="sm" onClick={() => copiar('css')}>
-              {copiado === 'css' ? <CheckIcon aria-hidden="true" /> : <CopyIcon aria-hidden="true" />}
+            </span>
+            <span className="mt-0.5 block max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
+              {tr('cssRaiz')}
+            </span>
+          </summary>
+
+          <div className="grid gap-3 border-t border-line p-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => copiar('css')}
+              className="justify-self-start"
+            >
+              {copiado === 'css' ? (
+                <CheckIcon aria-hidden="true" />
+              ) : (
+                <CopyIcon aria-hidden="true" />
+              )}
               {copiado === 'css' ? tr('copiado') : tr('copiarCss')}
             </Button>
+
+            <pre className="overflow-x-auto rounded-lg border border-line bg-surface-2 p-4 font-mono text-[0.78rem] leading-relaxed text-ink">
+              <code>{css}</code>
+            </pre>
           </div>
-
-          <pre className="mt-4 overflow-x-auto rounded-lg border border-line bg-surface-2 p-4 font-mono text-[0.78rem] leading-relaxed text-ink">
-            <code>{css}</code>
-          </pre>
-
-          <p className="mt-3 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
-            {tr('cssRaiz')}
-          </p>
-        </section>
+        </details>
       </div>
     </div>
   );

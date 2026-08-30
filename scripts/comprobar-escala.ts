@@ -66,17 +66,27 @@ const base: Ajustes = {
   anchoMax: 1920,
   prefijo: 'step',
   nombres: {},
+  omitidos: [],
 };
 
 console.log('\n0. El evaluador de CSS de esta prueba es correcto');
 {
   afirmar(evaluarCss('2rem', 1000) === 32, '2rem = 32 px');
   afirmar(evaluarCss('6.4vw', 1000) === 64, '6.4vw a 1000 px = 64 px');
-  afirmar(evaluarCss('clamp(1rem, 5vw, 3rem)', 1000) === 48, 'clamp elige el término del medio cuando cabe');
+  afirmar(
+    evaluarCss('clamp(1rem, 5vw, 3rem)', 1000) === 48,
+    'clamp elige el término del medio cuando cabe'
+  );
   afirmar(evaluarCss('clamp(1rem, 5vw, 3rem)', 200) === 16, 'clamp respeta el mínimo');
   afirmar(evaluarCss('clamp(1rem, 5vw, 3rem)', 5000) === 48, 'clamp respeta el máximo');
-  afirmar(Math.abs(evaluarCss('clamp(1rem, 0.5rem + 2vw, 3rem)', 1000) - 28) < 0.001, 'suma rem y vw');
-  afirmar(Math.abs(evaluarCss('clamp(1rem, 3vw - 0.5rem, 5rem)', 1000) - 22) < 0.001, 'resta rem de vw');
+  afirmar(
+    Math.abs(evaluarCss('clamp(1rem, 0.5rem + 2vw, 3rem)', 1000) - 28) < 0.001,
+    'suma rem y vw'
+  );
+  afirmar(
+    Math.abs(evaluarCss('clamp(1rem, 3vw - 0.5rem, 5rem)', 1000) - 22) < 0.001,
+    'resta rem de vw'
+  );
 }
 
 console.log('\n1. La tabla coincide con lo que el navegador calcularía del clamp() generado');
@@ -99,23 +109,41 @@ console.log('\n2. Los extremos son exactamente el mínimo y el máximo pedidos')
 {
   const pasos = construirEscala(base);
   const p0 = pasos.find((p) => p.indice === 0)!;
-  afirmar(Math.abs(evaluarCss(p0.valor, 390) - 16) < 0.02, `en 390 px el paso 0 mide ${evaluarCss(p0.valor, 390).toFixed(2)} (pedido 16)`);
-  afirmar(Math.abs(evaluarCss(p0.valor, 1920) - 20) < 0.02, `en 1920 px el paso 0 mide ${evaluarCss(p0.valor, 1920).toFixed(2)} (pedido 20)`);
+  afirmar(
+    Math.abs(evaluarCss(p0.valor, 390) - 16) < 0.02,
+    `en 390 px el paso 0 mide ${evaluarCss(p0.valor, 390).toFixed(2)} (pedido 16)`
+  );
+  afirmar(
+    Math.abs(evaluarCss(p0.valor, 1920) - 20) < 0.02,
+    `en 1920 px el paso 0 mide ${evaluarCss(p0.valor, 1920).toFixed(2)} (pedido 20)`
+  );
   afirmar(Math.abs(evaluarCss(p0.valor, 320) - 16) < 0.02, 'por debajo del mínimo se queda fijo');
   afirmar(Math.abs(evaluarCss(p0.valor, 2560) - 20) < 0.02, 'por encima del máximo se queda fijo');
 
   const p3 = pasos.find((p) => p.indice === 3)!;
-  afirmar(Math.abs(evaluarCss(p3.valor, 390) - 16 * 1.2 ** 3) < 0.02, `el paso +3 respeta la proporción estrecha: ${evaluarCss(p3.valor, 390).toFixed(2)}`);
-  afirmar(Math.abs(evaluarCss(p3.valor, 1920) - 20 * 1.25 ** 3) < 0.02, `el paso +3 respeta la proporción ancha: ${evaluarCss(p3.valor, 1920).toFixed(2)}`);
+  afirmar(
+    Math.abs(evaluarCss(p3.valor, 390) - 16 * 1.2 ** 3) < 0.02,
+    `el paso +3 respeta la proporción estrecha: ${evaluarCss(p3.valor, 390).toFixed(2)}`
+  );
+  afirmar(
+    Math.abs(evaluarCss(p3.valor, 1920) - 20 * 1.25 ** 3) < 0.02,
+    `el paso +3 respeta la proporción ancha: ${evaluarCss(p3.valor, 1920).toFixed(2)}`
+  );
 }
 
 console.log('\n3. Los cruces se detectan cuando los hay, y no cuando no');
 {
-  afirmar(buscarCruces(construirEscala(base), base).length === 0, 'una escala sana no da ningún aviso');
+  afirmar(
+    buscarCruces(construirEscala(base), base).length === 0,
+    'una escala sana no da ningún aviso'
+  );
 
   const razonBaja: Ajustes = { ...base, razonMin: 0.9, razonMax: 0.9 };
   const cruces = buscarCruces(construirEscala(razonBaja), razonBaja);
-  afirmar(cruces.length > 0, `proporción menor que uno: ${cruces.length} avisos, el primero ${cruces[0]?.menor} contra ${cruces[0]?.mayor}`);
+  afirmar(
+    cruces.length > 0,
+    `proporción menor que uno: ${cruces.length} avisos, el primero ${cruces[0]?.menor} contra ${cruces[0]?.mayor}`
+  );
 
   const mezclada: Ajustes = { ...base, razonMin: 1.35, razonMax: 1.02 };
   const cruces2 = buscarCruces(construirEscala(mezclada), mezclada);
@@ -128,7 +156,10 @@ console.log('\n4. El CSS generado es válido');
   afirmar(css.startsWith(':root {') && css.trim().endsWith('}'), 'el bloque abre y cierra');
   afirmar((css.match(/--step-/g) || []).length === 8, 'declara los ocho pasos');
   afirmar(!/NaN|Infinity|undefined/.test(css), 'no hay NaN ni Infinity en el CSS');
-  afirmar(/rem/.test(css) && /vw/.test(css), 'cada paso lleva un término en rem, así el zoom sigue funcionando');
+  afirmar(
+    /rem/.test(css) && /vw/.test(css),
+    'cada paso lleva un término en rem, así el zoom sigue funcionando'
+  );
 }
 
 console.log('\n5. La escala real de dgoalvarez.com, evaluada con esta misma aritmética');
@@ -151,7 +182,10 @@ console.log('\n5. La escala real de dgoalvarez.com, evaluada con esta misma arit
   }
 
   const cuerpoA1360 = evaluarCss('clamp(17px, 1vw, 18.5px)', 1360);
-  afirmar(cuerpoA1360 === 17, `a 1360 px el cuerpo del portafolio sigue clavado en su mínimo (${cuerpoA1360} px)`);
+  afirmar(
+    cuerpoA1360 === 17,
+    `a 1360 px el cuerpo del portafolio sigue clavado en su mínimo (${cuerpoA1360} px)`
+  );
 }
 
 console.log('\n6. anchoParaFraccion: a qué anchura un paso casi ha terminado de crecer');
@@ -160,10 +194,16 @@ console.log('\n6. anchoParaFraccion: a qué anchura un paso casi ha terminado de
   const p0 = pasos.find((p) => p.indice === 0)!;
   const w = anchoParaFraccion(p0, 0.95, base)!;
   const enEseAncho = evaluarCss(p0.valor, w);
-  afirmar(Math.abs(enEseAncho / p0.maxPx - 0.95) < 0.01, `el paso 0 llega al 95 % (${enEseAncho.toFixed(2)} de ${p0.maxPx}) en ${w} px`);
+  afirmar(
+    Math.abs(enEseAncho / p0.maxPx - 0.95) < 0.01,
+    `el paso 0 llega al 95 % (${enEseAncho.toFixed(2)} de ${p0.maxPx}) en ${w} px`
+  );
 
   const plano = construirEscala({ ...base, baseMax: 16, razonMax: 1.2 });
-  afirmar(anchoParaFraccion(plano[0]!, 0.95, base) === null, 'un paso que no crece devuelve «no crece»');
+  afirmar(
+    anchoParaFraccion(plano[0]!, 0.95, base) === null,
+    'un paso que no crece devuelve «no crece»'
+  );
 }
 
 console.log('\n7. Los nombres de cada paso');
@@ -189,23 +229,101 @@ console.log('\n7. Los nombres de cada paso');
   const cssTw = aCss(
     construirEscala({ ...base, nombres: aplicarEsquema(tailwind, base.abajo, base.arriba) })
   );
-  afirmar(cssTw.includes('--step-base:') && cssTw.includes('--step-2xl:'), 'el esquema de Tailwind se ancla en base');
+  afirmar(
+    cssTw.includes('--step-base:') && cssTw.includes('--step-2xl:'),
+    'el esquema de Tailwind se ancla en base'
+  );
 
-  afirmar(limpiarNombre('mi nombre!! raro') === 'minombreraro', 'los nombres se limpian de lo que no vale en CSS');
+  afirmar(
+    limpiarNombre('mi nombre!! raro') === 'minombreraro',
+    'los nombres se limpian de lo que no vale en CSS'
+  );
   afirmar(limpiarNombre('a'.repeat(80)).length === 32, 'y se recortan a 32 caracteres');
   afirmar(limpiarNombre('') === '', 'un nombre vacío sigue vacío, y el paso vuelve a su número');
 
-  afirmar(buscarNombresRepetidos(construirEscala(base)).length === 0, 'la escala numérica no repite ningún nombre');
+  afirmar(
+    buscarNombresRepetidos(construirEscala(base)).length === 0,
+    'la escala numérica no repite ningún nombre'
+  );
 
   const repes = buscarNombresRepetidos(
     construirEscala({ ...base, nombres: { '0': 'title', '1': 'title' } })
   );
-  afirmar(repes.length === 1 && repes[0] === '--step-title', `dos pasos con el mismo nombre se detectan (${repes.join(', ')})`);
+  afirmar(
+    repes.length === 1 && repes[0] === '--step-title',
+    `dos pasos con el mismo nombre se detectan (${repes.join(', ')})`
+  );
 
   // Un nombre inventado en la dirección no debe poder colarse en el bloque
   // de CSS que alguien va a pegar en su proyecto.
-  const sucio = aCss(construirEscala({ ...base, nombres: { '0': limpiarNombre('x; } body { display:none') } }));
+  const sucio = aCss(
+    construirEscala({ ...base, nombres: { '0': limpiarNombre('x; } body { display:none') } })
+  );
   afirmar(!sucio.includes('display:none'), 'un nombre con CSS dentro no sobrevive a la limpieza');
+}
+
+console.log('\nSaltarse pasos');
+{
+  const tailwind = ESQUEMAS.find((e) => e.clave === 'tailwind')!;
+
+  // Lo que sale de fábrica: el esquema de Tailwind con el prefijo «text».
+  const deFabrica: Ajustes = {
+    ...base,
+    prefijo: 'text',
+    nombres: aplicarEsquema(tailwind, 2, 5),
+  };
+  const nombres = construirEscala(deFabrica).map((p) => p.nombre);
+  afirmar(
+    nombres.join(' ') ===
+      '--text-xs --text-sm --text-base --text-lg --text-xl --text-2xl --text-3xl --text-4xl',
+    `de fábrica sale la rampa de Tailwind (${nombres.join(' ')})`
+  );
+
+  // Un paso apagado sigue en la rampa pero no llega al CSS. Es la mitad de
+  // la función: se ve el hueco, pero no se puede usar por accidente.
+  const conSalto: Ajustes = { ...deFabrica, omitidos: [2] };
+  const pasosConSalto = construirEscala(conSalto);
+  afirmar(
+    pasosConSalto.length === 8 && pasosConSalto.some((p) => p.omitido),
+    'el paso apagado se queda en la rampa'
+  );
+
+  const css = aCss(pasosConSalto);
+  afirmar(
+    (css.match(/--text-/g) || []).length === 7,
+    `el CSS declara 7 variables y no 8 (${(css.match(/--text-/g) || []).length})`
+  );
+
+  // Y la otra mitad, que es la que hace útil la función: los nombres se
+  // corren para no dejar hueco. Saltarse el +2 no deja «lg» y luego
+  // «3xl»; los que quedan siguen siendo lg, xl, 2xl, 3xl seguidos.
+  const repartidos = aplicarEsquema(tailwind, 2, 5, [2]);
+  const arribaSeguidos = [1, 3, 4, 5].map((i) => repartidos[String(i)]);
+  afirmar(
+    arribaSeguidos.join(' ') === 'lg xl 2xl 3xl',
+    `los nombres que quedan siguen seguidos (${arribaSeguidos.join(' ')})`
+  );
+  afirmar(repartidos['2'] === undefined, 'y el apagado no se lleva ninguno');
+
+  const negativos = aplicarEsquema(tailwind, 2, 5, [-1]);
+  afirmar(negativos['-2'] === 'sm', 'lo mismo hacia abajo');
+
+  // Un cruce con un paso apagado no es un cruce: no llega al CSS.
+  const invertida: Ajustes = { ...base, razonMin: 0.9, razonMax: 0.9, arriba: 2, abajo: 0 };
+  afirmar(
+    buscarCruces(construirEscala(invertida), invertida).length > 0,
+    'una escala invertida sí cruza'
+  );
+  const todoApagado: Ajustes = { ...invertida, omitidos: [1, 2] };
+  afirmar(
+    buscarCruces(construirEscala(todoApagado), todoApagado).length === 0,
+    'y apagar los pasos que cruzan quita el aviso'
+  );
+
+  const repesApagadas = buscarNombresRepetidos(
+    construirEscala({ ...base, nombres: { '0': 'title', '1': 'title' }, omitidos: [1] })
+  );
+  afirmar(repesApagadas.length === 0, 'dos nombres iguales no chocan si uno está apagado');
 }
 
 console.log(fallos === 0 ? '\nTODO CORRECTO\n' : `\n${fallos} FALLOS\n`);

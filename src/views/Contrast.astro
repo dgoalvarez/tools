@@ -7,16 +7,14 @@
  * defecto— así que la hidratación no encuentra ninguna diferencia; lo que
  * venga en el enlace se aplica justo después.
  *
- * Lo que explica la herramienta se pliega en el «¿Cómo funciona?». La nota
- * de que APCA todavía no se puede citar como cumplimiento vive ahí y no
- * pegada al número: no cambia lo que hay que hacer con este color, cambia
- * lo que se puede decir en una auditoría.
+ * Lo que explica la herramienta lo cuenta el paso a paso del botón «?»,
+ * señalando cada control. Ahí va también la nota de que APCA todavía no se
+ * puede citar como cumplimiento: no cambia lo que hay que hacer con este
+ * color, cambia lo que se puede decir en una auditoría.
  */
 import Tool from '../layouts/Tool.astro';
 import Contrast from '../islands/Contrast';
-import ComoFunciona from '../components/ComoFunciona.astro';
 import { UI } from '../i18n/ui';
-import { CONTRASTE } from '../i18n/contrast';
 import { t, type Lang } from '../i18n/config';
 
 interface Props {
@@ -36,26 +34,4 @@ const { lang } = Astro.props;
       {t(UI.sinJs, lang)}
     </p>
   </noscript>
-
-  <ComoFunciona lang={lang}>
-    <div>
-      <h3>{t(CONTRASTE.dosFormasTitulo, lang)}</h3>
-      <p class="mt-1">{t(CONTRASTE.dosFormasCuerpo, lang)}</p>
-    </div>
-
-    <div>
-      <h3>{t(CONTRASTE.apcaEtiqueta, lang)}</h3>
-      <p class="mt-1">{t(CONTRASTE.apcaNoEsNorma, lang)}</p>
-    </div>
-
-    <div>
-      <h3>{t(CONTRASTE.textoGrande, lang)}</h3>
-      <p class="mt-1">{t(CONTRASTE.textoGrandePor, lang)}</p>
-    </div>
-
-    <div>
-      <h3>{t(CONTRASTE.numerosTitulo, lang)}</h3>
-      <p class="mt-1">{t(CONTRASTE.numerosCuerpo, lang)}</p>
-    </div>
-  </ComoFunciona>
 </Tool>

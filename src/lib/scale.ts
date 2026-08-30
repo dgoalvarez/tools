@@ -36,6 +36,16 @@ export interface Ajustes {
   /** Lo que va delante de cada nombre: «step» produce --step-0, --step-1… */
   prefijo: string;
   /**
+   * Los pasos apagados, por su número.
+   *
+   * Existe porque en una rampa de verdad casi nunca se usan todos los
+   * pasos: se salta uno para que el salto entre dos titulares sea mayor.
+   * Un paso apagado se queda a la vista en la rampa —hay que poder ver el
+   * hueco que se abrió— pero no sale ni en el CSS ni en la tabla, y no
+   * consume nombre del esquema.
+   */
+  omitidos: number[];
+  /**
    * El nombre propio de un paso, si lo tiene, indexado por su número como
    * texto. Los pasos sin nombre propio se quedan con su número.
    *
@@ -91,19 +101,44 @@ export function limpiarNombre(bruto: string): string {
 }
 
 /** Aplica un esquema a todos los pasos de una escala. */
-export function aplicarEsquema(esquema: Esquema, abajo: number, arriba: number) {
+/**
+ * Reparte los nombres de un esquema entre los pasos.
+ *
+ * Los apagados no consumen nombre, y ese detalle es el que hace útil la
+ * función de saltarse pasos: si te saltas el +2 con el esquema de
+ * Tailwind, el siguiente que queda es `--text-2xl`, no `--text-3xl`. Si
+ * consumiera, saltarse un paso dejaría un hueco en la nomenclatura y
+ * habría que renombrarlo todo a mano.
+ *
+ * Se cuenta desde el 0 hacia fuera, en las dos direcciones.
+ */
+export function aplicarEsquema(
+  esquema: Esquema,
+  abajo: number,
+  arriba: number,
+  omitidos: number[] = []
+) {
   const nombres: Record<string, string> = {};
   if (esquema.clave === 'numerico') return nombres;
 
-  nombres['0'] = esquema.base;
+  const apagado = new Set(omitidos);
+
+  if (!apagado.has(0)) nombres['0'] = esquema.base;
+
+  let siguiente = 0;
   for (let i = 1; i <= arriba; i++) {
-    const nombre = esquema.arriba[i - 1];
+    if (apagado.has(i)) continue;
+    const nombre = esquema.arriba[siguiente++];
     if (nombre) nombres[String(i)] = nombre;
   }
+
+  siguiente = 0;
   for (let i = 1; i <= abajo; i++) {
-    const nombre = esquema.abajo[i - 1];
+    if (apagado.has(-i)) continue;
+    const nombre = esquema.abajo[siguiente++];
     if (nombre) nombres[String(-i)] = nombre;
   }
+
   return nombres;
 }
 
@@ -118,6 +153,8 @@ export interface Paso {
   valor: string;
   /** Los píxeles a cada anchura de ANCHOS_TABLA, en el mismo orden. */
   enTabla: number[];
+  /** Apagado: se ve en la rampa, pero no sale ni en el CSS ni en la tabla. */
+  omitido: boolean;
 }
 
 /**
@@ -197,6 +234,7 @@ export function construirEscala(ajustes: Ajustes): Paso[] {
       maxPx,
       valor,
       enTabla: [],
+      omitido: ajustes.omitidos.includes(i),
     };
 
     paso.enTabla = ANCHOS_TABLA.map((ancho) => tamanoEn(paso, ancho, ajustes));
@@ -225,7 +263,13 @@ export interface Cruce {
  * entonces la jerarquía se rompe a ciertas anchuras y no a otras, que es la
  * clase de fallo que nadie ve hasta que está publicado.
  */
-export function buscarCruces(pasos: Paso[], ajustes: Ajustes): Cruce[] {
+export function buscarCruces(todos: Paso[], ajustes: Ajustes): Cruce[] {
+  // Los apagados no se comparan: un cruce con un paso que no se va a usar
+  // no es un problema, y avisar de él sería un aviso falso. Comparar los
+  // que quedan entre sí, en cambio, sí importa: al saltarse uno cambian
+  // los vecinos.
+  const pasos = todos.filter((p) => !p.omitido);
+
   const anchos = [
     ajustes.anchoMin,
     ...ANCHOS_TABLA,
@@ -285,6 +329,9 @@ export function buscarNombresRepetidos(pasos: Paso[]): string[] {
   const repetidos = new Set<string>();
 
   for (const paso of pasos) {
+    // Dos apagados pueden llamarse igual sin consecuencias: ninguno de los
+    // dos llega al CSS.
+    if (paso.omitido) continue;
     if (vistos.has(paso.nombre)) repetidos.add(paso.nombre);
     vistos.add(paso.nombre);
   }
@@ -296,8 +343,13 @@ export function buscarNombresRepetidos(pasos: Paso[]): string[] {
 
 /** El bloque listo para pegar en una hoja de estilos. */
 export function aCss(pasos: Paso[]): string {
-  const ancho = Math.max(...pasos.map((p) => p.nombre.length));
-  const lineas = pasos.map((p) => `  ${(p.nombre + ':').padEnd(ancho + 1)} ${p.valor};`);
+  // Solo los encendidos: un paso apagado es un paso que se ha decidido no
+  // usar, y emitir su variable sería invitar a usarlo.
+  const vivos = pasos.filter((p) => !p.omitido);
+  if (!vivos.length) return ':root {\n}';
+
+  const ancho = Math.max(...vivos.map((p) => p.nombre.length));
+  const lineas = vivos.map((p) => `  ${(p.nombre + ':').padEnd(ancho + 1)} ${p.valor};`);
   return `:root {\n${lineas.join('\n')}\n}`;
 }
 

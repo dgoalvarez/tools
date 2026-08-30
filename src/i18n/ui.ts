@@ -37,6 +37,8 @@ export const UI = {
   /** El rótulo de la herramienta que está abierta, fijada arriba de la barra. */
   abierta: { es: 'Abierta', en: 'Open' },
   cerrar: { es: 'Cerrar', en: 'Close' },
+  /** El cuarto elemento de la barra de móvil: abre el lanzador. */
+  mas: { es: 'Más', en: 'More' },
 
   // ---------- Portada ----------
   homeIntro: {
@@ -70,6 +72,13 @@ export const UI = {
    * tiene quien lo abriría, en vez de anunciar una sección.
    */
   comoFunciona: { es: '¿Cómo funciona?', en: 'How does it work?' },
+  /** Los botones del paso a paso. Van aquí porque los pone driver.js. */
+  tourSiguiente: { es: 'Siguiente', en: 'Next' },
+  tourAtras: { es: 'Atrás', en: 'Back' },
+  tourFin: { es: 'Listo', en: 'Done' },
+  tourSaltar: { es: 'Saltar', en: 'Skip' },
+  /** driver.js sustituye {{current}} y {{total}}. */
+  tourProgreso: { es: '{{current}} de {{total}}', en: '{{current}} of {{total}}' },
 
   // ---------- Sin JavaScript ----------
   sinJs: {

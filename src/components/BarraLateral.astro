@@ -42,9 +42,20 @@ const grupos = ORDEN_AMBITOS.map((ambito) => ({
 ---
 
 <nav class="barra-lateral" aria-label={t(UI.navTools, lang)}>
-  <a href={route('home', lang)} class="barra-marca hover:text-[var(--acento)]">
-    <Marca />
-  </a>
+  {/* La marca a la izquierda y el buscador a la derecha: cada uno en su
+      borde, que es lo que hace que la fila se lea como dos cosas y no
+      como una. */}
+  <div class="barra-marca">
+    <a href={route('home', lang)} class="hover:text-[var(--acento)]">
+      <Marca />
+    </a>
+
+    {/* Sin JavaScript este botón no abriría nada, así que nace oculto y
+        es el script quien lo enseña. */}
+    <button type="button" class="pastilla cursor-pointer" data-bento hidden>
+      <Icono nombre="lupa" tamano={16} titulo={t(UI.verTodas, lang)} />
+    </button>
+  </div>
 
   <div class="barra-lista">
     <p class="barra-grupo">{t(UI.abierta, lang)}</p>
@@ -76,6 +87,16 @@ const grupos = ORDEN_AMBITOS.map((ambito) => ({
         </>
       ))
     }
+
+    {/* En móvil la barra es una fila de iconos abajo y no caben ni la
+        marca ni el pie, así que idioma y tema se quedarían fuera de
+        alcance. Este «Más» abre el lanzador, que los lleva dentro. */}
+    <button type="button" class="barra-item solo-movil cursor-pointer" data-bento hidden>
+      <span class="icono"><Icono nombre="mas" tamano={19} /></span>
+      <span class="min-w-0">
+        <span class="nombre">{t(UI.mas, lang)}</span>
+      </span>
+    </button>
   </div>
 
   <div class="barra-pie">
@@ -90,11 +111,5 @@ const grupos = ORDEN_AMBITOS.map((ambito) => ({
     </a>
 
     <ThemeToggle client:load toDark={t(UI.toDarkMode, lang)} toLight={t(UI.toLightMode, lang)} />
-
-    {/* Sin JavaScript este botón no haría nada, así que nace oculto y es
-        el script quien lo enseña. */}
-    <button type="button" class="pastilla ml-auto cursor-pointer" data-bento hidden>
-      <Icono nombre="lupa" tamano={16} titulo={t(UI.verTodas, lang)} />
-    </button>
   </div>
 </nav>

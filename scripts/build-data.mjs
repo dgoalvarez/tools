@@ -36,7 +36,15 @@
  * bajar.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
+import {
+  createReadStream,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+  statSync,
+} from 'node:fs';
+import { createInterface } from 'node:readline';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -53,6 +61,12 @@ const FUENTES = [
   {
     archivo: 'admin1CodesASCII.txt',
     url: 'https://download.geonames.org/export/dump/admin1CodesASCII.txt',
+  },
+  // 203 MB comprimido, 780 MB en disco. Solo hace falta aquí y solo se
+  // baja una vez: al repositorio entra el JSON, no esto.
+  {
+    archivo: 'alternateNamesV2.zip',
+    url: 'https://download.geonames.org/export/dump/alternateNamesV2.zip',
   },
 ];
 
@@ -79,6 +93,70 @@ function descargar() {
   // `unzip` viene con git en Windows y con el sistema en macOS y Linux.
   execFileSync('unzip', ['-o', '-q', join(cache, 'cities500.zip'), '-d', cache]);
   execFileSync('unzip', ['-o', '-q', join(cache, 'US.zip'), '-d', join(cache, 'zip')]);
+  if (!existsSync(join(cache, 'alternateNamesV2.txt'))) {
+    execFileSync('unzip', ['-o', '-q', join(cache, 'alternateNamesV2.zip'), '-d', cache]);
+  }
+}
+
+/**
+ * Los nombres en español y en inglés de los lugares que nos interesan.
+ *
+ * El volcado son 19 millones de filas y 780 MB, así que se lee línea a
+ * línea. Un readFileSync de esto revienta el heap de Node antes de llegar
+ * a la mitad.
+ *
+ * De las varias formas que puede tener un nombre en un idioma se elige
+ * una: primero la marcada como preferida, luego la corta, y si no hay
+ * ninguna de las dos, la primera que aparezca. Se descartan las
+ * históricas y las coloquiales, que son las que traen «Constantinopla».
+ */
+async function leerNombresAlternos(ids) {
+  const mejores = new Map();
+  let filas = 0;
+
+  const lector = createInterface({
+    input: createReadStream(join(cache, 'alternateNamesV2.txt')),
+    crlfDelay: Infinity,
+  });
+
+  for await (const linea of lector) {
+    filas++;
+    const f = linea.split('\t');
+
+    const idioma = f[2];
+    if (idioma !== 'es' && idioma !== 'en') continue;
+    if (!ids.has(f[1])) continue;
+    // 6 es coloquial y 7 es histórico.
+    if (f[6] === '1' || f[7] === '1') continue;
+
+    const valor = f[3];
+    if (!valor) continue;
+
+    // 4 es «preferido» y 5 es «corto». Cuanto menor, mejor.
+    const rango = f[4] === '1' ? 0 : f[5] === '1' ? 1 : 2;
+
+    const clave = `${f[1]}|${idioma}`;
+    const previo = mejores.get(clave);
+    if (!previo || rango < previo.rango) mejores.set(clave, { valor, rango });
+  }
+
+  console.log(`  ${filas.toLocaleString('es')} nombres alternativos leídos`);
+  return mejores;
+}
+
+/**
+ * El nombre de un lugar en un idioma, o cadena vacía.
+ *
+ * Vacía cuando lo que hay es exactamente el mismo nombre de siempre:
+ * guardar «Madrid» dos veces son bytes que alguien descarga para nada.
+ *
+ * La comparación es exacta y no sin tildes, y la diferencia importa:
+ * «Múnich» y «Munich» se buscan igual, pero no se escriben igual, y una
+ * página en español tiene que poder escribirlo bien.
+ */
+function traducido(alternos, id, idioma, original) {
+  const encontrado = alternos.get(`${id}|${idioma}`)?.valor ?? '';
+  return encontrado === original ? '' : encontrado;
 }
 
 /** Lee un archivo separado por tabuladores, saltándose comentarios. */
@@ -91,7 +169,27 @@ function leerTsv(ruta) {
 
 // ---------------------------------------------------------------- ciudades
 
-function construirCiudades(lugares, regiones) {
+/**
+ * Las ciudades que se publican, y los geonameid cuyo nombre traducido hay
+ * que ir a buscar: los de esas ciudades y los de sus regiones.
+ *
+ * Se separa de `construirCiudades` porque hace falta saber *qué* buscar
+ * antes de leer los 780 MB de nombres alternativos, y no después.
+ */
+function seleccionar(lugares, regiones) {
+  const elegidas = lugares.filter((f) => Number(f[14]) >= POBLACION_MINIMA && f[17]);
+  const ids = new Set();
+
+  for (const f of elegidas) {
+    ids.add(f[0]);
+    const region = regiones.get(`${f[8]}.${f[10]}`);
+    if (region) ids.add(region.id);
+  }
+
+  return { elegidas, ids };
+}
+
+function construirCiudades(elegidas, regiones, alternos) {
   // Los nombres de zona y de región se repiten miles de veces —«California»
   // aparece en cientos de filas— así que se guardan una sola vez y cada
   // ciudad apunta a su posición. Es la diferencia entre medio mega y algo
@@ -101,24 +199,32 @@ function construirCiudades(lugares, regiones) {
   const indiceZona = new Map();
   const indiceRegion = new Map();
 
-  const internar = (lista, indice, valor) => {
+  const internar = (lista, indice, valor, construir) => {
     if (!indice.has(valor)) {
       indice.set(valor, lista.length);
-      lista.push(valor);
+      lista.push(construir());
     }
     return indice.get(valor);
   };
 
-  const idDeZona = (zona) => internar(zonas, indiceZona, zona);
-  const idDeRegion = (region) => internar(nombresRegion, indiceRegion, region);
+  const idDeZona = (zona) => internar(zonas, indiceZona, zona, () => zona);
 
-  const ciudades = lugares
-    .filter((f) => Number(f[14]) >= POBLACION_MINIMA && f[17])
+  /** Cada región se guarda una vez, con sus dos traducciones al lado. */
+  const idDeRegion = (codigo) => {
+    const region = regiones.get(codigo);
+    const nombre = region?.nombre ?? '';
+    return internar(nombresRegion, indiceRegion, codigo, () => [
+      nombre,
+      region ? traducido(alternos, region.id, 'es', nombre) : '',
+      region ? traducido(alternos, region.id, 'en', nombre) : '',
+    ]);
+  };
+
+  const ciudades = elegidas
     .map((f) => {
       const nombre = f[1];
       const ascii = f[2];
       const pais = f[8];
-      const region = regiones.get(`${pais}.${f[10]}`) ?? '';
       return [
         nombre,
         // El nombre sin tildes solo se guarda cuando aporta algo: es lo que
@@ -126,16 +232,21 @@ function construirCiudades(lugares, regiones) {
         // tenga que acertar con los acentos.
         ascii && ascii !== nombre ? ascii : '',
         pais,
-        idDeRegion(region),
+        idDeRegion(`${pais}.${f[10]}`),
         idDeZona(f[17]),
+        // El nombre en cada idioma, y vacío cuando es el de siempre.
+        // «Londres» tiene que encontrar London, y una página en español
+        // tiene que poder escribir «Londres» y no «London».
+        traducido(alternos, f[0], 'es', nombre),
+        traducido(alternos, f[0], 'en', nombre),
         Number(f[14]),
       ];
     })
     // Por población: quien escribe «san» quiere San Francisco antes que San
     // Pedro de Macorís. Se ordena aquí y luego se tira la cifra: el orden
     // del array ya es la respuesta, y son 90 KB menos.
-    .sort((a, b) => b[5] - a[5])
-    .map((c) => c.slice(0, 5));
+    .sort((a, b) => b[7] - a[7])
+    .map((c) => c.slice(0, 7));
 
   return { zonas, regiones: nombresRegion, ciudades };
 }
@@ -250,16 +361,28 @@ descargar();
 console.log('\nLeyendo…');
 const lugares = leerTsv(join(cache, 'cities500.txt'));
 const codigosPostales = leerTsv(join(cache, 'zip', 'US.txt'));
-const regiones = new Map(leerTsv(join(cache, 'admin1CodesASCII.txt')).map((f) => [f[0], f[1]]));
+// El nombre y el geonameid: el nombre para enseñarlo y el identificador
+// para poder buscar cómo se dice en el otro idioma.
+const regiones = new Map(
+  leerTsv(join(cache, 'admin1CodesASCII.txt')).map((f) => [f[0], { nombre: f[1], id: f[3] }])
+);
 console.log(`  ${lugares.length.toLocaleString('es')} lugares poblados`);
 console.log(`  ${codigosPostales.length.toLocaleString('es')} códigos postales`);
+
+const { elegidas, ids } = seleccionar(lugares, regiones);
+console.log(`\nNombres en español y en inglés (${ids.size.toLocaleString('es')} lugares)…`);
+const alternos = await leerNombresAlternos(ids);
 
 const generado = new Date().toISOString().slice(0, 10);
 const atribucion = 'GeoNames (https://www.geonames.org), CC BY 4.0';
 
 mkdirSync(salida, { recursive: true });
 
-const { zonas, regiones: nombresRegion, ciudades } = construirCiudades(lugares, regiones);
+const {
+  zonas,
+  regiones: nombresRegion,
+  ciudades,
+} = construirCiudades(elegidas, regiones, alternos);
 const ciudadesJson = JSON.stringify({
   generado,
   fuente: atribucion,
@@ -274,13 +397,23 @@ const zipsJson = JSON.stringify({ generado, fuente: atribucion, prefijos, excepc
 writeFileSync(join(salida, 'zips.json'), zipsJson);
 
 console.log('\nCiudades');
-console.log(`  ${ciudades.length.toLocaleString('es')} con más de ${POBLACION_MINIMA.toLocaleString('es')} habitantes`);
+console.log(
+  `  ${ciudades.length.toLocaleString('es')} con más de ${POBLACION_MINIMA.toLocaleString('es')} habitantes`
+);
 console.log(`  ${zonas.length} zonas horarias distintas`);
+console.log(
+  `  ${ciudades.filter((c) => c[5]).length.toLocaleString('es')} con nombre propio en español`
+);
+console.log(
+  `  ${ciudades.filter((c) => c[6]).length.toLocaleString('es')} con nombre propio en inglés`
+);
 console.log(`  ${(ciudadesJson.length / 1024).toFixed(0)} KB sin comprimir`);
 
 console.log('\nCódigos postales');
 console.log(`  ${resumen.codigos.toLocaleString('es')} resueltos`);
-console.log(`  ${resumen.porCondado.toLocaleString('es')} por su condado, ${resumen.porCercania.toLocaleString('es')} por el lugar más cercano`);
+console.log(
+  `  ${resumen.porCondado.toLocaleString('es')} por su condado, ${resumen.porCercania.toLocaleString('es')} por el lugar más cercano`
+);
 console.log(`  ${resumen.condadosPartidos} condados que la frontera horaria parte por la mitad`);
 console.log(`  ${resumen.prefijos} prefijos + ${resumen.excepciones} excepciones`);
 console.log(`  ${(zipsJson.length / 1024).toFixed(0)} KB sin comprimir`);

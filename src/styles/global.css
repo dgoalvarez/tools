@@ -342,9 +342,13 @@
     padding-inline-start: var(--barra);
   }
 
+  /* Marca a la izquierda, buscador a la derecha. Cada uno en su borde:
+     con los dos pegados al mismo lado la fila parecía una sola pieza. */
   .barra-marca {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
     min-height: 3.75rem;
     padding-inline: 1.25rem;
     border-block-end: 1px solid var(--line);
@@ -439,8 +443,11 @@
     background: var(--line);
   }
 
+  /* Lo mismo abajo: el idioma a la izquierda, el tema a la derecha. */
   .barra-pie {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 0.4375rem;
     padding: 0.6875rem 0.875rem;
     border-block-start: 1px solid var(--line);
@@ -546,6 +553,11 @@
       color: var(--acento);
     }
 
+    /* La fila de la marca y la del pie no caben en 4,25 rem de alto, así
+       que en móvil no se enseñan. Lo que llevaban —buscador, idioma y
+       tema— no desaparece: se va al «Más» de la barra, que abre el
+       lanzador. Sin eso, dentro de una herramienta y en un móvil no había
+       forma de cambiar de idioma ni de tema. */
     .barra-marca,
     .barra-grupo,
     .barra-corte,
@@ -555,10 +567,27 @@
       display: none;
     }
 
+    .solo-movil {
+      display: flex;
+    }
+
+    /* Sin esto, el «Más» aparecería aunque el JavaScript no haya llegado a
+       quitarle el `hidden`: una regla de autor gana siempre a la hoja del
+       navegador, y `display: flex` habría tapado su `display: none`. Un
+       botón que se ve y no responde es peor que uno que no está. */
+    .solo-movil[hidden] {
+      display: none;
+    }
+
     .con-barra {
       padding-inline-start: 0;
       padding-block-end: calc(var(--barra-movil) + 0.5rem);
     }
+  }
+
+  /* Se enseña solo donde la barra es una fila de iconos abajo. */
+  .solo-movil {
+    display: none;
   }
 
   /* ---------- El lanzador ---------- */
@@ -615,24 +644,32 @@
     -webkit-appearance: none;
     width: 100%;
     height: 1.5rem;
-    background: transparent;
     cursor: pointer;
+
+    /* Ni fondo ni degradado en el propio input.
+       Antes el componente ponía el degradado en línea sobre el <input> y
+       el carril lo heredaba. El efecto secundario era que el degradado
+       pintaba también la caja del input —que es un rectángulo sin
+       redondear— y asomaba por fuera de las cuatro esquinas del carril.
+       Ahora el degradado viaja como --degradado y solo lo pinta el
+       carril, que es el único con las esquinas puestas. */
+    background: none;
   }
 
-  /* El carril hereda el degradado que el componente pone en el propio
-     input; así el color vive en un solo sitio. */
   .barra-color::-webkit-slider-runnable-track {
+    box-sizing: border-box;
     height: 1.25rem;
     border: 1px solid var(--line);
     border-radius: 999px;
-    background: inherit;
+    background-image: var(--degradado);
   }
 
   .barra-color::-moz-range-track {
+    box-sizing: border-box;
     height: 1.25rem;
     border: 1px solid var(--line);
     border-radius: 999px;
-    background: inherit;
+    background-image: var(--degradado);
   }
 
   /* El tirador lleva un borde oscuro y un halo del color de fondo para que
@@ -640,9 +677,12 @@
   .barra-color::-webkit-slider-thumb {
     appearance: none;
     -webkit-appearance: none;
-    width: 1rem;
-    height: 1rem;
-    margin-top: 0.125rem;
+    box-sizing: border-box;
+    width: 1.375rem;
+    height: 1.375rem;
+    /* Sobresale 1 px por arriba y por abajo del carril: es lo que hace que
+       se lea como un tirador encima y no como un trozo del carril. */
+    margin-top: -0.0625rem;
     border: 2px solid var(--ink);
     border-radius: 999px;
     background: var(--bg);
@@ -650,8 +690,9 @@
   }
 
   .barra-color::-moz-range-thumb {
-    width: 1rem;
-    height: 1rem;
+    box-sizing: border-box;
+    width: 1.375rem;
+    height: 1.375rem;
     border: 2px solid var(--ink);
     border-radius: 999px;
     background: var(--bg);
@@ -668,8 +709,11 @@
      Son radios de verdad. Las flechas del teclado ya recorren un grupo de
      radios sin ayuda, que es justo el comportamiento que pide la norma
      para un conmutador de pestañas. */
+  /* Ocupa el ancho de la tarjeta y reparte: media pestaña suelta a la
+     izquierda parecía un resto, no un control. */
   .segmento {
-    display: inline-flex;
+    display: flex;
+    width: 100%;
     padding: 0.1875rem;
     border: 1px solid var(--line);
     border-radius: var(--radius);
@@ -677,7 +721,9 @@
   }
 
   .segmento label {
-    padding: 0.25rem 0.625rem;
+    flex: 1;
+    text-align: center;
+    padding: 0.3125rem 0.625rem;
     border-radius: calc(var(--radius) * 0.7);
     font-size: 0.75rem;
     font-weight: 500;
@@ -709,5 +755,220 @@
   .segmento label:has(input:focus-visible) {
     outline: 2px solid var(--brand);
     outline-offset: 1px;
+  }
+}
+
+/* ============================================================
+   La tarjeta de controles
+
+   La pauta: todo lo que se toca va dentro de una tarjeta. Antes solo el
+   selector de color la tenía y el resto flotaba sobre el fondo, y la
+   consecuencia no era estética: no se veía dónde acababa un grupo de
+   ajustes y empezaba el siguiente.
+
+   Está aquí y no en cada isla a propósito. Una herramienta nueva escribe
+   `class="tarjeta-control"` y ya está dentro de la pauta, sin tener que
+   copiar seis clases de utilidad y sin poder equivocarse en una.
+
+   En un móvil la tarjeta se desmonta. El borde y el relleno cuestan
+   ancho, y ahí el ancho es lo que falta; lo que separa los grupos pasa a
+   ser una línea, que cuesta un píxel.
+   ============================================================ */
+
+@layer components {
+  .tarjeta-control {
+    display: grid;
+    gap: 0.8125rem;
+    padding: 1.0625rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background: var(--surface);
+  }
+
+  /* El título de un grupo.
+     Es un <p> y no el <legend> del fieldset a propósito: un legend dentro
+     de un contenedor de rejilla no es un hijo de la rejilla, y los
+     navegadores lo pintan por su cuenta encima de la caja. El nombre
+     accesible del grupo sigue estando en el legend, que se queda en
+     `sr-only`; esto es solo lo que se ve. */
+  .tarjeta-control .titulo {
+    margin: 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  @media (width < 48rem) {
+    .tarjeta-control {
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: none;
+    }
+
+    .tarjeta-control + .tarjeta-control {
+      padding-block-start: 1.25rem;
+      border-block-start: 1px solid var(--line);
+    }
+  }
+}
+
+/* ============================================================
+   El cuadro de color
+
+   La cuarta forma de elegir un color, y la única que no es una barra: el
+   cuadrado de saturación y brillo con el tono debajo. Es el selector de
+   cualquier herramienta de diseño, y está aquí porque mucha gente lo
+   reconoce antes que a tres barras con nombres de canal.
+
+   No sustituye a las barras. Un cuadrado de dos dimensiones no se
+   explora bien con un lector de pantalla por mucho ARIA que lleve, así
+   que OKLCH, RGB y HSL se quedan: ese es el camino completo, y esto es
+   el atajo cómodo.
+   ============================================================ */
+
+@layer components {
+  .plano-color {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1.9;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    cursor: crosshair;
+    touch-action: none;
+
+    /* Blanco → color por la horizontal, transparente → negro por la
+       vertical. El tono lo pone --tono en línea. */
+    background-image:
+      linear-gradient(to top, #000, transparent),
+      linear-gradient(to right, #fff, transparent);
+    background-color: var(--tono);
+  }
+
+  .plano-color:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  /* El puntero: dos anillos, uno claro y otro oscuro, para que se vea
+     igual sobre la esquina blanca y sobre la negra. */
+  .plano-color .puntero {
+    position: absolute;
+    width: 1rem;
+    height: 1rem;
+    margin: -0.5rem 0 0 -0.5rem;
+    border: 2px solid #fff;
+    border-radius: 999px;
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.55);
+    pointer-events: none;
+  }
+}
+
+/* ============================================================
+   El paso a paso
+
+   driver.js trae su propia hoja de estilos, y trae un blanco fijo, un
+   texto casi negro y la tipografía del sistema. En modo oscuro eso es una
+   tarjeta blanca en mitad de la pantalla, y en cualquier modo es una
+   pieza que no se parece al resto del sitio.
+
+   Aquí se le viste con los tokens de casa. Los selectores llevan dos
+   clases —`.driver-popover.tour-dgo`— a propósito: su hoja se inyecta en
+   el momento de abrir el paso a paso, o sea DESPUÉS de esta, y ganaría
+   por orden si compitieran con la misma especificidad. Con dos clases
+   contra una, gana esta pase lo que pase.
+   ============================================================ */
+
+@layer components {
+  .driver-popover.tour-dgo {
+    max-width: 22rem;
+    padding: 1.125rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background-color: var(--surface);
+    color: var(--ink);
+    font-family: inherit;
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.22);
+  }
+
+  .driver-popover.tour-dgo .driver-popover-title {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    /* Sitio para el «Saltar», que va absoluto arriba a la derecha. */
+    padding-inline-end: 4.5rem;
+  }
+
+  .driver-popover.tour-dgo .driver-popover-description {
+    margin-block-start: 0.4375rem;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: var(--ink-muted);
+  }
+
+  .driver-popover.tour-dgo .driver-popover-arrow {
+    border-color: var(--surface);
+  }
+
+  .driver-popover.tour-dgo .driver-popover-progress-text {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* «Saltar» lleva su palabra en vez de una aspa, así que necesita el
+     ancho de una palabra y no el de un icono. */
+  .driver-popover.tour-dgo .driver-popover-close-btn {
+    inset: 0.875rem 1.125rem auto auto;
+    width: auto;
+    height: auto;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .driver-popover.tour-dgo .driver-popover-close-btn:hover,
+  .driver-popover.tour-dgo .driver-popover-close-btn:focus-visible {
+    color: var(--ink);
+  }
+
+  .driver-popover.tour-dgo .driver-popover-footer {
+    margin-block-start: 1.125rem;
+  }
+
+  .driver-popover.tour-dgo .driver-popover-footer-btn {
+    min-height: 2rem;
+    padding: 0.25rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background-color: var(--surface);
+    color: var(--ink-muted);
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  .driver-popover.tour-dgo .driver-popover-footer-btn:hover {
+    background-color: var(--surface-2);
+    color: var(--ink);
+  }
+
+  /* El de avanzar manda: es el que se pulsa siete veces seguidas. */
+  .driver-popover.tour-dgo .driver-popover-next-btn {
+    border-color: var(--acento);
+    background-color: var(--acento);
+    color: var(--brand-ink);
+  }
+
+  .driver-popover.tour-dgo .driver-popover-next-btn:hover {
+    background-color: color-mix(in srgb, var(--acento) 85%, var(--ink));
+    color: var(--brand-ink);
+  }
+
+  .driver-popover.tour-dgo :is(button):focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
   }
 }

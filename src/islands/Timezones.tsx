@@ -12,7 +12,7 @@
  * códigos postales se descargan solo cuando alguien los usa.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckIcon, ClockIcon, CopyIcon, MapPinIcon, XIcon } from '@phosphor-icons/react';
+import { CheckIcon, CopyIcon, MapPinIcon, TrashIcon, XIcon } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,9 +23,11 @@ import BuscadorLugar, { type TextosBuscador } from './BuscadorLugar';
 import {
   componerFrase,
   convertir,
+  nombreDePais,
   nombreDeZona,
   obtenerTemporal,
   zonaDelNavegador,
+  type Coincidencia,
   type DatosCiudades,
   type DatosZips,
   type Destino,
@@ -44,13 +46,11 @@ interface Props {
 }
 
 /**
- * La fecha y la hora de este momento.
+ * La fecha y la hora de este momento: con lo que arranca la herramienta.
  *
- * Antes esto redondeaba a la media hora siguiente, pensando en que las
- * citas se ponen en horas redondas. El resultado era que pulsar «Ahora» a
- * las 10:15 escribía 10:30, y nadie entendía qué había hecho el botón. Un
- * botón que se llama «Ahora» pone «ahora»; redondear, si alguien quiere,
- * lo hace escribiendo.
+ * Hubo un botón «Ahora» que volvía aquí. Se ha quitado: los campos ya
+ * nacen con la hora actual, así que el botón solo hacía algo después de
+ * haberla cambiado a mano, y entonces no se entendía qué hacía.
  */
 function ahoraMismo() {
   const d = new Date();
@@ -118,11 +118,22 @@ export default function Timezones({ lang }: Props) {
 
   // ---------- añadir y quitar ----------
 
-  function anadirDestino(etiqueta: string, zona: string) {
+  function anadirDestino(c: Coincidencia) {
     setDestinos((previos) =>
-      previos.some((d) => d.zona === zona && d.etiqueta === etiqueta)
+      previos.some((d) => d.zona === c.zona && d.etiqueta === c.etiqueta)
         ? previos
-        : [...previos, { id: `${zona}|${etiqueta}`, etiqueta, zona, fuente: 'ciudad' }]
+        : [
+            ...previos,
+            {
+              id: `${c.zona}|${c.etiqueta}`,
+              etiqueta: c.etiqueta,
+              ciudad: c.ciudad,
+              region: c.region,
+              pais: c.pais,
+              zona: c.zona,
+              fuente: 'ciudad',
+            },
+          ]
     );
   }
 
@@ -130,9 +141,16 @@ export default function Timezones({ lang }: Props) {
     setDestinos((previos) => previos.filter((d) => d.id !== id));
   }
 
-  function anadirMiUbicacion() {
+  /**
+   * El origen sale del navegador.
+   *
+   * Estaba en «para quién» y añadía un destino, que es justo lo contrario
+   * de lo que dice el botón: «mi ubicación» es de dónde escribo la hora,
+   * no a quién se la digo. Ahora vive en «mi cita» y fija el origen.
+   */
+  function origenDeMiUbicacion() {
     const zona = zonaDelNavegador();
-    anadirDestino(nombreDeZona(zona), zona);
+    setOrigen({ zona, etiqueta: nombreDeZona(zona) });
   }
 
   // ---------- la dirección ----------
@@ -163,6 +181,9 @@ export default function Timezones({ lang }: Props) {
         .map((zona): Destino => ({
           id: `${zona}|url`,
           etiqueta: nombreDeZona(zona),
+          ciudad: nombreDeZona(zona),
+          region: '',
+          pais: '',
           zona,
           fuente: 'zona',
         }));
@@ -213,12 +234,6 @@ export default function Timezones({ lang }: Props) {
     }
   }
 
-  function ponerAhora() {
-    const ahora = ahoraMismo();
-    setFecha(ahora.fecha);
-    setHora(ahora.hora);
-  }
-
   const diferenciaTexto = (horas: number) => {
     if (horas === 0) return tr('misma');
     const absoluto = Math.abs(horas);
@@ -229,11 +244,11 @@ export default function Timezones({ lang }: Props) {
   // ---------- pintado ----------
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:items-start">
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)] lg:items-start">
       {/* ---------------- Controles ---------------- */}
-      <div className="grid gap-7">
-        <section className="grid gap-3">
-          <h2 className="text-[var(--fs-small)] font-semibold text-ink">{tr('origenTitulo')}</h2>
+      <div className="grid gap-4">
+        <section className="tarjeta-control" data-tour="cita">
+          <h2 className="titulo">{tr('origenTitulo')}</h2>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
@@ -247,20 +262,8 @@ export default function Timezones({ lang }: Props) {
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="hora">{tr('hora')}</Label>
-              <Input
-                id="hora"
-                type="time"
-                value={hora}
-                onChange={(e) => setHora(e.target.value)}
-              />
+              <Input id="hora" type="time" value={hora} onChange={(e) => setHora(e.target.value)} />
             </div>
-          </div>
-
-          <div className="flex justify-start">
-            <Button variant="ghost" size="xs" onClick={ponerAhora}>
-              <ClockIcon aria-hidden="true" />
-              {tr('ahora')}
-            </Button>
           </div>
 
           {/*
@@ -268,51 +271,56 @@ export default function Timezones({ lang }: Props) {
             desde su propia zona un día tras otro. Plegado, el resumen dice
             cuál es —que es el 99 % de las veces lo único que hace falta
             saber— y abrirlo cuesta una pulsación las pocas veces que no.
+
+            «Mi ubicación» vive aquí dentro y no en «para quién». Ahí abajo
+            añadía un destino, que es lo contrario de lo que dice el botón:
+            mi ubicación es desde dónde escribo la hora, no a quién se la
+            digo.
           */}
-          <details className="rounded-lg border border-line">
+          <details className="rounded-lg border border-line" data-tour="origen">
             <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2.5 text-[var(--fs-small)] marker:content-none">
-              <span className="text-ink-soft">
+              <span className="min-w-0 truncate text-ink-soft">
                 {tr('zonaOrigen')} <span className="font-medium text-ink">{origen.etiqueta}</span>
               </span>
-              <span className="text-ink-soft underline underline-offset-2">
+              <span className="shrink-0 text-ink-soft underline underline-offset-2">
                 {tr('cambiar')}
               </span>
             </summary>
 
-            <div className="border-t border-line p-3">
+            <div className="grid gap-3 border-t border-line p-3">
               <BuscadorLugar
                 id="origen"
+                lang={lang}
                 textos={{ ...textosBuscador, etiqueta: tr('cambiarOrigen'), ayuda: '' }}
                 pedirCiudades={pedirCiudades}
                 pedirZips={pedirZips}
                 onElegir={(c) => setOrigen({ zona: c.zona, etiqueta: c.etiqueta })}
               />
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={origenDeMiUbicacion}
+                className="justify-self-start"
+              >
+                <MapPinIcon aria-hidden="true" />
+                {tr('miUbicacion')}
+              </Button>
             </div>
           </details>
         </section>
 
-        <section className="grid gap-3">
-          <h2 className="text-[var(--fs-small)] font-semibold text-ink">
-            {tr('destinosTitulo')}
-          </h2>
+        <section className="tarjeta-control" data-tour="destinos">
+          <h2 className="titulo">{tr('destinosTitulo')}</h2>
 
           <BuscadorLugar
             id="destino"
+            lang={lang}
             textos={textosBuscador}
             pedirCiudades={pedirCiudades}
             pedirZips={pedirZips}
-            onElegir={(c) => anadirDestino(c.etiqueta, c.zona)}
+            onElegir={anadirDestino}
           />
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={anadirMiUbicacion}
-            className="justify-self-start"
-          >
-            <MapPinIcon aria-hidden="true" />
-            {tr('miUbicacion')}
-          </Button>
         </section>
       </div>
 
@@ -325,8 +333,7 @@ export default function Timezones({ lang }: Props) {
               {tr('noExisteTitulo')}
             </h2>
             <p className="mt-2 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-muted">
-              {tr('noExisteCuerpo')}{' '}
-              <strong className="text-ink">{resultado.horaCorregida}</strong>
+              {tr('noExisteCuerpo')} <strong className="text-ink">{resultado.horaCorregida}</strong>
             </p>
           </section>
         )}
@@ -345,7 +352,7 @@ export default function Timezones({ lang }: Props) {
         {/* El origen, siempre a la vista: es contra lo que se compara todo. */}
         {resultado && (
           <div className="rounded-lg border border-line bg-surface-2 p-5">
-            <p className="text-[var(--fs-small)] text-ink-soft">{origen.etiqueta}</p>
+            <p className="truncate text-[var(--fs-small)] text-ink-soft">{origen.etiqueta}</p>
             <p className="mt-1 text-[length:var(--fs-h2)] font-semibold text-ink">
               {resultado.origen.hora}
             </p>
@@ -353,8 +360,22 @@ export default function Timezones({ lang }: Props) {
           </div>
         )}
 
-        <section>
-          <h2 className="text-[length:var(--fs-h3)] font-semibold text-ink">{tr('resultados')}</h2>
+        <section data-tour="resultados">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-[length:var(--fs-h3)] font-semibold text-ink">
+              {tr('resultados')}
+            </h2>
+
+            {/* Quitar de una en una está bien para dos; para nueve no.
+                Aparece a partir de la segunda, que es cuando empieza a
+                hacer falta. */}
+            {destinos.length > 1 && (
+              <Button variant="ghost" size="sm" onClick={() => setDestinos([])}>
+                <TrashIcon aria-hidden="true" />
+                {tr('quitarTodas')}
+              </Button>
+            )}
+          </div>
 
           {destinos.length === 0 ? (
             <p className="mt-3 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
@@ -364,21 +385,42 @@ export default function Timezones({ lang }: Props) {
             <ul className="mt-4 grid gap-3">
               {resultado?.destinos.map((c) => {
                 const frase = componerFrase(c, resultado.origen, lang);
+                const debajo = [c.destino.region, nombreDePais(c.destino.pais, lang)]
+                  .filter(Boolean)
+                  .join(' · ');
+
                 return (
                   <li key={c.destino.id} className="rounded-lg border border-line bg-surface p-5">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="flex items-start justify-between gap-3">
+                      {/* La ciudad arriba y la región debajo, cada una
+                          truncándose por su cuenta. En una sola línea, un
+                          nombre como «Santo Domingo de los Colorados, Santo
+                          Domingo» empujaba el botón de quitar fuera de la
+                          ficha. */}
                       <div className="min-w-0">
-                        <p className="font-medium text-ink">{c.destino.etiqueta}</p>
-                        <p className="font-mono text-[0.7rem] text-ink-soft">
+                        <p className="truncate font-medium text-ink" title={c.destino.ciudad}>
+                          {c.destino.ciudad}
+                        </p>
+                        {debajo && (
+                          <p
+                            className="truncate text-[var(--fs-small)] text-ink-muted"
+                            title={debajo}
+                          >
+                            {debajo}
+                          </p>
+                        )}
+                        <p className="truncate font-mono text-[0.7rem] text-ink-soft">
                           {c.destino.zona} · {c.abreviatura}
                         </p>
                       </div>
+
                       <Button
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => quitar(c.destino.id)}
-                        aria-label={`${tr('quitar')} ${c.destino.etiqueta}`}
+                        aria-label={`${tr('quitar')} ${c.destino.ciudad}`}
                         title={tr('quitar')}
+                        className="shrink-0"
                       >
                         <XIcon aria-hidden="true" />
                       </Button>
@@ -393,12 +435,15 @@ export default function Timezones({ lang }: Props) {
 
                     {/* El aviso que evita el error que de verdad se comete. */}
                     {c.saltoDeDia !== 0 && (
-                      <p className="mt-3 rounded-md border border-[var(--danger)] px-3 py-2 text-[var(--fs-small)] font-medium text-[var(--danger)]">
+                      <p
+                        data-tour="salto"
+                        className="mt-3 rounded-md border border-[var(--danger)] px-3 py-2 text-[var(--fs-small)] font-medium text-[var(--danger)]"
+                      >
                         {c.saltoDeDia > 0 ? tr('diaSiguiente') : tr('diaAnterior')}
                       </p>
                     )}
 
-                    <div className="mt-4 border-t border-line pt-3">
+                    <div className="mt-4 border-t border-line pt-3" data-tour="frase">
                       <p className="text-[var(--fs-small)] text-ink-muted">{frase}</p>
                       <Button
                         variant="outline"
@@ -418,12 +463,6 @@ export default function Timezones({ lang }: Props) {
                 );
               })}
             </ul>
-          )}
-
-          {destinos.length > 0 && (
-            <p className="mt-4 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
-              {tr('fraseAyuda')}
-            </p>
           )}
         </section>
       </div>

@@ -32,9 +32,7 @@ export function escribirParams(valores: Record<string, string | null | undefined
   }
 
   const consulta = params.toString();
-  const destino = consulta
-    ? `${window.location.pathname}?${consulta}`
-    : window.location.pathname;
+  const destino = consulta ? `${window.location.pathname}?${consulta}` : window.location.pathname;
 
   window.history.replaceState(null, '', destino);
 }

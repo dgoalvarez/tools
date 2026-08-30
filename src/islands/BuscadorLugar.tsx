@@ -8,12 +8,13 @@
  * postales, y al revés.
  */
 import { useEffect, useState } from 'react';
-import { PlusIcon } from '@phosphor-icons/react';
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import type { Lang } from '@/i18n/config';
 import {
   buscarCiudades,
+  nombreDePais,
   nombreDeZona,
   zonaDeZip,
   type Coincidencia,
@@ -31,6 +32,7 @@ export interface TextosBuscador {
 
 interface Props {
   id: string;
+  lang: Lang;
   textos: TextosBuscador;
   pedirCiudades: () => Promise<DatosCiudades>;
   pedirZips: () => Promise<DatosZips>;
@@ -39,6 +41,7 @@ interface Props {
 
 export default function BuscadorLugar({
   id,
+  lang,
   textos,
   pedirCiudades,
   pedirZips,
@@ -71,7 +74,17 @@ export default function BuscadorLugar({
           if (cancelado) return;
           const zona = zonaDeZip(datos, texto);
           setSugerencias(
-            zona ? [{ etiqueta: `${texto} · ${nombreDeZona(zona)}`, zona, pais: 'US' }] : []
+            zona
+              ? [
+                  {
+                    ciudad: texto,
+                    region: nombreDeZona(zona),
+                    pais: 'US',
+                    zona,
+                    etiqueta: `${texto} · ${nombreDeZona(zona)}`,
+                  },
+                ]
+              : []
           );
           if (!zona) setAviso(textos.zipDesconocido);
         } else if (/^\d+$/.test(texto)) {
@@ -82,7 +95,7 @@ export default function BuscadorLugar({
         } else {
           const datos = await pedirCiudades();
           if (cancelado) return;
-          const encontradas = buscarCiudades(datos, texto);
+          const encontradas = buscarCiudades(datos, texto, lang);
           setSugerencias(encontradas);
           if (encontradas.length === 0) setAviso(textos.sinResultados);
         }
@@ -95,7 +108,7 @@ export default function BuscadorLugar({
       cancelado = true;
       clearTimeout(temporizador);
     };
-  }, [consulta, pedirCiudades, pedirZips, textos.sinResultados, textos.zipDesconocido]);
+  }, [consulta, lang, pedirCiudades, pedirZips, textos.sinResultados, textos.zipDesconocido]);
 
   function elegir(coincidencia: Coincidencia) {
     onElegir(coincidencia);
@@ -119,7 +132,13 @@ export default function BuscadorLugar({
           va dentro de un acordeón y repetir ahí la misma indicación que en
           el buscador de destinos sería decir dos veces lo mismo. */}
       {(buscando || aviso || textos.ayuda) && (
-        <p className={aviso ? 'text-[var(--fs-small)] text-[var(--danger)]' : 'text-[var(--fs-small)] text-ink-soft'}>
+        <p
+          className={
+            aviso
+              ? 'text-[var(--fs-small)] text-[var(--danger)]'
+              : 'text-[var(--fs-small)] text-ink-soft'
+          }
+        >
           {buscando ? textos.cargando : (aviso ?? textos.ayuda)}
         </p>
       )}
@@ -128,15 +147,23 @@ export default function BuscadorLugar({
         <ul className="grid gap-1 rounded-lg border border-line bg-surface p-1.5">
           {sugerencias.map((s) => (
             <li key={`${s.etiqueta}-${s.zona}`}>
+              {/* Dos renglones y no uno: «Santo Domingo de los Colorados,
+                  Santo Domingo» en una sola línea desbordaba la lista, y
+                  truncarlo escondía justo la región, que es lo que
+                  distingue una ciudad de su homónima. */}
               <button
                 type="button"
                 onClick={() => elegir(s)}
-                className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[var(--fs-small)] hover:bg-surface-2"
+                className="grid w-full gap-0.5 rounded-md px-2.5 py-2 text-left text-[var(--fs-small)] hover:bg-surface-2"
               >
-                <PlusIcon aria-hidden="true" size={14} className="shrink-0 text-ink-soft" />
-                <span className="min-w-0 flex-1 truncate text-ink">{s.etiqueta}</span>
-                <span className="shrink-0 font-mono text-[0.7rem] text-ink-soft">
-                  {nombreDeZona(s.zona)}
+                <span className="flex items-baseline gap-2">
+                  <span className="min-w-0 flex-1 truncate font-medium text-ink">{s.ciudad}</span>
+                  <span className="shrink-0 font-mono text-[0.7rem] text-ink-soft">
+                    {nombreDeZona(s.zona)}
+                  </span>
+                </span>
+                <span className="truncate text-[0.72rem] text-ink-soft">
+                  {[s.region, nombreDePais(s.pais, lang)].filter(Boolean).join(' · ')}
                 </span>
               </button>
             </li>

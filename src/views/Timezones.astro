@@ -1,0 +1,30 @@
+---
+/**
+ * La página de la herramienta de husos horarios.
+ *
+ * Igual que las otras dos: `client:load` para que el HTML salga ya pintado
+ * del servidor, y un aviso para quien no tenga JavaScript.
+ */
+import Tool from '../layouts/Tool.astro';
+import Timezones from '../islands/Timezones';
+import { UI } from '../i18n/ui';
+import { t, type Lang } from '../i18n/config';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<Tool lang={lang} tool="timezones">
+  <Timezones client:load lang={lang} />
+
+  <noscript>
+    <p
+      class="mt-6 max-w-[var(--measure)] rounded-lg border border-line bg-surface-2 p-4 text-[var(--fs-small)] text-ink-muted"
+    >
+      {t(UI.sinJs, lang)}
+    </p>
+  </noscript>
+</Tool>

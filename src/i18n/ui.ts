@@ -47,6 +47,8 @@ export const UI = {
     es: 'Sin cuentas, sin cookies, sin base de datos. Todo se calcula en tu navegador.',
     en: 'No accounts, no cookies, no database. Everything is computed in your browser.',
   },
+  /** La atribución de los datos de husos horarios. La exige su licencia. */
+  datosDe: { es: 'Ciudades y códigos postales de', en: 'Cities and ZIP codes from' },
   madeBy: { es: 'Hecho por', en: 'Made by' },
   portfolioLink: { es: 'Ver el portafolio', en: 'View the portfolio' },
 

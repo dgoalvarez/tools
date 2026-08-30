@@ -37,7 +37,7 @@ export const TOOLS: Record<ToolKey, Tool> = {
       es: 'Convierte una hora a los husos de quien tenga que estar en la cita, por ciudad o por código ZIP de Estados Unidos, y te da la frase lista para copiar. Avisa cuando la hora cae en otro día, que es el error que de verdad se comete al agendar.',
       en: 'Convert a time to the zones of everyone who has to be in the meeting, by city or by US ZIP code, and get the sentence ready to copy. It warns when the time lands on another day, which is the mistake people actually make when scheduling.',
     },
-    listo: false,
+    listo: true,
   },
   contrast: {
     name: { es: 'Contraste', en: 'Contrast' },

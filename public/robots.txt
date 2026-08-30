@@ -6,8 +6,8 @@ Allow: /
 
 # Rastreadores de motores generativos (ChatGPT, Claude, Perplexity, Gemini…).
 # Se permiten a propósito: estas herramientas son públicas y gratuitas, y
-# hoy parte de las búsquedas de «calculadora de contraste» o «convertir
-# husos horarios» ocurren dentro de un asistente.
+# hoy buena parte de las búsquedas del tipo «convertir husos horarios» o
+# «calculadora de contraste» ocurren dentro de un asistente.
 User-agent: GPTBot
 Allow: /
 

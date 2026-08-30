@@ -9,16 +9,17 @@ import type { T } from './config';
 export const UI = {
   // ---------- Identidad ----------
   siteName: { es: 'Herramientas', en: 'Tools' },
-  siteAuthor: { es: 'Diego Alvarez', en: 'Diego Alvarez' },
+  /** La marca. Es lo que se ve; el nombre completo no aparece en el sitio. */
+  brand: { es: 'DGO', en: 'DGO' },
   tagline: {
-    es: 'Herramientas de diseño que hacen una cosa y la hacen bien.',
-    en: 'Design tools that do one thing and do it well.',
+    es: 'Herramientas que hacen una cosa y la hacen bien.',
+    en: 'Tools that do one thing and do them well.',
   },
-  /** Lo que va después del nombre de cada herramienta en el <title>. */
-  titleSuffix: { es: 'Herramientas · Diego Alvarez', en: 'Tools · Diego Alvarez' },
+  /** El <title> de la portada. El de cada herramienta es su nombre + la marca. */
+  homeTitle: { es: 'Herramientas · DGO', en: 'Tools · DGO' },
   siteDescription: {
-    es: 'Herramientas gratuitas de diseño y de trabajo: husos horarios, contraste de color y escalas tipográficas. Calculan en tu navegador y no guardan ningún dato.',
-    en: 'Free tools for design and work: time zones, colour contrast and type scales. They run in your browser and store no data.',
+    es: 'Herramientas gratuitas: husos horarios, contraste de color y escalas tipográficas. Calculan en tu navegador y no guardan ningún dato de nadie.',
+    en: 'Free tools: time zones, colour contrast and type scales. They run in your browser and store nobody’s data.',
   },
 
   // ---------- Navegación ----------
@@ -28,8 +29,8 @@ export const UI = {
 
   // ---------- Portada ----------
   homeIntro: {
-    es: 'Tres herramientas para problemas concretos del oficio. Todo se calcula en tu navegador: no hay cuentas, no hay cookies y no se guarda nada de nadie.',
-    en: 'Three tools for concrete problems of the craft. Everything runs in your browser: no accounts, no cookies, nothing about anyone is stored.',
+    es: 'Tres herramientas para problemas concretos del trabajo diario. Todo se calcula en tu navegador: no hay cuentas, no hay cookies y no se guarda nada de nadie.',
+    en: 'Three tools for concrete problems of everyday work. Everything runs in your browser: no accounts, no cookies, nothing about anyone is stored.',
   },
   openTool: { es: 'Abrir', en: 'Open' },
 
@@ -54,9 +55,10 @@ export const UI = {
   toLightMode: { es: 'Cambiar a modo claro', en: 'Switch to light mode' },
   toDarkMode: { es: 'Cambiar a modo oscuro', en: 'Switch to dark mode' },
   switchLanguage: { es: 'View this page in English', en: 'Ver esta página en español' },
+  // Describe la imagen que se comparte. Cuando cambie og.png, cambia esto.
   ogImageAlt: {
-    es: 'Diego Alvarez · Diseñador de Producto UX/UI',
-    en: 'Diego Alvarez · Product Designer UX/UI',
+    es: 'DGO · Herramientas gratuitas',
+    en: 'DGO · Free tools',
   },
 } satisfies Record<string, T>;
 

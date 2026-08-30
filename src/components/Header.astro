@@ -29,7 +29,7 @@ const other = otherLang(lang);
       class="font-medium tracking-tight text-ink hover:text-brand"
       aria-current={page === 'home' ? 'page' : undefined}
     >
-      {t(UI.siteName, lang)}<span class="text-ink-soft"> · Diego Alvarez</span>
+      {t(UI.brand, lang)}<span class="text-ink-soft"> · {t(UI.siteName, lang)}</span>
     </a>
 
     <nav aria-label={t(UI.navTools, lang)} class="flex flex-wrap items-center gap-x-4 gap-y-1">

@@ -112,7 +112,41 @@ export const CONTRASTE = {
   // ---------- Veredictos ----------
   pasa: { es: 'Pasa', en: 'Pass' },
   noPasa: { es: 'No pasa', en: 'Fail' },
+  // ---------- Lo que se pliega ----------
+  dosFormasTitulo: { es: 'Por qué hay dos medidas', en: 'Why there are two measures' },
+  dosFormasCuerpo: {
+    es: 'WCAG 2.2 es la norma vigente y solo compara la luminancia de los dos colores: no sabe de qué tamaño ni de qué grosor es la letra. APCA sí, y además distingue si el texto es claro sobre oscuro o al revés, porque no se lee igual.',
+    en: 'WCAG 2.2 is the current standard and only compares the luminance of the two colours: it knows nothing about the size or weight of the type. APCA does, and it also tells apart light-on-dark from dark-on-light, because they do not read the same.',
+  },
+  numerosTitulo: { es: 'De dónde salen los números', en: 'Where the numbers come from' },
+  numerosCuerpo: {
+    es: 'Ninguno de los dos algoritmos está reescrito aquí: WCAG 2.x se calcula con culori y APCA con apca-w3, que es su implementación oficial. Los resultados están comprobados contra la calculadora de WebAIM y contra los valores canónicos de APCA.',
+    en: 'Neither algorithm is reimplemented here: WCAG 2.x is computed with culori and APCA with apca-w3, its official implementation. The results are checked against the WebAIM calculator and against APCA’s canonical values.',
+  },
+
+  // ---------- El selector ----------
+  espacio: { es: 'Espacio de color', en: 'Colour space' },
+  ajustarCon: { es: 'Ajustar con barras', en: 'Adjust with sliders' },
 } satisfies Record<string, T>;
+
+/**
+ * El nombre de cada canal, por espacio.
+ *
+ * Van con palabras y no con las letras de siempre (L, C, H) porque «Tono»
+ * lo entiende cualquiera y «H» solo quien ya sabía. La letra se queda al
+ * lado, en pequeño, para quien la busca.
+ */
+export const CANALES: Record<string, T> = {
+  'oklch.l': { es: 'Luminosidad', en: 'Lightness' },
+  'oklch.c': { es: 'Croma', en: 'Chroma' },
+  'oklch.h': { es: 'Tono', en: 'Hue' },
+  'rgb.r': { es: 'Rojo', en: 'Red' },
+  'rgb.g': { es: 'Verde', en: 'Green' },
+  'rgb.b': { es: 'Azul', en: 'Blue' },
+  'hsl.h': { es: 'Tono', en: 'Hue' },
+  'hsl.s': { es: 'Saturación', en: 'Saturation' },
+  'hsl.l': { es: 'Luminosidad', en: 'Lightness' },
+};
 
 /** Los grosores, con el nombre que usa la gente y no solo el número. */
 export const GROSORES: { valor: number; nombre: T }[] = [

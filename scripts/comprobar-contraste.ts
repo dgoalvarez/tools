@@ -3,6 +3,9 @@
  * Se ejecuta a mano; no forma parte del repositorio.
  */
 import {
+  canalesDe,
+  conCanal,
+  ESPACIOS,
   medirWcag,
   medirApca,
   sugerirColor,
@@ -115,6 +118,47 @@ for (const s of ['#0a5f5a', '0a5f5a', 'rgb(10 95 90)', 'hsl(177 81% 21%)', 'oklc
 }
 afirmar(leerColor('no soy un color') === null, '«no soy un color» se rechaza');
 afirmar(leerColor('') === null, 'el campo vacío se rechaza');
+
+console.log('\n9. Las barras del selector de color');
+{
+  for (const espacio of ESPACIOS) {
+    const canales = canalesDe('#0a5f5a', espacio);
+
+    afirmar(canales.length === 3, `${espacio}: tres canales (${canales.map((c) => c.clave).join(' ')})`);
+
+    // Si mover una barra hasta donde ya estaba cambiara el color, cada
+    // toque la desplazaría un poco y sería imposible ajustar nada.
+    afirmar(
+      canales.every((c) => conCanal('#0a5f5a', espacio, c.clave, c.valor) === '#0a5f5a'),
+      `${espacio}: mover un canal a su propio valor no cambia el color`
+    );
+
+    afirmar(
+      canales.every((c) => c.degradado.startsWith('linear-gradient(to right, #')),
+      `${espacio}: cada barra trae su degradado`
+    );
+
+    afirmar(
+      canales.every((c) => c.valor >= c.min - 0.001 && c.valor <= c.max + 0.001),
+      `${espacio}: los valores caen dentro de los límites de su barra`
+    );
+  }
+
+  // Un gris no tiene tono, y culori lo devuelve como undefined. Si eso
+  // llegara a la barra, la barra no se podría mover.
+  const gris = canalesDe('#808080', 'oklch');
+  afirmar(
+    gris.every((c) => Number.isFinite(c.valor)),
+    'un gris no rompe las barras, aunque su tono sea indefinido'
+  );
+
+  afirmar(
+    conCanal('#0a5f5a', 'oklch', 'l', 80) === '#85cdc7',
+    'subir la luminosidad en OKLCH aclara sin virar el tono'
+  );
+  afirmar(conCanal('#0a5f5a', 'rgb', 'r', 255) === '#ff5f5a', 'subir el rojo al máximo hace lo que dice');
+  afirmar(canalesDe('esto no es un color', 'oklch').length === 0, 'un color inválido no devuelve canales');
+}
 
 console.log(fallos === 0 ? '\nTODO CORRECTO\n' : `\n${fallos} FALLOS\n`);
 process.exit(fallos === 0 ? 0 : 1);

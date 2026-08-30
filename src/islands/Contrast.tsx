@@ -10,9 +10,10 @@
  * es pegar un enlace.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowLeftRight, Check, Link2, Pipette } from 'lucide-react';
+import { ArrowLeftRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import SelectorColor from './SelectorColor';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -67,7 +68,6 @@ export default function Contrast({ lang }: Props) {
   // que escribe correría con los valores por defecto y borraría de la
   // dirección justo lo que el otro efecto acaba de leer de ella.
   const [enlaceLeido, setEnlaceLeido] = useState(false);
-  const [enlaceCopiado, setEnlaceCopiado] = useState(false);
 
   const cambiarTexto = useCallback((valor: string) => {
     setTextoBruto(valor);
@@ -120,7 +120,6 @@ export default function Contrast({ lang }: Props) {
       s: px === PX_INICIAL ? null : String(px),
       w: peso === PESO_INICIAL ? null : String(peso),
     });
-    setEnlaceCopiado(false);
   }, [enlaceLeido, textoHex, fondoHex, px, peso]);
 
   // ---------- las cuentas ----------
@@ -171,32 +170,21 @@ export default function Contrast({ lang }: Props) {
     }
   }
 
-  async function copiarEnlace() {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setEnlaceCopiado(true);
-    } catch {
-      // Sin permiso de portapapeles queda el enlace de la barra, que es el
-      // mismo: el estado vive ahí, no aquí.
-    }
-  }
-
   // ---------- pintado ----------
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:items-start">
       {/* ---------------- Controles ---------------- */}
       <div className="grid gap-5">
-        <CampoColor
+        <SelectorColor
+          lang={lang}
+          id="color-texto"
           etiqueta={tr('colorTexto')}
           bruto={textoBruto}
           hex={textoHex}
           valido={textoEsColor}
           onCambio={cambiarTexto}
           onCuentagotas={soportaCuentagotas ? () => usarCuentagotas('texto') : undefined}
-          textoCuentagotas={tr('cuentagotas')}
-          textoNoEsColor={tr('noEsColor')}
-          ayuda={tr('formatoLibre')}
         />
 
         <div className="flex justify-center">
@@ -211,17 +199,19 @@ export default function Contrast({ lang }: Props) {
           </Button>
         </div>
 
-        <CampoColor
+        <SelectorColor
+          lang={lang}
+          id="color-fondo"
           etiqueta={tr('colorFondo')}
           bruto={fondoBruto}
           hex={fondoHex}
           valido={fondoEsColor}
           onCambio={cambiarFondo}
           onCuentagotas={soportaCuentagotas ? () => usarCuentagotas('fondo') : undefined}
-          textoCuentagotas={tr('cuentagotas')}
-          textoNoEsColor={tr('noEsColor')}
-          ayuda={tr('formatoLibre')}
         />
+
+        {/* La indicación de formato, una sola vez para los dos campos. */}
+        <p className="text-[var(--fs-small)] text-ink-soft">{tr('formatoLibre')}</p>
 
         {textoAlpha < 1 && (
           <p className="rounded-md border border-line bg-surface-2 p-3 text-[var(--fs-small)] text-ink-muted">
@@ -269,11 +259,6 @@ export default function Contrast({ lang }: Props) {
             {tr('textoGrandePor')}
           </p>
         )}
-
-        <Button variant="outline" size="sm" onClick={copiarEnlace} className="justify-self-start">
-          {enlaceCopiado ? <Check aria-hidden="true" /> : <Link2 aria-hidden="true" />}
-          {enlaceCopiado ? tr('copiado') : tr('copiarEnlace')}
-        </Button>
       </div>
 
       {/* ---------------- Resultados ---------------- */}
@@ -382,10 +367,6 @@ export default function Contrast({ lang }: Props) {
                 </>
               )}
             </div>
-
-            <p className="mt-4 border-t border-line pt-3 text-[var(--fs-small)] text-ink-soft">
-              {tr('apcaNoEsNorma')}
-            </p>
           </section>
         </div>
 
@@ -504,74 +485,6 @@ function Fila({
       <span className={pasa ? 'font-medium text-brand' : 'font-medium text-[var(--danger)]'}>
         {pasa ? si : no}
       </span>
-    </div>
-  );
-}
-
-function CampoColor({
-  etiqueta,
-  bruto,
-  hex,
-  valido,
-  onCambio,
-  onCuentagotas,
-  textoCuentagotas,
-  textoNoEsColor,
-  ayuda,
-}: {
-  etiqueta: string;
-  bruto: string;
-  hex: string;
-  valido: boolean;
-  onCambio: (valor: string) => void;
-  onCuentagotas?: () => void;
-  textoCuentagotas: string;
-  textoNoEsColor: string;
-  ayuda: string;
-}) {
-  const id = `campo-${etiqueta.replace(/\s+/g, '-').toLowerCase()}`;
-
-  return (
-    <div className="grid gap-1.5">
-      <Label htmlFor={id}>{etiqueta}</Label>
-
-      <div className="flex items-center gap-2">
-        {/* El selector nativo del sistema. Su valor siempre es el último
-            color válido, porque solo entiende hexadecimal de seis dígitos. */}
-        <input
-          type="color"
-          value={hex}
-          onChange={(e) => onCambio(e.target.value)}
-          aria-label={etiqueta}
-          className="h-9 w-9 shrink-0 cursor-pointer rounded-md border border-line bg-transparent p-0.5"
-        />
-
-        <Input
-          id={id}
-          value={bruto}
-          onChange={(e) => onCambio(e.target.value)}
-          spellCheck={false}
-          autoComplete="off"
-          aria-invalid={!valido}
-          className="font-mono"
-        />
-
-        {onCuentagotas && (
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={onCuentagotas}
-            title={textoCuentagotas}
-            aria-label={textoCuentagotas}
-          >
-            <Pipette aria-hidden="true" />
-          </Button>
-        )}
-      </div>
-
-      <p className={valido ? 'text-[var(--fs-small)] text-ink-soft' : 'text-[var(--fs-small)] text-[var(--danger)]'}>
-        {valido ? ayuda : textoNoEsColor}
-      </p>
     </div>
   );
 }

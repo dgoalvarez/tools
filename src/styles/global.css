@@ -469,3 +469,119 @@
     }
   }
 }
+
+/* ============================================================
+   Las barras del selector de color
+
+   Son `<input type="range">` de verdad, no un componente. Un range nativo
+   ya se mueve con las flechas del teclado, ya se anuncia con su valor y su
+   rango, y ya funciona con lectores de pantalla sin escribir una línea de
+   ARIA. Reimplementarlo con divs habría costado más y funcionado peor.
+
+   El degradado no va en el CSS: se calcula en vivo y llega como estilo en
+   línea, porque depende del color que haya en ese momento. Aquí solo está
+   la forma.
+   ============================================================ */
+
+@layer components {
+  .barra-color {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+    height: 1.5rem;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  /* El carril hereda el degradado que el componente pone en el propio
+     input; así el color vive en un solo sitio. */
+  .barra-color::-webkit-slider-runnable-track {
+    height: 1.25rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: inherit;
+  }
+
+  .barra-color::-moz-range-track {
+    height: 1.25rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: inherit;
+  }
+
+  /* El tirador lleva un borde oscuro y un halo del color de fondo para que
+     se vea igual sobre la parte clara y sobre la oscura del degradado. */
+  .barra-color::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 1rem;
+    height: 1rem;
+    margin-top: 0.125rem;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--bg);
+    box-shadow: 0 0 0 1px var(--bg);
+  }
+
+  .barra-color::-moz-range-thumb {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--bg);
+    box-shadow: 0 0 0 1px var(--bg);
+  }
+
+  .barra-color:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 3px;
+    border-radius: 999px;
+  }
+
+  /* ---------- El conmutador de espacio ----------
+     Son radios de verdad. Las flechas del teclado ya recorren un grupo de
+     radios sin ayuda, que es justo el comportamiento que pide la norma
+     para un conmutador de pestañas. */
+  .segmento {
+    display: inline-flex;
+    padding: 0.1875rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+  }
+
+  .segmento label {
+    padding: 0.25rem 0.625rem;
+    border-radius: calc(var(--radius) * 0.7);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .segmento label:hover {
+    color: var(--ink);
+  }
+
+  .segmento input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .segmento input:checked + span {
+    color: var(--ink);
+  }
+
+  .segmento label:has(input:checked) {
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+  }
+
+  .segmento label:has(input:focus-visible) {
+    outline: 2px solid var(--brand);
+    outline-offset: 1px;
+  }
+}

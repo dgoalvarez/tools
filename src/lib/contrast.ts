@@ -256,3 +256,124 @@ export function hayDesacuerdo(wcag: ResultadoWcag, apca: ResultadoApca): boolean
 export function esPolaridadClara(lc: number): boolean {
   return lc < 0;
 }
+
+// ------------------------------------------------------------- los canales
+
+/**
+ * Los tres espacios en los que se puede empujar un color con sliders.
+ *
+ * OKLCH va primero porque es el único en el que mover una barra hace lo que
+ * uno espera: subir la luminosidad aclara sin virar el tono. En HSL, bajarle
+ * la «lightness» a un amarillo lo vuelve verde, y en RGB no hay ninguna
+ * barra que signifique «más claro».
+ *
+ * RGB y HSL están porque son los que mucha gente ya tiene en la cabeza, y
+ * obligar a aprender OKLCH para tocar un color sería cobrar una entrada.
+ */
+export type Espacio = 'oklch' | 'rgb' | 'hsl';
+
+export const ESPACIOS: Espacio[] = ['oklch', 'rgb', 'hsl'];
+
+interface EspecCanal {
+  /** La letra del canal dentro de culori. */
+  clave: string;
+  /** Los límites en las unidades que ve quien usa la herramienta. */
+  min: number;
+  max: number;
+  paso: number;
+  /**
+   * Cuánto hay que multiplicar el valor de la interfaz para obtener el que
+   * usa culori. Existe porque nadie escribe «rojo 0.5»: se escribe 128.
+   */
+  escala: number;
+  /** Cómo se escribe el número al lado de la barra. */
+  decimales: number;
+  sufijo?: string;
+}
+
+const ESPECS: Record<Espacio, EspecCanal[]> = {
+  oklch: [
+    { clave: 'l', min: 0, max: 100, paso: 0.1, escala: 0.01, decimales: 1, sufijo: '%' },
+    { clave: 'c', min: 0, max: 0.4, paso: 0.001, escala: 1, decimales: 3 },
+    { clave: 'h', min: 0, max: 360, paso: 1, escala: 1, decimales: 0, sufijo: '°' },
+  ],
+  rgb: [
+    { clave: 'r', min: 0, max: 255, paso: 1, escala: 1 / 255, decimales: 0 },
+    { clave: 'g', min: 0, max: 255, paso: 1, escala: 1 / 255, decimales: 0 },
+    { clave: 'b', min: 0, max: 255, paso: 1, escala: 1 / 255, decimales: 0 },
+  ],
+  hsl: [
+    { clave: 'h', min: 0, max: 360, paso: 1, escala: 1, decimales: 0, sufijo: '°' },
+    { clave: 's', min: 0, max: 100, paso: 1, escala: 0.01, decimales: 0, sufijo: '%' },
+    { clave: 'l', min: 0, max: 100, paso: 1, escala: 0.01, decimales: 0, sufijo: '%' },
+  ],
+};
+
+/**
+ * Un conversor por espacio. Se tipa a mano como «de hexadecimal a un objeto
+ * de canales» porque `converter()` devuelve un tipo distinto por cada
+ * espacio y aquí los tres se guardan en el mismo sitio.
+ */
+type Conversor = (color: string) => Record<string, number> | undefined;
+
+const CONVERSORES: Record<Espacio, Conversor> = {
+  oklch: converter('oklch') as unknown as Conversor,
+  rgb: converter('rgb') as unknown as Conversor,
+  hsl: converter('hsl') as unknown as Conversor,
+};
+
+export interface Canal extends EspecCanal {
+  /** El valor actual, en las unidades de la interfaz. */
+  valor: number;
+  /**
+   * El degradado de la barra: los colores que saldrían al recorrerla de
+   * punta a punta. Es lo que convierte tres barras grises en algo que se
+   * puede usar sin mirar el número.
+   */
+  degradado: string;
+}
+
+/** Cuántos colores se muestrean para pintar la barra de cada canal. */
+const MUESTRAS = 12;
+
+/** Lleva un color a hexadecimal, recortando el croma si se sale de pantalla. */
+function aHex(color: Record<string, unknown>): string {
+  const dentro = enGamaSrgb(color as never);
+  return formatHex((dentro ? color : clampChroma(color as never, 'oklch')) as never) ?? '#000000';
+}
+
+/** Los tres canales de un color en el espacio que se pida. */
+export function canalesDe(hex: string, espacio: Espacio): Canal[] {
+  const base = CONVERSORES[espacio](hex);
+  if (!base) return [];
+
+  return ESPECS[espacio].map((espec) => {
+    // El tono de un gris es indefinido en OKLCH y en HSL; culori devuelve
+    // undefined y la barra se quedaría en blanco. Cero es tan arbitrario
+    // como cualquier otro, y al menos deja mover la barra.
+    const crudo = base[espec.clave] ?? 0;
+
+    const degradado = Array.from({ length: MUESTRAS }, (_, i) => {
+      const t = i / (MUESTRAS - 1);
+      const valor = espec.min + t * (espec.max - espec.min);
+      return aHex({ ...base, mode: espacio, [espec.clave]: valor * espec.escala });
+    });
+
+    return {
+      ...espec,
+      valor: crudo / espec.escala,
+      degradado: `linear-gradient(to right, ${degradado.join(', ')})`,
+    };
+  });
+}
+
+/** El mismo color con un canal movido. Devuelve hexadecimal. */
+export function conCanal(hex: string, espacio: Espacio, clave: string, valor: number): string {
+  const base = CONVERSORES[espacio](hex);
+  if (!base) return hex;
+
+  const espec = ESPECS[espacio].find((e) => e.clave === clave);
+  if (!espec) return hex;
+
+  return aHex({ ...base, mode: espacio, [clave]: valor * espec.escala });
+}

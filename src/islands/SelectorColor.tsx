@@ -50,7 +50,11 @@ interface Props {
   hex: string;
   valido: boolean;
   onCambio: (valor: string) => void;
-  /** Abre el cuentagotas del navegador. Solo donde existe la API. */
+  /**
+   * Coge un color de la pantalla. Llega solo donde el navegador trae la
+   * API `EyeDropper`; donde no, el botón no se pinta, porque no habría
+   * nada que pudiera hacer lo que su nombre dice.
+   */
   onCuentagotas?: () => void;
 }
 
@@ -71,17 +75,6 @@ export default function SelectorColor({
   const [modo, setModo] = useState<Modo>('visual');
   const canales = modo === 'visual' ? [] : canalesDe(hex, modo);
   const visual = visualDe(hex);
-
-  // El selector del sistema, escondido. Es el plan B del cuentagotas:
-  // donde el navegador no trae la API de EyeDropper —Firefox y Safari— el
-  // botón abre esto, que en Windows y en macOS trae su propio cuentagotas
-  // dentro. Así el botón nunca desaparece.
-  const delSistema = useRef<HTMLInputElement>(null);
-
-  function cogerColor() {
-    if (onCuentagotas) onCuentagotas();
-    else delSistema.current?.click();
-  }
 
   // ---------- el cuadro ----------
 
@@ -128,14 +121,36 @@ export default function SelectorColor({
       <div className="grid gap-1.5">
         <Label htmlFor={id}>{etiqueta}</Label>
 
-        <div className="flex items-center gap-2">
-          {/* La muestra no es un control: es la respuesta a «¿qué color es
-              este?», y por eso va pegada al campo donde se escribe. */}
-          <span
-            aria-hidden="true"
-            className="size-9 shrink-0 rounded-md border border-line"
-            style={{ background: hex }}
-          />
+        {/*
+          Dos cosas distintas, y antes estaban en el mismo botón.
+
+          El cuentagotas coge el color de donde esté el puntero, en
+          cualquier parte de la pantalla. Eso solo lo puede hacer la API
+          `EyeDropper`, que hoy traen Chrome y Edge y no traen Firefox ni
+          Safari. Donde no está, el botón NO aparece: antes abría el
+          selector del sistema como recambio, y eso era decir una cosa y
+          hacer otra — el selector del sistema no coge nada de la
+          pantalla, sirve para elegir un color a mano.
+
+          Elegir a mano es lo que hace la muestra: es un
+          `<input type="color">` de verdad, así que se pulsa y se abre el
+          selector del sistema. Que un cuadrado de color abra un selector
+          de color no hay que explicarlo.
+        */}
+        <div
+          className="flex items-center gap-2"
+          data-tour={id === 'color-texto' ? 'cuentagotas' : undefined}
+        >
+          <span className="relative size-9 shrink-0">
+            <input
+              type="color"
+              value={hex}
+              onChange={(e) => onCambio(e.target.value)}
+              aria-label={tr('elegirAMano')}
+              title={tr('elegirAMano')}
+              className="muestra-color"
+            />
+          </span>
 
           <Input
             id={id}
@@ -147,26 +162,17 @@ export default function SelectorColor({
             className="font-mono"
           />
 
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={cogerColor}
-            title={tr('cuentagotas')}
-            aria-label={tr('cuentagotas')}
-            data-tour={id === 'color-texto' ? 'cuentagotas' : undefined}
-          >
-            <EyedropperIcon aria-hidden="true" />
-          </Button>
-
-          <input
-            ref={delSistema}
-            type="color"
-            value={hex}
-            onChange={(e) => onCambio(e.target.value)}
-            tabIndex={-1}
-            aria-hidden="true"
-            className="sr-only"
-          />
+          {onCuentagotas && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={onCuentagotas}
+              title={tr('cuentagotas')}
+              aria-label={tr('cuentagotas')}
+            >
+              <EyedropperIcon aria-hidden="true" />
+            </Button>
+          )}
         </div>
 
         {!valido && (

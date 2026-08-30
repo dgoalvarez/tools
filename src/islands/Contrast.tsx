@@ -170,49 +170,63 @@ export default function Contrast({ lang }: Props) {
   // ---------- pintado ----------
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,var(--col-controles))_minmax(0,1fr)] lg:items-start">
-      {/* ---------------- Controles ---------------- */}
-      <div className="columna-herramienta gap-5">
-        <SelectorColor
-          lang={lang}
-          id="color-texto"
-          etiqueta={tr('colorTexto')}
-          bruto={textoBruto}
-          hex={textoHex}
-          valido={textoEsColor}
-          onCambio={cambiarTexto}
-          onCuentagotas={soportaCuentagotas ? () => usarCuentagotas('texto') : undefined}
-        />
+    <div className="columna-herramienta gap-6">
+      {/*
+        ---------------- Los dos colores ----------------
 
-        {/* Con solo el icono y sin borde pasaba desapercibido, y es la
-            acción que más se repite: se prueba un par, se le da la vuelta
-            y se vuelve a mirar. Ahora lleva su palabra y una línea a cada
-            lado que dice que separa dos cosas. */}
-        <div className="flex items-center gap-3">
-          <span aria-hidden="true" className="h-px flex-1 bg-line" />
-          <Button variant="outline" size="sm" onClick={intercambiar}>
+        Uno al lado del otro y no uno encima del otro. Apilados, los dos
+        planos de color se comían 760 px de alto ellos solos y empujaban
+        todo lo demás fuera de la pantalla; en fila ocupan la mitad y
+        además se ven juntos, que es lo que se está comparando.
+      */}
+      <div>
+        {/* La indicación de formato, arriba del todo y no al final.
+            Estaba debajo de las dos tarjetas, y ahí llegaba tarde: dice
+            cómo se puede escribir un color, así que tiene que leerse
+            ANTES de escribir el primero. */}
+        <p className="mb-2.5 text-[var(--fs-small)] text-ink-soft">{tr('formatoLibre')}</p>
+
+        <div className="grid items-center gap-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+          <SelectorColor
+            lang={lang}
+            id="color-texto"
+            etiqueta={tr('colorTexto')}
+            bruto={textoBruto}
+            hex={textoHex}
+            valido={textoEsColor}
+            onCambio={cambiarTexto}
+            onCuentagotas={soportaCuentagotas ? () => usarCuentagotas('texto') : undefined}
+          />
+
+          {/* Con solo el icono y sin borde pasaba desapercibido, y es la
+              acción que más se repite: se prueba un par, se le da la
+              vuelta y se vuelve a mirar. Entre las dos tarjetas dice
+              además de qué va: cambia una por la otra. */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={intercambiar}
+            title={tr('intercambiarLargo')}
+            className="justify-self-center"
+          >
             <ArrowsLeftRightIcon aria-hidden="true" />
             {tr('intercambiar')}
           </Button>
-          <span aria-hidden="true" className="h-px flex-1 bg-line" />
+
+          <SelectorColor
+            lang={lang}
+            id="color-fondo"
+            etiqueta={tr('colorFondo')}
+            bruto={fondoBruto}
+            hex={fondoHex}
+            valido={fondoEsColor}
+            onCambio={cambiarFondo}
+            onCuentagotas={soportaCuentagotas ? () => usarCuentagotas('fondo') : undefined}
+          />
         </div>
 
-        <SelectorColor
-          lang={lang}
-          id="color-fondo"
-          etiqueta={tr('colorFondo')}
-          bruto={fondoBruto}
-          hex={fondoHex}
-          valido={fondoEsColor}
-          onCambio={cambiarFondo}
-          onCuentagotas={soportaCuentagotas ? () => usarCuentagotas('fondo') : undefined}
-        />
-
-        {/* La indicación de formato, una sola vez para los dos campos. */}
-        <p className="text-[var(--fs-small)] text-ink-soft">{tr('formatoLibre')}</p>
-
         {textoAlpha < 1 && (
-          <p className="rounded-md border border-line bg-surface-2 p-3 text-[var(--fs-small)] text-ink-muted">
+          <p className="mt-3 rounded-md border border-line bg-surface-2 p-3 text-[var(--fs-small)] text-ink-muted">
             {tr('avisoAlfa')} <code className="font-mono text-ink">{efectivo}</code>
           </p>
         )}
@@ -228,63 +242,68 @@ export default function Contrast({ lang }: Props) {
           par se lee. Son dos entradas del cálculo, así que van donde está
           el cálculo y encima de la muestra que cambian.
         */}
-        <div className="tarjeta-control sm:grid-cols-2" data-tour="forma">
-          <div className="grid gap-1.5">
-            <Label htmlFor="tamano">{tr('tamano')}</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="tamano"
-                type="number"
-                min={8}
-                max={200}
-                value={px}
-                onChange={(e) => setPx(Math.max(8, Math.min(200, Number(e.target.value) || 8)))}
-              />
-              <span className="text-[var(--fs-small)] text-ink-soft">px</span>
+        {/* La forma de la letra y la muestra comparten fila y alto: son
+            la misma pregunta —«¿cómo se ve esto de verdad?»— y separadas
+            en dos filas gastaban 90 px en un hueco entre ellas. */}
+        <div className="grid items-stretch gap-4 md:grid-cols-[minmax(0,var(--col-controles))_minmax(0,1fr)]">
+          <div className="tarjeta-control h-full content-center sm:grid-cols-2" data-tour="forma">
+            <div className="grid gap-1.5">
+              <Label htmlFor="tamano">{tr('tamano')}</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="tamano"
+                  type="number"
+                  min={8}
+                  max={200}
+                  value={px}
+                  onChange={(e) => setPx(Math.max(8, Math.min(200, Number(e.target.value) || 8)))}
+                />
+                <span className="text-[var(--fs-small)] text-ink-soft">px</span>
+              </div>
             </div>
+
+            <div className="grid gap-1.5">
+              <Label htmlFor="grosor">{tr('grosor')}</Label>
+              <Select value={String(peso)} onValueChange={(v) => setPeso(Number(v))}>
+                <SelectTrigger id="grosor" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {GROSORES.map((g) => (
+                    <SelectItem key={g.valor} value={String(g.valor)}>
+                      {g.valor} · {t(g.nombre, lang)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {wcag.grande && (
+              <p className="text-[var(--fs-small)] text-ink-soft sm:col-span-2">
+                <span className="font-medium text-ink-muted">{tr('textoGrande')}.</span>{' '}
+                {tr('textoGrandePor')}
+              </p>
+            )}
           </div>
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="grosor">{tr('grosor')}</Label>
-            <Select value={String(peso)} onValueChange={(v) => setPeso(Number(v))}>
-              <SelectTrigger id="grosor" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {GROSORES.map((g) => (
-                  <SelectItem key={g.valor} value={String(g.valor)}>
-                    {g.valor} · {t(g.nombre, lang)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {wcag.grande && (
-            <p className="text-[var(--fs-small)] text-ink-soft sm:col-span-2">
-              <span className="font-medium text-ink-muted">{tr('textoGrande')}.</span>{' '}
-              {tr('textoGrandePor')}
-            </p>
-          )}
-        </div>
-
-        {/* La muestra: el color real, al tamaño real, sobre el fondo real. */}
-        <div
-          data-tour="muestra"
-          className="grid min-h-36 place-items-center rounded-lg border border-line p-6"
-          style={{ background: fondoHex }}
-        >
-          <p
-            className="text-center"
-            style={{
-              color: efectivo,
-              fontSize: `${px}px`,
-              fontWeight: peso,
-              lineHeight: 1.35,
-            }}
+          {/* La muestra: el color real, al tamaño real, sobre el fondo real. */}
+          <div
+            data-tour="muestra"
+            className="grid min-h-28 place-items-center rounded-lg border border-line p-6"
+            style={{ background: fondoHex }}
           >
-            {tr('muestra')}
-          </p>
+            <p
+              className="text-center"
+              style={{
+                color: efectivo,
+                fontSize: `${px}px`,
+                fontWeight: peso,
+                lineHeight: 1.35,
+              }}
+            >
+              {tr('muestra')}
+            </p>
+          </div>
         </div>
 
         {/* Los dos veredictos, uno al lado del otro y del mismo alto.
@@ -292,7 +311,14 @@ export default function Contrast({ lang }: Props) {
             derecha apila dos módulos: el de APCA y, cuando los dos no
             coinciden, el que lo explica. Apilar en vez de estirar es lo
             que mantiene la fila cuadrada. */}
-        <div className="grid items-stretch gap-4 sm:grid-cols-2">
+        {/* Dos columnas cuando el par aprueba, tres cuando no: la
+            sugerencia solo existe entonces, y con `grid-cols-2` fijo
+            habría caído a una fila propia dejando medio hueco al lado. */}
+        <div
+          className={`grid items-stretch gap-4 sm:grid-cols-2 ${
+            wcag.pasaAA ? '' : 'lg:grid-cols-3'
+          }`}
+        >
           {/* -------- WCAG 2.2 -------- */}
           <section
             data-tour="wcag"
@@ -306,7 +332,10 @@ export default function Contrast({ lang }: Props) {
             </p>
             <p className="mt-1 text-[var(--fs-small)] text-ink-soft">{tr('wcagRazon')}</p>
 
-            <div className="mt-4 grid gap-2 text-[var(--fs-small)]">
+            {/* Con la tarjeta a media pantalla, la etiqueta y su
+                veredicto quedaban a 400 px uno de otro y había que
+                recorrer la línea entera para emparejarlos. */}
+            <div className="mt-4 grid max-w-[26rem] gap-2 text-[var(--fs-small)]">
               <Fila
                 nombre={`AA · ${wcag.umbralAA}:1`}
                 pasa={wcag.pasaAA}
@@ -345,7 +374,7 @@ export default function Contrast({ lang }: Props) {
                 {esPolaridadClara(apca.lc) ? tr('apcaPolaridadClara') : tr('apcaPolaridadOscura')}
               </p>
 
-              <div className="mt-4 text-[var(--fs-small)]">
+              <div className="mt-4 max-w-[26rem] text-[var(--fs-small)]">
                 {apca.estado === 'pasa' && (
                   <Fila
                     nombre={`${tr('apcaMinimo')}: ${apca.minimoPx} px`}
@@ -402,71 +431,93 @@ export default function Contrast({ lang }: Props) {
               </section>
             )}
           </div>
-        </div>
 
-        {/* -------- El color que sí pasaría -------- */}
-        {!wcag.pasaAA && (
-          <section data-tour="sugerencia" className="rounded-lg border border-line bg-surface p-5">
-            <h3 className="text-[length:var(--fs-h3)] font-semibold text-ink">
-              {tr('sugerenciaTitulo')}
-            </h3>
+          {/* -------- El color que sí pasaría --------
+              Tercera columna de la misma fila y no una tarjeta aparte
+              debajo. En su propia fila costaba 212 px de alto para
+              enseñar un color y un botón; aquí cabe en el hueco que ya
+              dejaba APCA, que se estira igual. Y además queda al lado
+              del veredicto que la provoca, que es donde se entiende:
+              «no pasa» y a continuación «este sí». */}
+          {!wcag.pasaAA && (
+            <section
+              data-tour="sugerencia"
+              /* A dos columnas es el tercero en discordia y dejaba medio
+                 hueco a su derecha; ahí ocupa la fila entera. A tres, una
+                 columna como las otras. */
+              className="flex h-full flex-col rounded-lg border border-line bg-surface p-5 sm:col-span-2 lg:col-span-1"
+            >
+              <h3 className="text-[length:var(--fs-h3)] font-semibold text-ink">
+                {tr('sugerenciaTitulo')}
+              </h3>
 
-            {sugerencia ? (
-              <>
-                <div className="mt-4 flex flex-wrap items-center gap-4">
-                  <div
-                    className="grid h-16 w-24 shrink-0 place-items-center rounded-md border border-line"
-                    style={{ background: fondoHex }}
-                  >
-                    <span
-                      style={{
-                        color: sugerencia.hex,
-                        fontSize: `${px}px`,
-                        fontWeight: peso,
-                      }}
+              {sugerencia ? (
+                <>
+                  <div className="mt-4 flex items-center gap-3">
+                    <div
+                      className="grid h-14 w-20 shrink-0 place-items-center rounded-md border border-line"
+                      style={{ background: fondoHex }}
                     >
-                      Aa
-                    </span>
+                      <span
+                        style={{ color: sugerencia.hex, fontSize: `${px}px`, fontWeight: peso }}
+                      >
+                        Aa
+                      </span>
+                    </div>
+
+                    <div className="grid min-w-0 gap-0.5">
+                      <code className="font-mono text-[length:var(--fs-h3)] text-ink">
+                        {sugerencia.hex}
+                      </code>
+                      <p className="text-[var(--fs-small)] text-ink-soft tabular-nums">
+                        {sugerencia.direccion === 'oscurecer'
+                          ? tr('sugerenciaOscurecer')
+                          : tr('sugerenciaAclarar')}{' '}
+                        · {sugerencia.razon.toFixed(2)}:1
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="grid gap-1">
-                    <code className="font-mono text-[length:var(--fs-h3)] text-ink">
-                      {sugerencia.hex}
-                    </code>
-                    <p className="text-[var(--fs-small)] text-ink-soft tabular-nums">
-                      {sugerencia.direccion === 'oscurecer'
-                        ? tr('sugerenciaOscurecer')
-                        : tr('sugerenciaAclarar')}{' '}
-                      · {sugerencia.razon.toFixed(2)}:1 · {sugerencia.lc.toFixed(1)} Lc
-                    </p>
-                  </div>
+                  <p className="mt-3 text-[var(--fs-small)] text-ink-soft">
+                    {tr('sugerenciaComo')}
+                    {sugerencia.cromaAjustado && ` ${tr('sugerenciaCroma')}`}
+                  </p>
 
-                  {/* A tamaño «sm» y sin nada delante se leía como una
-                      etiqueta y no como algo que se pulsa. Ahora es un
-                      botón del tamaño normal y lleva delante el color que
-                      va a poner: se ve qué hace antes de hacerlo. */}
-                  <Button onClick={() => cambiarTexto(sugerencia.hex)} className="ml-auto">
-                    <span
-                      aria-hidden="true"
-                      className="size-4 shrink-0 rounded-full border border-current/40"
-                      style={{ background: sugerencia.hex }}
-                    />
+                  {/*
+                    Seguía leyéndose como una etiqueta y no como algo que
+                    se pulsa. Tres motivos, los tres arreglados aquí:
+
+                      · Medía 32 px de alto con texto de 12,8. A ese
+                        tamaño una caja de color con una palabra dentro
+                        es un tag, no un botón.
+                      · Llevaba una bolita del color delante, que es
+                        justo lo que hace que algo parezca un tag — y
+                        además sobraba: el «Aa» de arriba ya enseña el
+                        color.
+                      · Iba en el teal de la marca y no en el acento de
+                        la herramienta, que aquí es morado. Un botón de un
+                        color que no aparece en ningún otro sitio de la
+                        página se lee como una insignia.
+
+                    Y va abajo del todo, ocupando el ancho de la tarjeta:
+                    es la única acción de este bloque, así que no tiene
+                    con quién competir por el sitio.
+                  */}
+                  <Button
+                    onClick={() => cambiarTexto(sugerencia.hex)}
+                    className="mt-4 h-10 w-full border border-[var(--acento)] bg-[var(--acento)] px-4 text-[0.9rem] font-medium text-[var(--brand-ink)] hover:bg-[color-mix(in_srgb,var(--acento)_86%,var(--ink))]"
+                  >
                     {tr('sugerenciaUsar')}
                   </Button>
-                </div>
-
-                <p className="mt-4 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
-                  {tr('sugerenciaComo')}
-                  {sugerencia.cromaAjustado && ` ${tr('sugerenciaCroma')}`}
+                </>
+              ) : (
+                <p className="mt-2 text-[var(--fs-small)] text-ink-muted">
+                  {tr('sugerenciaNinguna')}
                 </p>
-              </>
-            ) : (
-              <p className="mt-2 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-muted">
-                {tr('sugerenciaNinguna')}
-              </p>
-            )}
-          </section>
-        )}
+              )}
+            </section>
+          )}
+        </div>
       </div>
     </div>
   );

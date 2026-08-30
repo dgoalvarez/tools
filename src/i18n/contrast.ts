@@ -11,8 +11,17 @@ export const CONTRASTE = {
   // ---------- Los dos colores ----------
   colorTexto: { es: 'Color del texto', en: 'Text colour' },
   colorFondo: { es: 'Color del fondo', en: 'Background colour' },
-  intercambiar: { es: 'Intercambiar texto y fondo', en: 'Swap text and background' },
+  /**
+   * Era «Intercambiar texto y fondo». Puesto entre las dos tarjetas ya
+   * se ve qué intercambia, y la frase larga abría un hueco de 245 px
+   * entre ellas que no servía para nada. El nombre completo se queda en
+   * el `title`, para quien pase el ratón.
+   */
+  intercambiar: { es: 'Intercambiar', en: 'Swap' },
+  intercambiarLargo: { es: 'Intercambiar texto y fondo', en: 'Swap text and background' },
   cuentagotas: { es: 'Tomar un color de la pantalla', en: 'Pick a colour from the screen' },
+  /** Lo que hace la muestra: abrir el selector del sistema. */
+  elegirAMano: { es: 'Elegir un color', en: 'Choose a colour' },
   formatoLibre: {
     es: 'Hex, rgb(), hsl(), oklch() o un nombre como «teal».',
     en: 'Hex, rgb(), hsl(), oklch() or a name like “teal”.',

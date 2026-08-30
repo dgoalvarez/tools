@@ -120,10 +120,10 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
     },
     {
       ancla: 'cuentagotas',
-      titulo: { es: 'Coger un color de la pantalla', en: 'Grab a colour off the screen' },
+      titulo: { es: 'Escribirlo, elegirlo o cogerlo', en: 'Type it, choose it or grab it' },
       cuerpo: {
-        es: 'Toma el color de cualquier punto de la pantalla. Donde el navegador no trae cuentagotas, abre el selector del sistema, que trae el suyo.',
-        en: 'Takes the colour from anywhere on screen. Where the browser has no eyedropper, it opens the system picker, which brings its own.',
+        es: 'El campo acepta cualquier notación. El cuadrado de la izquierda abre el selector de tu sistema, para elegir a mano. Y el cuentagotas de la derecha coge el color de donde pongas el puntero, en cualquier parte de la pantalla; solo aparece en los navegadores que saben hacerlo, que hoy son Chrome y Edge.',
+        en: 'The field takes any notation. The square on the left opens your system picker, to choose by hand. And the eyedropper on the right takes the colour from wherever you point, anywhere on screen; it only shows up in browsers that can do it, which today are Chrome and Edge.',
       },
     },
     {

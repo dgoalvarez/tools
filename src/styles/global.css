@@ -902,7 +902,12 @@
   .plano-color {
     position: relative;
     width: 100%;
-    aspect-ratio: 1.9;
+    /* Alto fijo y no proporción. Con `aspect-ratio`, poner las dos
+       tarjetas de color una al lado de otra las hacía el doble de
+       anchas y por tanto el doble de altas, que es lo contrario de lo
+       que se buscaba. Así el ancho lo decide la columna y el alto lo
+       decide esto. */
+    height: clamp(6.5rem, 9vw, 9rem);
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
     cursor: crosshair;
@@ -1388,5 +1393,54 @@
     .nota-datos {
       max-width: var(--col-controles);
     }
+  }
+}
+
+/* ============================================================
+   La muestra de color
+
+   Es un `<input type="color">` de verdad y no un cuadrado decorativo:
+   al pulsarlo se abre el selector del sistema. Que un cuadrado de color
+   abra un selector de color no hay que explicárselo a nadie, y deja el
+   cuentagotas para lo suyo — coger el color de donde esté el puntero—
+   en vez de mezclar las dos cosas en el mismo botón.
+
+   Los navegadores le ponen al `input[type=color]` un relleno y un borde
+   propios que dejan el color en un recuadro pequeño dentro de la caja.
+   Aquí se le quitan para que el color ocupe el control entero.
+   ============================================================ */
+
+@layer components {
+  .muestra-color {
+    appearance: none;
+    -webkit-appearance: none;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: none;
+    cursor: pointer;
+  }
+
+  .muestra-color::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+
+  .muestra-color::-webkit-color-swatch {
+    border: none;
+    border-radius: calc(var(--radius-md) - 1px);
+  }
+
+  .muestra-color::-moz-color-swatch {
+    border: none;
+    border-radius: calc(var(--radius-md) - 1px);
+  }
+
+  .muestra-color:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
   }
 }

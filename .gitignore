@@ -32,3 +32,6 @@ design/
 # El lienzo de propuestas se publica, no se versiona (3 MB)
 home-y-navegacion-cuatro-direcciones.html
 dgo-tools-editorial-oscuro.html
+
+# Capturas de verificación (se regeneran con npm run ver)
+capturas/

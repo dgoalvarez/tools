@@ -365,6 +365,7 @@
   }
 
   .barra-grupo {
+    flex: none;
     margin: 0;
     padding: 0.75rem 0.625rem 0.1875rem;
     font-size: 0.66rem;
@@ -376,6 +377,11 @@
 
   .barra-item {
     display: flex;
+    /* Sin esto, con la ventana baja la columna flexible aplastaba las
+       fichas por debajo de su contenido y el resumen se salía de la caja
+       y se comía el rótulo del grupo siguiente. La lista ya tiene
+       `overflow-y: auto`: lo correcto es que ruede, no que se aplaste. */
+    flex: none;
     gap: 0.75rem;
     min-height: 2.75rem;
     padding: 0.75rem;
@@ -438,6 +444,7 @@
   }
 
   .barra-corte {
+    flex: none;
     height: 1px;
     margin: 0.75rem 0.125rem 0.25rem;
     background: var(--line);
@@ -493,6 +500,16 @@
     color: var(--ink-soft);
   }
 
+  /* Se enseña solo donde la barra es una fila de iconos abajo.
+     Va AQUÍ, antes de la consulta de medios, y no después: las dos reglas
+     tienen la misma especificidad, así que decide el orden. Estaba
+     después, ganaba siempre, y el «Más» de la barra de móvil no aparecía
+     nunca — con él, la única forma de llegar al idioma y al tema desde un
+     móvil. */
+  .solo-movil {
+    display: none;
+  }
+
   /* ---------- En móvil, una barra abajo ----------
      El nombre se queda; lo que se va es el resumen, que no cabe. */
   @media (width < 48rem) {
@@ -519,18 +536,35 @@
     }
 
     .barra-item {
+      /* Aquí la barra es una FILA, así que el `flex: none` de arriba —que
+         existe para que la columna no aplaste las fichas— haría lo
+         contrario de lo que hace falta: cuatro elementos a su ancho
+         natural no caben en 390 px, la barra se desbordaba y con ella la
+         página entera, que se iba de lado y se llevaba el botón de ayuda
+         fuera de pantalla. En fila reparten a partes iguales. */
+      flex: 1 1 0;
+      min-width: 0;
+
       flex-direction: column;
       align-items: center;
       gap: 0.1875rem;
       min-height: 0;
-      padding: 0.375rem 0.5rem;
+      padding: 0.375rem 0.375rem;
       border-color: transparent;
       background: none;
       text-align: center;
     }
 
+    /* «Escala tipográfica» no cabe en una línea de 90 px. Que parta, en
+       vez de empujar a los demás. */
     .barra-item .nombre {
       font-size: 0.66rem;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+
+    .barra-item > .min-w-0 {
+      min-width: 0;
     }
 
     .barra-item[aria-current='page'] {
@@ -583,11 +617,6 @@
       padding-inline-start: 0;
       padding-block-end: calc(var(--barra-movil) + 0.5rem);
     }
-  }
-
-  /* Se enseña solo donde la barra es una fila de iconos abajo. */
-  .solo-movil {
-    display: none;
   }
 
   /* ---------- El lanzador ---------- */
@@ -970,5 +999,78 @@
   .driver-popover.tour-dgo :is(button):focus-visible {
     outline: 2px solid var(--brand);
     outline-offset: 2px;
+  }
+}
+
+/* ============================================================
+   El encabezado de una herramienta
+
+   Tres renglones y un solo eje: el rótulo de materia con la ayuda a la
+   derecha, el nombre, y qué resuelve. Antes el nombre y el resumen iban
+   uno al lado del otro alineados por la línea base, y a cada anchura de
+   ventana el resumen caía a una altura distinta.
+
+   La contención está en los números, no en el tamaño. El título baja de
+   64 a 56 px en su tope: en una página de herramienta manda la
+   herramienta, no su nombre, y el titular grande ya lo tiene la portada.
+   ============================================================ */
+
+@layer components {
+  .cabecera {
+    /* Más aire debajo de la raya que encima: la raya cierra el
+       encabezado, así que va pegada a él, y el hueco grande es el que
+       separa el encabezado de la herramienta. */
+    padding-block: clamp(1.75rem, 3vw, 2.75rem) clamp(1.25rem, 2vw, 1.75rem);
+    margin-block-end: clamp(1.75rem, 3vw, 2.75rem);
+    border-block-end: 1px solid var(--line);
+  }
+
+  .cabecera-fila {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    /* Reserva el alto del botón aunque el JavaScript no haya llegado: sin
+       esto, el título daba un salto al hidratarse la isla. */
+    min-height: 2.5rem;
+  }
+
+  .cabecera-materia {
+    margin: 0;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--acento);
+  }
+
+  .cabecera-titulo {
+    margin: 0.625rem 0 0;
+    font-size: clamp(2.25rem, 3.1vw, 3.5rem);
+    line-height: 1;
+    font-weight: 600;
+    /* Menos apretado que antes (-0.042em). A este tamaño, una grotesca
+       con el tracking muy cerrado se lee tensa, no fina. */
+    letter-spacing: -0.032em;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+
+  .cabecera-resumen {
+    margin: 0.75rem 0 0;
+    max-width: 58ch;
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    color: var(--ink-muted);
+    text-wrap: pretty;
+  }
+
+  /* ---------- El botón de ayuda ----------
+     Es la misma pastilla que la barra de navegación, para que se lea como
+     parte del mismo sistema y no como un botón inventado aquí. Lo único
+     suyo es que al pasar por encima toma el acento de la herramienta. */
+  .ayuda:hover {
+    border-color: var(--acento);
+    color: var(--acento);
   }
 }

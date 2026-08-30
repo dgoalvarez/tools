@@ -1,19 +1,39 @@
 ---
 /**
- * El envoltorio común de una herramienta: título, qué resuelve, y hueco
- * para la herramienta en sí.
+ * El envoltorio común de una herramienta.
  *
- * Sin migas de pan: la barra lateral ya dice dónde estás y cuál está
- * abierta, así que repetirlo arriba sería decir dos veces lo mismo.
+ * El encabezado va en tres renglones y no en una fila:
  *
- * El nombre y la descripción no se escriben aquí ni en cada página: salen
- * de src/i18n/tools.ts, que es de donde salen también las tarjetas de la
+ *   TIEMPO                                    ? Cómo funciona
+ *   Husos horarios
+ *   Di tu hora en la hora del otro, sin equivocarte de día.
+ *   ────────────────────────────────────────────────────────
+ *
+ * Antes el título y el resumen iban uno al lado del otro alineados por
+ * abajo. Se leía como dos cosas puestas juntas y no como un bloque: el
+ * resumen colgaba de la línea base del título, a una altura distinta según
+ * lo ancha que fuera la ventana, y el botón de ayuda saltaba de renglón
+ * sin avisar en cuanto el nombre crecía.
+ *
+ * En tres renglones hay un solo eje y todo cuelga del mismo margen. La
+ * ayuda está siempre en el mismo sitio, mida lo que mida el nombre.
+ *
+ * El rótulo de materia sale de las mismas etiquetas que agrupan la portada
+ * y la barra lateral, y se pinta con el acento de esa materia — medido y
+ * no elegido a ojo: `scripts/comprobar-encabezado.ts` lo comprueba en los
+ * dos temas y contra los dos fondos sobre los que puede caer.
+ *
+ * Sin migas de pan: la barra lateral ya dice dónde estás.
+ *
+ * El nombre y el resumen no se escriben aquí ni en cada página: salen de
+ * src/i18n/tools.ts, que es de donde salen también las tarjetas de la
  * portada. Así no puede haber una herramienta que se llame de dos formas.
  */
 import Base from './Base.astro';
 import Tour from '../islands/Tour';
 import { UI } from '../i18n/ui';
 import { TOOLS } from '../i18n/tools';
+import { MATERIAS } from '../i18n/labels';
 import { t, type Lang } from '../i18n/config';
 import type { ToolKey } from '../i18n/routes';
 
@@ -29,32 +49,25 @@ const name = t(meta.name, lang);
 const description = t(meta.description, lang);
 ---
 
-<Base lang={lang} page={tool} title={`${name} · ${t(UI.brand, lang)} Tools`} description={description}>
-  <div class="mx-auto max-w-[1560px] px-[var(--pad-x)] py-[clamp(1.75rem,3vw,3.25rem)]">
-    {/*
-      El título y lo que resuelve van en la misma línea cuando hay sitio:
-      juntos son una frase, y separarlos en dos bloques hacía que el
-      resumen pareciera un párrafo suelto.
-    */}
-    <header class="flex flex-wrap items-end gap-x-8 gap-y-2.5">
-      <h1
-        class="m-0 text-[length:clamp(2.375rem,3.4vw,4rem)] leading-[0.96] font-semibold tracking-[-0.042em] text-ink"
-      >
-        {name}
-      </h1>
-      <p class="m-0 max-w-[46ch] text-[0.95rem] leading-relaxed text-ink-muted">
-        {t(meta.summary, lang)}
-      </p>
-
-      {/* El paso a paso, en la esquina. Sustituye al cajón de «¿Cómo
-          funciona?» que vivía abajo del todo: explicaba los controles
-          lejos de los controles, y por eso casi nadie lo abría. */}
-      <div class="ml-auto">
+<Base
+  lang={lang}
+  page={tool}
+  title={`${name} · ${t(UI.brand, lang)} Tools`}
+  description={description}
+>
+  <div class="mx-auto max-w-[1560px] px-[var(--pad-x)]">
+    <header class="cabecera">
+      <div class="cabecera-fila">
+        <p class="cabecera-materia">{t(MATERIAS[meta.etiquetas.materia], lang)}</p>
         <Tour client:load lang={lang} tool={tool} />
       </div>
+
+      <h1 class="cabecera-titulo">{name}</h1>
+
+      <p class="cabecera-resumen">{t(meta.summary, lang)}</p>
     </header>
 
-    <div class="mt-[clamp(1.25rem,2vw,2.125rem)]">
+    <div class="pb-[clamp(2rem,4vw,4rem)]">
       <slot />
     </div>
   </div>

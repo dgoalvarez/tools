@@ -73,6 +73,8 @@ export const UI = {
    */
   comoFunciona: { es: '¿Cómo funciona?', en: 'How does it work?' },
   /** Los botones del paso a paso. Van aquí porque los pone driver.js. */
+  /** Lo que dice el botón del encabezado. Corto: va dentro de una pastilla. */
+  tourAbrir: { es: 'Cómo funciona', en: 'How it works' },
   tourSiguiente: { es: 'Siguiente', en: 'Next' },
   tourAtras: { es: 'Atrás', en: 'Back' },
   tourFin: { es: 'Listo', en: 'Done' },

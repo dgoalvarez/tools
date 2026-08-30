@@ -87,15 +87,20 @@ export default function Tour({ lang, tool }: Props) {
   }
 
   return (
+    // Es la misma pastilla que la barra de navegación: así se lee como
+    // parte del mismo sistema y no como un botón inventado en esta página.
+    // En pantallas estrechas se queda solo el icono, pero el nombre
+    // accesible no se pierde: sigue en el `aria-label`.
     <button
       type="button"
       onClick={abrir}
       disabled={cargando}
       title={t(UI.comoFunciona, lang)}
       aria-label={t(UI.comoFunciona, lang)}
-      className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-full border border-line text-ink-muted hover:border-[var(--acento)] hover:text-[var(--acento)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)] disabled:opacity-50"
+      className="pastilla ayuda shrink-0 cursor-pointer disabled:opacity-50"
     >
-      <QuestionMarkIcon aria-hidden="true" size={18} weight="bold" />
+      <QuestionMarkIcon aria-hidden="true" size={15} weight="bold" />
+      <span className="solo-escritorio">{t(UI.tourAbrir, lang)}</span>
     </button>
   );
 }

@@ -1,12 +1,15 @@
 ---
 /**
- * Pie: la promesa de privacidad y la firma.
+ * Pie: la promesa de privacidad y la firma. Nada más.
  *
  * La promesa va aquí, a la vista, y no en una página de política: no hay
  * nada que politizar cuando no se recoge nada.
  *
- * Cuando llegue la herramienta de husos horarios, la atribución a GeoNames
- * (CC BY 4.0) va en este archivo. Es obligatoria, no opcional.
+ * La atribución a GeoNames NO está aquí. Vive en la página de husos
+ * horarios, que es la única que usa esos datos. Ponerla en todas las
+ * páginas no cumplía mejor la licencia —CC BY pide atribuir donde se usa la
+ * obra— y sí obligaba a quien mira una escala tipográfica a leer una nota
+ * sobre códigos postales.
  */
 import { UI } from '../i18n/ui';
 import { t, type Lang } from '../i18n/config';
@@ -23,32 +26,7 @@ const year = new Date().getFullYear();
   <div
     class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-[var(--pad-x)] py-6 text-[var(--fs-small)] text-ink-soft"
   >
-    <p class="max-w-[46ch]">
-      {t(UI.privacyNote, lang)}
-      {/*
-        La licencia CC BY 4.0 de GeoNames obliga a atribuir. No es cortesía
-        ni una nota que se pueda mover a una página interior: es la
-        condición bajo la que se pueden usar sus datos.
-      */}
-      <br />
-      <span>
-        {t(UI.datosDe, lang)}{' '}
-        <a
-          href="https://www.geonames.org"
-          rel="noopener"
-          class="underline underline-offset-2 hover:text-brand"
-        >
-          GeoNames
-        </a>{' '}
-        <a
-          href="https://creativecommons.org/licenses/by/4.0/"
-          rel="license noopener"
-          class="underline underline-offset-2 hover:text-brand"
-        >
-          (CC BY 4.0)
-        </a>
-      </span>
-    </p>
+    <p class="max-w-[46ch]">{t(UI.privacyNote, lang)}</p>
 
     <p>
       {t(UI.madeBy, lang)}{' '}

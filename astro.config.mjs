@@ -58,6 +58,15 @@ export default defineConfig({
 
   vite: {
     plugins: [tailwindcss()],
+    build: {
+      // Sin esto, Astro mete los scripts pequeños dentro del HTML. Y todo
+      // script en línea necesita su hash en la Content Security Policy, así
+      // que cada vez que se tocara una línea de src/scripts/ habría que
+      // volver a copiar un hash a vercel.json. Con cero, todos salen como
+      // archivo .js y solo queda en línea el del tema, que tiene que estarlo
+      // para aplicarse antes del primer pintado.
+      assetsInlineLimit: 0,
+    },
   },
 });
 

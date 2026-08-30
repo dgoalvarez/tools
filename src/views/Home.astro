@@ -1,14 +1,24 @@
 ---
 /**
- * La portada: qué es esto y las tres herramientas.
+ * La portada: una rejilla bento con las herramientas agrupadas por ámbito.
  *
- * Las tarjetas salen de src/i18n/tools.ts y sus direcciones de
- * src/i18n/routes.ts. Añadir una herramienta a esos dos archivos la añade
- * aquí sin tocar esta página.
+ * Se ordena por para qué sirve cada una y no por de qué trata, porque quien
+ * llega buscando «algo para agendar citas» entiende «Productividad» y no
+ * tiene por qué entender «Tiempo». La materia y la tarea van en la ficha,
+ * como etiquetas: informan si te fijas y no estorban si no.
+ *
+ * Dentro de cada grupo, la primera herramienta ocupa el doble. No es
+ * decoración: una rejilla donde todo mide igual obliga a leerlo todo para
+ * elegir, y una donde algo destaca deja empezar por ahí.
+ *
+ * Todo sale de src/i18n/tools.ts y src/i18n/labels.ts. Añadir una
+ * herramienta ahí la añade aquí sin tocar este archivo.
  */
 import Base from '../layouts/Base.astro';
+import Icono from '../components/Icono.astro';
 import { UI } from '../i18n/ui';
 import { TOOLS } from '../i18n/tools';
+import { AMBITOS, MATERIAS, TAREAS, ORDEN_AMBITOS, ambitoPrincipal } from '../i18n/labels';
 import { t, type Lang } from '../i18n/config';
 import { route, TOOL_KEYS } from '../i18n/routes';
 
@@ -17,6 +27,11 @@ interface Props {
 }
 
 const { lang } = Astro.props;
+
+const grupos = ORDEN_AMBITOS.map((ambito) => ({
+  ambito,
+  herramientas: TOOL_KEYS.filter((key) => ambitoPrincipal(TOOLS[key].etiquetas) === ambito),
+})).filter((grupo) => grupo.herramientas.length > 0);
 ---
 
 <Base
@@ -30,39 +45,62 @@ const { lang } = Astro.props;
       <h1 class="text-[length:var(--fs-title)] leading-[1.1] font-semibold tracking-tight text-ink">
         {t(UI.tagline, lang)}
       </h1>
-      <p class="mt-4 text-ink-muted">{t(UI.homeIntro, lang)}</p>
+      <p class="mt-3 text-ink-muted">{t(UI.homeIntro, lang)}</p>
     </header>
 
-    <ul class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="mt-12 grid gap-10">
       {
-        TOOL_KEYS.map((key) => (
-          <li class="h-full">
-            <a
-              href={route(key, lang)}
-              class="group flex h-full flex-col rounded-lg border border-line bg-surface p-5 transition-colors hover:border-brand"
-            >
-              <h2 class="text-[length:var(--fs-h3)] font-semibold tracking-tight text-ink group-hover:text-brand">
-                {t(TOOLS[key].name, lang)}
-              </h2>
-              <p class="mt-2 flex-1 text-[var(--fs-small)] text-ink-muted">
-                {t(TOOLS[key].summary, lang)}
-              </p>
-              {
-                TOOLS[key].listo ? (
-                  <p class="mt-4 text-[var(--fs-small)] font-medium text-brand">
-                    {t(UI.openTool, lang)}
-                    <span aria-hidden="true"> →</span>
-                  </p>
-                ) : (
-                  <p class="mt-4 text-[var(--fs-small)] font-medium text-ink-soft">
-                    {t(UI.soonBadge, lang)}
-                  </p>
-                )
-              }
-            </a>
-          </li>
+        grupos.map((grupo) => (
+          <section>
+            <h2 class="text-[0.68rem] font-semibold tracking-[0.06em] text-ink-soft uppercase">
+              {t(AMBITOS[grupo.ambito], lang)}
+            </h2>
+
+            <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {grupo.herramientas.map((key, i) => {
+                const tool = TOOLS[key];
+                return (
+                  <li class={i === 0 ? 'sm:col-span-2' : ''}>
+                    <a
+                      href={route(key, lang)}
+                      class="group flex h-full flex-col rounded-xl border border-line bg-surface p-5 transition-colors hover:border-brand"
+                    >
+                      <Icono nombre={tool.icono} tamano={22} class="text-brand" />
+
+                      <h3 class="mt-4 text-[length:var(--fs-h3)] font-semibold tracking-tight text-ink group-hover:text-brand">
+                        {t(tool.name, lang)}
+                      </h3>
+                      <p class="mt-1.5 flex-1 text-[var(--fs-small)] text-ink-muted">
+                        {t(tool.summary, lang)}
+                      </p>
+
+                      <div class="mt-4 flex flex-wrap items-center gap-1.5 text-[0.7rem]">
+                        <span class="rounded-full border border-line px-2 py-0.5 text-ink-soft">
+                          {t(MATERIAS[tool.etiquetas.materia], lang)}
+                        </span>
+                        <span class="rounded-full border border-line px-2 py-0.5 text-ink-soft">
+                          {t(TAREAS[tool.etiquetas.tarea], lang)}
+                        </span>
+
+                        <span class="ml-auto font-medium text-brand group-hover:underline">
+                          {tool.listo ? (
+                            <>
+                              {t(UI.openTool, lang)}
+                              <span aria-hidden="true"> →</span>
+                            </>
+                          ) : (
+                            <span class="text-ink-soft">{t(UI.soonBadge, lang)}</span>
+                          )}
+                        </span>
+                      </div>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
         ))
       }
-    </ul>
+    </div>
   </div>
 </Base>

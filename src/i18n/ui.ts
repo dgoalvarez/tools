@@ -26,11 +26,16 @@ export const UI = {
   navHome: { es: 'Inicio', en: 'Home' },
   navTools: { es: 'Herramientas', en: 'Tools' },
   backHome: { es: 'Volver al inicio', en: 'Back to home' },
+  verTodas: { es: 'Ver todas', en: 'See all' },
+  todasLasHerramientas: { es: 'Todas las herramientas', en: 'All the tools' },
+  fijarMenu: { es: 'Dejar el menú abierto', en: 'Keep the menu open' },
+  soltarMenu: { es: 'Plegar el menú', en: 'Collapse the menu' },
+  cerrar: { es: 'Cerrar', en: 'Close' },
 
   // ---------- Portada ----------
   homeIntro: {
-    es: 'Tres herramientas para problemas concretos del trabajo diario. Todo se calcula en tu navegador: no hay cuentas, no hay cookies y no se guarda nada de nadie.',
-    en: 'Three tools for concrete problems of everyday work. Everything runs in your browser: no accounts, no cookies, nothing about anyone is stored.',
+    es: 'Se calculan en tu navegador. Sin cuentas y sin cookies.',
+    en: 'They run in your browser. No accounts, no cookies.',
   },
   openTool: { es: 'Abrir', en: 'Open' },
 

@@ -1,0 +1,46 @@
+---
+/**
+ * Pinta uno de los iconos de `iconos.ts` como SVG, sin JavaScript.
+ *
+ * Es decorativo por defecto (`aria-hidden`), porque un icono junto a su
+ * texto solo lo repetiría para quien usa un lector de pantalla. Cuando el
+ * icono va solo —el menú plegado, un botón sin etiqueta— hay que pasarle
+ * un `titulo`, y entonces sí se anuncia.
+ */
+import { ICONOS, type IconoKey } from './iconos';
+
+interface Props {
+  nombre: IconoKey;
+  /** Tamaño en píxeles. El de fábrica es el que usa el menú. */
+  tamano?: number;
+  /** Si se pasa, el icono deja de ser decorativo y se anuncia con este texto. */
+  titulo?: string;
+  class?: string;
+}
+
+const { nombre, tamano = 20, titulo, class: clase } = Astro.props;
+
+// Astro trata una variable en mayúscula como nombre de etiqueta, así que
+// esto pinta <circle>, <path> o <rect> según toque.
+const trazos = ICONOS[nombre].map(
+  ([etiqueta, atributos]) => [etiqueta as 'path', atributos] as const
+);
+---
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width={tamano}
+  height={tamano}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.75"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class={clase}
+  role={titulo ? 'img' : undefined}
+  aria-hidden={titulo ? undefined : 'true'}
+  aria-label={titulo}
+>
+  {trazos.map(([Trazo, atributos]) => <Trazo {...atributos} />)}
+</svg>

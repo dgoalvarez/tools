@@ -253,3 +253,219 @@
     color: var(--brand-ink);
   }
 }
+
+/* ============================================================
+   El riel de navegación
+
+   Es una franja de iconos pegada a la izquierda que se ensancha al pasar
+   por encima, al recibir el foco con el teclado, o cuando alguien la deja
+   fijada. Tres reglas de fondo:
+
+   1. Al ensancharse se pone POR ENCIMA del contenido, no lo empuja. Si
+      empujara, toda la página bailaría cada vez que el ratón pasa cerca.
+   2. Los nombres de las herramientas están siempre en el HTML; plegado
+      solo los recorta el `overflow`. Quien usa un lector de pantalla no
+      puede «pasar por encima» de nada, así que los nombres tienen que
+      estar ahí siempre.
+   3. `:focus-within` lo abre. Sin eso, navegar con el tabulador sería ir a
+      ciegas por una columna de iconos.
+   ============================================================ */
+
+:root {
+  --riel-plegado: 3.5rem;
+  --riel-abierto: 14.5rem;
+  --riel-movil: 4rem;
+}
+
+@layer components {
+  .riel {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: 0;
+    z-index: 40;
+
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    width: var(--riel-plegado);
+    padding: 0.75rem 0.5rem;
+    overflow: hidden;
+
+    background: var(--surface);
+    border-inline-end: 1px solid var(--line);
+
+    transition: width 160ms ease;
+  }
+
+  .riel:hover,
+  .riel:focus-within,
+  html[data-riel='fijo'] .riel {
+    width: var(--riel-abierto);
+    box-shadow: 0 0 0 1px var(--line);
+  }
+
+  /* Quien prefiere que nada se mueva, que no se mueva. */
+  @media (prefers-reduced-motion: reduce) {
+    .riel {
+      transition: none;
+    }
+  }
+
+  /* El texto que solo se ve con el riel abierto. No se oculta con
+     `display` ni con `visibility`: se recorta, y así sigue existiendo
+     para los lectores de pantalla y para el buscador del navegador. */
+  .riel-texto {
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .riel-fila {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+
+    /* El alto de un objetivo táctil cómodo, también en escritorio. */
+    min-height: 2.5rem;
+    padding-inline: 0.625rem;
+    border-radius: var(--radius);
+
+    color: var(--ink-muted);
+    font-size: var(--fs-small);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .riel-fila > svg {
+    flex: none;
+  }
+
+  .riel-fila:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+
+  .riel-fila[aria-current='page'] {
+    background: color-mix(in srgb, var(--brand) 12%, transparent);
+    color: var(--brand);
+    font-weight: 500;
+  }
+
+  .riel-marca {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+
+  .riel-grupo {
+    margin-block-start: 0.75rem;
+    padding-inline: 0.625rem;
+
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .riel-pie {
+    margin-block-start: auto;
+    padding-block-start: 0.5rem;
+    border-block-start: 1px solid var(--line);
+  }
+
+  /* El contenido deja sitio al riel plegado; cuando está fijado, al
+     abierto. Es la única vez que el riel mueve la página, y solo porque
+     alguien lo ha pedido a propósito. */
+  .contenido {
+    padding-inline-start: var(--riel-plegado);
+    transition: padding-inline-start 160ms ease;
+  }
+
+  html[data-riel='fijo'] .contenido {
+    padding-inline-start: var(--riel-abierto);
+  }
+
+  /* ---------- En móvil, una barra abajo ----------
+     Donde no hay ratón, «pasar por encima» no existe. Y el pulgar llega
+     antes abajo que arriba. */
+  @media (width < 48rem) {
+    .riel {
+      inset-block: auto 0;
+      inset-inline: 0;
+      width: auto;
+      height: var(--riel-movil);
+
+      flex-direction: row;
+      justify-content: space-around;
+      gap: 0;
+      padding: 0.25rem 0.5rem;
+
+      border-inline-end: 0;
+      border-block-start: 1px solid var(--line);
+    }
+
+    .riel:hover,
+    .riel:focus-within,
+    html[data-riel='fijo'] .riel {
+      width: auto;
+      box-shadow: none;
+    }
+
+    .riel-fila {
+      flex-direction: column;
+      gap: 0.125rem;
+      min-height: 0;
+      padding-inline: 0.5rem;
+      font-size: 0.65rem;
+    }
+
+    /* La marca, los grupos y el botón de fijar no pintan nada en una
+       barra de cinco iconos. */
+    .riel-marca,
+    .riel-grupo,
+    .riel-solo-escritorio {
+      display: none;
+    }
+
+    .contenido,
+    html[data-riel='fijo'] .contenido {
+      padding-inline-start: 0;
+      padding-block-end: calc(var(--riel-movil) + 0.5rem);
+    }
+  }
+
+  /* ---------- El lanzador ---------- */
+  .bento::backdrop {
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+    backdrop-filter: blur(3px);
+  }
+
+  .bento {
+    margin: auto;
+    width: min(56rem, calc(100vw - 2rem));
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  .bento[open] {
+    animation: bento-entra 160ms ease;
+  }
+
+  @keyframes bento-entra {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bento[open] {
+      animation: none;
+    }
+  }
+}

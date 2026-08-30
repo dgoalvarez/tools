@@ -1,11 +1,11 @@
 ---
 /**
- * Estructura común de todas las páginas: <head>, cabecera, contenido y pie.
+ * Estructura común de todas las páginas: <head>, riel, contenido y pie.
  *
  * Cada página existe en un solo idioma, declarado en <html lang>, y apunta
  * a su equivalente en el otro mediante hreflang.
  */
-import Header from '../components/Header.astro';
+import Rail from '../components/Rail.astro';
 import Footer from '../components/Footer.astro';
 import { UI } from '../i18n/ui';
 import { t, otherLang, OG_LOCALE, DEFAULT_LANG, LANGS, type Lang } from '../i18n/config';
@@ -98,11 +98,13 @@ const ogImage = new URL('/og.png', site).href;
     <meta name="twitter:image:alt" content={t(UI.ogImageAlt, lang)} />
 
     {/*
-      Aplica la elección de tema antes del primer pintado; si no, quien
-      tenga guardado el modo claro vería un destello oscuro al cargar.
+      Aplica antes del primer pintado las dos cosas que alguien puede haber
+      elegido: el tema y si el menú se queda abierto. Si no fuera antes,
+      quien tenga guardado el modo claro vería un destello oscuro, y el
+      menú daría un salto de ancho nada más cargar.
 
-      Solo escribe `data-theme` cuando alguien ha elegido a mano. Si nadie
-      ha elegido, el atributo no existe y manda `prefers-color-scheme`
+      `data-theme` solo se escribe cuando alguien ha elegido a mano. Si
+      nadie ha elegido, el atributo no existe y manda `prefers-color-scheme`
       desde el CSS — que es lo que hace que el sitio se vea bien aunque
       este script no llegue a ejecutarse.
 
@@ -111,18 +113,17 @@ const ogImage = new URL('/og.png', site).href;
     */}
     <script is:inline>
       (function () {
-        var saved = null;
+        var raiz = document.documentElement;
         try {
-          saved = localStorage.getItem('dgo-tools-theme');
+          var tema = localStorage.getItem('dgo-tools-theme');
+          if (tema === 'dark' || tema === 'light') raiz.dataset.theme = tema;
+          if (localStorage.getItem('dgo-tools-riel') === 'fijo') raiz.dataset.riel = 'fijo';
         } catch (e) {}
-        if (saved === 'dark' || saved === 'light') {
-          document.documentElement.dataset.theme = saved;
-        }
       })();
     </script>
   </head>
 
-  <body class="flex min-h-dvh flex-col">
+  <body>
     <a
       href="#main"
       class="sr-only rounded-md bg-primary px-3 py-2 text-primary-foreground focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50"
@@ -130,12 +131,23 @@ const ogImage = new URL('/og.png', site).href;
       {t(UI.skipToContent, lang)}
     </a>
 
-    <Header lang={lang} page={page} />
+    <Rail lang={lang} page={page} />
 
-    <main id="main" class="flex-1">
-      <slot />
-    </main>
+    {/*
+      El riel va por encima con `position: fixed`, así que el contenido se
+      aparta con un relleno y no con una columna: al ensancharse el menú, la
+      página no se mueve.
+    */}
+    <div class="contenido flex min-h-dvh flex-col">
+      <main id="main" class="flex-1">
+        <slot />
+      </main>
 
-    <Footer lang={lang} />
+      <Footer lang={lang} />
+    </div>
+
+    <script>
+      import '../scripts/rail';
+    </script>
   </body>
 </html>

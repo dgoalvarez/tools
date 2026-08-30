@@ -1,17 +1,15 @@
 /**
- * El conmutador de tema: la única isla de React del sitio por ahora.
- *
- * No es una demostración. Es el control real, y de paso es lo que prueba
- * en producción que React hidrata, que shadcn hereda los tokens del sitio
- * y que la política de seguridad no bloquea nada.
+ * El conmutador de tema.
  *
  * El icono y la etiqueta NO se deciden en JavaScript, sino con la variante
  * `dark:` del CSS. Así el botón sale correcto en el primer pintado —
  * incluso antes de hidratarse, y también cuando el tema lo decide el
  * sistema y no hay ningún `data-theme` que leer.
+ *
+ * Vive dentro del riel, así que se pinta con sus mismas clases: un botón
+ * de shadcn ahí dentro se vería como un injerto.
  */
 import { Moon, Sun } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 const KEY = 'dgo-tools-theme';
 
@@ -36,20 +34,22 @@ export default function ThemeToggle({ toDark, toLight }: Props) {
     el.dataset.theme = next;
     try {
       localStorage.setItem(KEY, next);
-    } catch (e) {
+    } catch {
       // Navegación privada o almacenamiento bloqueado: el tema cambia
       // igual, solo que no se recuerda al recargar.
     }
   }
 
   return (
-    <Button variant="ghost" size="icon-sm" onClick={toggle} className="text-ink-muted">
-      <Moon aria-hidden="true" className="dark:hidden" />
-      <Sun aria-hidden="true" className="hidden dark:block" />
-      <span className="sr-only dark:hidden">
-        {toDark}
-      </span>
-      <span className="sr-only hidden dark:inline">{toLight}</span>
-    </Button>
+    <button type="button" onClick={toggle} className="riel-fila w-full cursor-pointer">
+      <Moon aria-hidden="true" className="size-5 dark:hidden" strokeWidth={1.75} />
+      <Sun aria-hidden="true" className="hidden size-5 dark:block" strokeWidth={1.75} />
+
+      {/* Dos etiquetas, y el CSS elige. En modo claro el botón lleva a
+          oscuro, y al revés: decirlo bien importa porque es lo único que
+          oye quien no ve el icono. */}
+      <span className="riel-texto dark:hidden">{toDark}</span>
+      <span className="riel-texto hidden dark:inline">{toLight}</span>
+    </button>
   );
 }

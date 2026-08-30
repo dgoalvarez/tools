@@ -10,6 +10,8 @@
  */
 import type { T } from './config';
 import type { ToolKey } from './routes';
+import type { Etiquetas } from './labels';
+import type { IconoKey } from '../components/iconos';
 
 interface Tool {
   /** El nombre corto, el del menú y el de la tarjeta. */
@@ -24,6 +26,14 @@ interface Tool {
    * barata de perder a alguien en la primera visita.
    */
   listo: boolean;
+  /** Cómo se ordena y se agrupa. Ver src/i18n/labels.ts. */
+  etiquetas: Etiquetas;
+  /**
+   * El icono del menú. Con el menú plegado es lo único que se ve, así que
+   * tiene que distinguirse de los otros de un vistazo, no describir bien la
+   * herramienta.
+   */
+  icono: IconoKey;
 }
 
 export const TOOLS: Record<ToolKey, Tool> = {
@@ -38,6 +48,10 @@ export const TOOLS: Record<ToolKey, Tool> = {
       en: 'Convert a time to the zones of everyone who has to be in the meeting, by city or by US ZIP code, and get the sentence ready to copy. It warns when the time lands on another day, which is the mistake people actually make when scheduling.',
     },
     listo: true,
+    // Sale bajo Productividad, que es donde la busca quien agenda; la
+    // atención al cliente es su otro uso y aparece en la ficha.
+    etiquetas: { ambito: ['productividad', 'atencionCliente'], materia: 'tiempo', tarea: 'convertir' },
+    icono: 'reloj',
   },
   contrast: {
     name: { es: 'Contraste', en: 'Contrast' },
@@ -50,6 +64,8 @@ export const TOOLS: Record<ToolKey, Tool> = {
       en: 'Check the contrast of a text colour over its background with WCAG 2.2 and with APCA, understand why the two verdicts can disagree, and get the nearest colour that does pass.',
     },
     listo: true,
+    etiquetas: { ambito: ['diseno'], materia: 'color', tarea: 'comprobar' },
+    icono: 'contraste',
   },
   scale: {
     name: { es: 'Escala tipográfica', en: 'Type scale' },
@@ -62,5 +78,7 @@ export const TOOLS: Record<ToolKey, Tool> = {
       en: 'Generate a fluid type scale with clamp(), ready to copy as CSS variables, and see what each step really measures at 390, 768, 1360 and 1920. It warns when two steps cross over at some width.',
     },
     listo: true,
+    etiquetas: { ambito: ['diseno'], materia: 'tipografia', tarea: 'generar' },
+    icono: 'tipografia',
   },
 };

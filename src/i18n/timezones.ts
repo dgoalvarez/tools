@@ -105,6 +105,17 @@ export const HUSOS = {
     es: 'Ciudades, regiones y códigos postales de',
     en: 'Cities, regions and ZIP codes from',
   },
+  /**
+   * Lo que se ve del desplegable esté abierto o cerrado.
+   *
+   * Nombra la fuente y la licencia porque eso es exactamente lo que la
+   * CC BY pide identificar. Lo que se pliega detrás es la explicación de
+   * la precisión, que es opcional; esto no lo es.
+   */
+  fuenteResumen: {
+    es: 'Datos de GeoNames · CC BY 4.0',
+    en: 'Data from GeoNames · CC BY 4.0',
+  },
   precisionCuerpo: {
     es: 'Las zonas horarias siguen fronteras políticas —países, estados, condados—, nunca barrios. El código postal sirve para distinguir los estados partidos en dos husos, como Florida o Indiana; dentro de una misma ciudad no cambia nada.',
     en: 'Time zones follow political borders — countries, states, counties — never neighbourhoods. The ZIP code is what tells apart the states split across two zones, such as Florida or Indiana; within one city it changes nothing.',

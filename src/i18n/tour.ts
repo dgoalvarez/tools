@@ -94,8 +94,8 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
       ancla: 'precision',
       titulo: { es: 'Hasta dónde llega', en: 'How far it goes' },
       cuerpo: {
-        es: 'Los husos son exactos a nivel de condado, que es el nivel al que existen de verdad. Los datos son de GeoNames, con licencia CC BY 4.0, y la atribución está ahí por eso.',
-        en: 'Zones are exact at county level, which is the level at which they really exist. The data is from GeoNames under a CC BY 4.0 licence, and the attribution is there for that reason.',
+        es: 'Los husos son exactos a nivel de condado, que es el nivel al que existen de verdad. Los datos son de GeoNames y la línea está ahí porque su licencia lo pide; ábrela si quieres el detalle de hasta dónde llega la precisión.',
+        en: 'Zones are exact at county level, which is the level at which they really exist. The data is from GeoNames and that line is there because its licence asks for it; open it if you want the detail on how far the precision goes.',
       },
     },
   ],

@@ -9,9 +9,24 @@
  * funciona?» al final. Ahora lo cuenta el paso a paso del botón «?», que
  * lo explica señalando el control en vez de describirlo aquí abajo.
  *
- * Lo único que no se ha movido es la atribución a GeoNames, y no por
- * gusto: la licencia CC BY obliga a atribuir donde se usa la obra, y el
- * paso a paso necesita JavaScript. Tiene que estar impresa en la página.
+ * ---------------------------------------------------------------------
+ * Por qué la nota de los datos se pliega pero no desaparece
+ *
+ * Lo de abajo no es un descargo que se pueda quitar: es la atribución
+ * que exige la licencia CC BY 4.0 de GeoNames, y la exige **donde se usa
+ * la obra**. Por eso vive aquí y no en el pie del sitio, y por eso está
+ * impresa en el HTML y no dentro del paso a paso, que necesita
+ * JavaScript.
+ *
+ * La forma de plegarla sin incumplir es esta: el resumen —que se ve
+ * siempre, abierto o cerrado— nombra la fuente y la licencia, que es lo
+ * que la licencia pide identificar. Lo que se pliega es la explicación
+ * de hasta dónde llega la precisión, que sí es opcional, más los enlaces.
+ *
+ * Es un `<details>` nativo, así que se abre sin JavaScript y Ctrl+F lo
+ * encuentra aunque esté cerrado: los navegadores lo abren al buscar
+ * dentro. Un div con `display: none` no aparecería en esa búsqueda, y
+ * entonces la atribución sería como si no existiera.
  */
 import Tool from '../layouts/Tool.astro';
 import Timezones from '../islands/Timezones';
@@ -37,25 +52,17 @@ const { lang } = Astro.props;
     </p>
   </noscript>
 
-  {/* La letra más pequeña del sitio, y a propósito: es lo que hay que
-      leer una vez y no volver a leer nunca. La atribución no se puede
-      quitar —la licencia CC BY la exige donde se usa la obra— pero sí
-      puede ocupar lo que le corresponde. */}
-  <p data-tour="precision" class="mt-8 max-w-[var(--measure)] text-[0.72rem] leading-relaxed text-ink-soft">
-    {t(HUSOS.precisionCuerpo, lang)}{' '}
-    <span class="whitespace-nowrap">
-      {t(HUSOS.atribucion, lang)}{' '}
-      <a
-        href="https://www.geonames.org"
-        rel="noopener"
-        class="underline underline-offset-2 hover:text-brand">GeoNames</a
-      >
-      <span aria-hidden="true"> · </span>
-      <a
-        href="https://creativecommons.org/licenses/by/4.0/"
-        rel="license noopener"
-        class="underline underline-offset-2 hover:text-brand">CC BY 4.0</a
-      >
-    </span>
-  </p>
+  <details data-tour="precision" class="nota-datos">
+    <summary>{t(HUSOS.fuenteResumen, lang)}</summary>
+
+    <div class="cuerpo">
+      <p>{t(HUSOS.precisionCuerpo, lang)}</p>
+      <p>
+        {t(HUSOS.atribucion, lang)}{' '}
+        <a href="https://www.geonames.org" rel="noopener">GeoNames</a>
+        <span aria-hidden="true"> · </span>
+        <a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener">CC BY 4.0</a>
+      </p>
+    </div>
+  </details>
 </Tool>

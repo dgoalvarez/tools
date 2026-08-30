@@ -29,7 +29,7 @@ export const ESCALA = {
     es: 'Entre estos dos anchos el tamaño crece; fuera, se queda fijo.',
     en: 'Between these two widths the size grows; outside them it stays put.',
   },
-  prefijo: { es: 'Nombre de las variables', en: 'Variable name' },
+  prefijo: { es: 'Prefijo', en: 'Prefix' },
 
   // ---------- La tabla ----------
   tablaTitulo: { es: 'A cuántos píxeles queda de verdad', en: 'What it really measures' },
@@ -72,7 +72,29 @@ export const ESCALA = {
   },
   cruceEn: { es: 'alcanza a', en: 'catches up with' },
   aA: { es: 'a', en: 'at' },
+  // ---------- Nombres de los pasos ----------
+  nombresTitulo: { es: 'Nombres', en: 'Names' },
+  esquema: { es: 'Esquema', en: 'Scheme' },
+  aMedida: { es: 'A medida', en: 'Custom' },
+  nombreDe: { es: 'Nombre del paso', en: 'Name of step' },
+  nombresAyuda: {
+    es: 'Cada paso se puede renombrar en la tabla. Un nombre vacío lo devuelve a su número.',
+    en: 'Each step can be renamed in the table. An empty name sends it back to its number.',
+  },
+  repetidoTitulo: { es: 'Hay nombres repetidos', en: 'Some names are repeated' },
+  repetidoCuerpo: {
+    es: 'Dos pasos con el mismo nombre declaran dos veces la misma variable CSS: la segunda pisa a la primera y uno de los dos tamaños desaparece sin avisar.',
+    en: 'Two steps with the same name declare the same CSS variable twice: the second overrides the first and one of the two sizes silently disappears.',
+  },
 } satisfies Record<string, T>;
+
+/** El nombre de cada esquema, para el selector. */
+export const NOMBRES_ESQUEMA: Record<string, T> = {
+  numerico: { es: 'Numérico · --step-1', en: 'Numeric · --step-1' },
+  semantico: { es: 'Semántico · --body, --title', en: 'Semantic · --body, --title' },
+  material: { es: 'Material · --body, --headline', en: 'Material · --body, --headline' },
+  tailwind: { es: 'Tailwind · --base, --lg, --xl', en: 'Tailwind · --base, --lg, --xl' },
+};
 
 /** Los nombres de las proporciones clásicas, que vienen de la música. */
 export const NOMBRES_RAZON = {

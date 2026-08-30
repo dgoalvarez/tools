@@ -33,8 +33,78 @@ export interface Ajustes {
   abajo: number;
   anchoMin: number;
   anchoMax: number;
-  /** El nombre de las variables: «step» produce --step-0, --step-1… */
+  /** Lo que va delante de cada nombre: «step» produce --step-0, --step-1… */
   prefijo: string;
+  /**
+   * El nombre propio de un paso, si lo tiene, indexado por su número como
+   * texto. Los pasos sin nombre propio se quedan con su número.
+   *
+   * Existe porque una escala se lleva a un proyecto real, y en un proyecto
+   * real nadie escribe `font-size: var(--step-3)`: escribe `--headline`.
+   * Obligar a renombrar ocho variables a mano al pegar el bloque era
+   * regalar el trabajo a medias.
+   */
+  nombres: Record<string, string>;
+}
+
+/**
+ * Los esquemas de nombres que se pueden aplicar de golpe.
+ *
+ * Todos se anclan en el paso 0, que es el tamaño del cuerpo de texto:
+ * hacia arriba los titulares y hacia abajo los textos pequeños. Cuando un
+ * esquema se queda sin nombres, los pasos que sobran siguen numerados.
+ */
+export interface Esquema {
+  clave: string;
+  base: string;
+  /** Del paso +1 en adelante. */
+  arriba: string[];
+  /** Del paso −1 hacia abajo. */
+  abajo: string[];
+}
+
+export const ESQUEMAS: Esquema[] = [
+  { clave: 'numerico', base: '', arriba: [], abajo: [] },
+  {
+    clave: 'semantico',
+    base: 'body',
+    arriba: ['title', 'headline', 'display', 'display-lg'],
+    abajo: ['caption', 'overline'],
+  },
+  {
+    clave: 'material',
+    base: 'body',
+    arriba: ['title', 'headline', 'display'],
+    abajo: ['label', 'label-small'],
+  },
+  {
+    clave: 'tailwind',
+    base: 'base',
+    arriba: ['lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl'],
+    abajo: ['sm', 'xs'],
+  },
+];
+
+/** Solo lo que puede ser un nombre de variable CSS. */
+export function limpiarNombre(bruto: string): string {
+  return bruto.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32);
+}
+
+/** Aplica un esquema a todos los pasos de una escala. */
+export function aplicarEsquema(esquema: Esquema, abajo: number, arriba: number) {
+  const nombres: Record<string, string> = {};
+  if (esquema.clave === 'numerico') return nombres;
+
+  nombres['0'] = esquema.base;
+  for (let i = 1; i <= arriba; i++) {
+    const nombre = esquema.arriba[i - 1];
+    if (nombre) nombres[String(i)] = nombre;
+  }
+  for (let i = 1; i <= abajo; i++) {
+    const nombre = esquema.abajo[i - 1];
+    if (nombre) nombres[String(-i)] = nombre;
+  }
+  return nombres;
 }
 
 export interface Paso {
@@ -48,6 +118,18 @@ export interface Paso {
   valor: string;
   /** Los píxeles a cada anchura de ANCHOS_TABLA, en el mismo orden. */
   enTabla: number[];
+}
+
+/**
+ * El nombre completo de la variable de un paso.
+ *
+ * Con nombre propio sale `--fs-body`; sin él, `--step-3`. El prefijo va
+ * siempre delante, porque una variable llamada `--body` a secas choca
+ * demasiado fácil con cualquier otra cosa del proyecto.
+ */
+export function nombreDePaso(indice: number, ajustes: Ajustes): string {
+  const propio = ajustes.nombres[String(indice)];
+  return `--${ajustes.prefijo}-${propio || indice}`;
 }
 
 /** Redondea a un máximo de `decimales` y quita los ceros que sobran. */
@@ -79,8 +161,7 @@ export function tamanoEn(paso: Pick<Paso, 'minPx' | 'maxPx'>, ancho: number, aju
  * estética.
  */
 export function construirEscala(ajustes: Ajustes): Paso[] {
-  const { baseMin, baseMax, razonMin, razonMax, arriba, abajo, anchoMin, anchoMax, prefijo } =
-    ajustes;
+  const { baseMin, baseMax, razonMin, razonMax, arriba, abajo, anchoMin, anchoMax } = ajustes;
 
   const pasos: Paso[] = [];
 
@@ -111,7 +192,7 @@ export function construirEscala(ajustes: Ajustes): Paso[] {
 
     const paso: Paso = {
       indice: i,
-      nombre: `--${prefijo}-${i}`,
+      nombre: nombreDePaso(i, ajustes),
       minPx,
       maxPx,
       valor,
@@ -188,6 +269,27 @@ export function anchoParaFraccion(paso: Paso, fraccion: number, ajustes: Ajustes
 
   const pendiente = (paso.maxPx - paso.minPx) / (ajustes.anchoMax - ajustes.anchoMin);
   return Math.round(ajustes.anchoMin + (objetivo - paso.minPx) / pendiente);
+}
+
+/**
+ * Nombres repetidos.
+ *
+ * Dos pasos con el mismo nombre producen dos declaraciones de la misma
+ * variable CSS: la segunda pisa a la primera y uno de los dos tamaños
+ * desaparece sin avisar. Es más fácil de lo que parece —basta escribir
+ * «title» en dos pasos— y la única señal sería que algo se ve del tamaño
+ * equivocado en el proyecto, tres días después.
+ */
+export function buscarNombresRepetidos(pasos: Paso[]): string[] {
+  const vistos = new Set<string>();
+  const repetidos = new Set<string>();
+
+  for (const paso of pasos) {
+    if (vistos.has(paso.nombre)) repetidos.add(paso.nombre);
+    vistos.add(paso.nombre);
+  }
+
+  return [...repetidos];
 }
 
 // -------------------------------------------------------------------- CSS

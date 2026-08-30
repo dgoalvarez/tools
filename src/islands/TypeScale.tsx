@@ -22,14 +22,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { t, type Lang } from '@/i18n/config';
-import { ESCALA as E, NOMBRES_RAZON } from '@/i18n/scale';
+import { ESCALA as E, NOMBRES_ESQUEMA, NOMBRES_RAZON } from '@/i18n/scale';
 import {
   ANCHOS_TABLA,
   RAZONES,
+  ESQUEMAS,
   aCss,
   anchoParaFraccion,
+  aplicarEsquema,
   buscarCruces,
+  buscarNombresRepetidos,
   construirEscala,
+  limpiarNombre,
   type Ajustes,
 } from '@/lib/scale';
 import { escribirParams, leerParams } from '@/lib/url-state';
@@ -44,10 +48,14 @@ const INICIAL: Ajustes = {
   anchoMin: 390,
   anchoMax: 1920,
   prefijo: 'step',
+  nombres: {},
 };
 
-/** Las claves de la dirección, cortas para que el enlace no sea un muro. */
-const CLAVES: Record<keyof Ajustes, string> = {
+/**
+ * Las claves de la dirección, cortas para que el enlace no sea un muro.
+ * `nombres` no está aquí: no es un número y se serializa aparte.
+ */
+const CLAVES: Record<Exclude<keyof Ajustes, 'nombres'>, string> = {
   baseMin: 'bn',
   baseMax: 'bx',
   razonMin: 'rn',
@@ -58,6 +66,26 @@ const CLAVES: Record<keyof Ajustes, string> = {
   anchoMax: 'wx',
   prefijo: 'p',
 };
+
+/** Los nombres propios en la dirección: «0:body,1:title,-1:caption». */
+function nombresATexto(nombres: Record<string, string>): string {
+  const pares = Object.entries(nombres).filter(([, v]) => v);
+  return pares.map(([i, n]) => `${i}:${n}`).join(',');
+}
+
+function textoANombres(texto: string): Record<string, string> {
+  const nombres: Record<string, string> = {};
+  for (const par of texto.split(',').slice(0, 25)) {
+    const [indice, nombre] = par.split(':');
+    // Un enlace manipulado no debe poder colar nada en el bloque de CSS
+    // que alguien va a pegar en su proyecto.
+    if (indice && nombre && /^-?\d{1,2}$/.test(indice)) {
+      const limpio = limpiarNombre(nombre);
+      if (limpio) nombres[indice] = limpio;
+    }
+  }
+  return nombres;
+}
 
 interface Props {
   lang: Lang;
@@ -81,7 +109,13 @@ export default function TypeScale({ lang }: Props) {
     const params = leerParams();
     const leidos: Partial<Ajustes> = {};
 
-    for (const [campo, clave] of Object.entries(CLAVES) as [keyof Ajustes, string][]) {
+    const enlaceNombres = params.get('n');
+    if (enlaceNombres) leidos.nombres = textoANombres(enlaceNombres);
+
+    for (const [campo, clave] of Object.entries(CLAVES) as [
+      Exclude<keyof Ajustes, 'nombres'>,
+      string,
+    ][]) {
       const crudo = params.get(clave);
       if (crudo === null) continue;
 
@@ -115,15 +149,19 @@ export default function TypeScale({ lang }: Props) {
     if (!enlaceLeido) return;
 
     const salida: Record<string, string | null> = {};
-    for (const [campo, clave] of Object.entries(CLAVES) as [keyof Ajustes, string][]) {
+    for (const [campo, clave] of Object.entries(CLAVES) as [
+      Exclude<keyof Ajustes, 'nombres'>,
+      string,
+    ][]) {
       salida[clave] = ajustes[campo] === INICIAL[campo] ? null : String(ajustes[campo]);
     }
+    salida.n = nombresATexto(ajustes.nombres) || null;
     escribirParams(salida);
   }, [enlaceLeido, ajustes]);
 
   // ---------- las cuentas ----------
 
-  const { pasos, cruces, css } = useMemo(() => {
+  const { pasos, cruces, repetidos, css } = useMemo(() => {
     // El ancho máximo tiene que quedar por encima del mínimo o la recta se
     // vuelve del revés. Se corrige aquí y no en el campo, para que se pueda
     // teclear un número intermedio sin que salte nada.
@@ -132,8 +170,43 @@ export default function TypeScale({ lang }: Props) {
       anchoMax: Math.max(ajustes.anchoMin + 1, ajustes.anchoMax),
     };
     const pasos = construirEscala(seguros);
-    return { pasos, cruces: buscarCruces(pasos, seguros), css: aCss(pasos) };
+    return {
+      pasos,
+      cruces: buscarCruces(pasos, seguros),
+      repetidos: buscarNombresRepetidos(pasos),
+      css: aCss(pasos),
+    };
   }, [ajustes]);
+
+  /** Renombra un paso. Un nombre vacío lo devuelve a su número. */
+  function renombrar(indice: number, bruto: string) {
+    const limpio = limpiarNombre(bruto);
+    setAjustes((previo) => {
+      const nombres = { ...previo.nombres };
+      if (limpio) nombres[String(indice)] = limpio;
+      else delete nombres[String(indice)];
+      return { ...previo, nombres };
+    });
+    setCopiado(null);
+  }
+
+  function ponerEsquema(clave: string) {
+    const esquema = ESQUEMAS.find((e) => e.clave === clave);
+    if (!esquema) return;
+    setAjustes((previo) => ({
+      ...previo,
+      nombres: aplicarEsquema(esquema, previo.abajo, previo.arriba),
+    }));
+    setCopiado(null);
+  }
+
+  /** Qué esquema está puesto, o ninguno si alguien ha editado a mano. */
+  const esquemaActual =
+    ESQUEMAS.find(
+      (e) =>
+        JSON.stringify(aplicarEsquema(e, ajustes.abajo, ajustes.arriba)) ===
+        JSON.stringify(ajustes.nombres)
+    )?.clave ?? '';
 
   const alReves = [...pasos].reverse();
 
@@ -255,19 +328,46 @@ export default function TypeScale({ lang }: Props) {
           <p className="text-[var(--fs-small)] text-ink-soft">{tr('anchoAyuda')}</p>
         </fieldset>
 
-        <div className="grid gap-1.5">
-          <Label htmlFor="prefijo">{tr('prefijo')}</Label>
-          <Input
-            id="prefijo"
-            value={ajustes.prefijo}
-            spellCheck={false}
-            autoComplete="off"
-            className="font-mono"
-            onChange={(e) =>
-              cambiar('prefijo', e.target.value.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24))
-            }
-          />
-        </div>
+        <fieldset className="grid gap-3">
+          <legend className="mb-2 text-[var(--fs-small)] font-semibold text-ink">
+            {tr('nombresTitulo')}
+          </legend>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="esquema">{tr('esquema')}</Label>
+            <Select value={esquemaActual || 'aMedida'} onValueChange={ponerEsquema}>
+              <SelectTrigger id="esquema" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {/* «A medida» solo aparece cuando alguien ya ha editado un
+                    nombre: como opción a elegir no significaría nada. */}
+                {!esquemaActual && <SelectItem value="aMedida">{tr('aMedida')}</SelectItem>}
+                {ESQUEMAS.map((e) => (
+                  <SelectItem key={e.clave} value={e.clave}>
+                    {t(NOMBRES_ESQUEMA[e.clave]!, lang)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="prefijo">{tr('prefijo')}</Label>
+            <Input
+              id="prefijo"
+              value={ajustes.prefijo}
+              spellCheck={false}
+              autoComplete="off"
+              className="font-mono"
+              onChange={(e) =>
+                cambiar('prefijo', e.target.value.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24))
+              }
+            />
+          </div>
+
+          <p className="text-[var(--fs-small)] text-ink-soft">{tr('nombresAyuda')}</p>
+        </fieldset>
 
         <Button
           variant="outline"
@@ -282,6 +382,20 @@ export default function TypeScale({ lang }: Props) {
 
       {/* ---------------- Resultados ---------------- */}
       <div className="grid gap-8">
+        {repetidos.length > 0 && (
+          <section className="rounded-lg border border-[var(--danger)] bg-surface p-5">
+            <h2 className="text-[length:var(--fs-h3)] font-semibold text-[var(--danger)]">
+              {tr('repetidoTitulo')}
+            </h2>
+            <p className="mt-2 font-mono text-[var(--fs-small)] text-ink-muted">
+              {repetidos.join(' · ')}
+            </p>
+            <p className="mt-3 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-muted">
+              {tr('repetidoCuerpo')}
+            </p>
+          </section>
+        )}
+
         {cruces.length > 0 && (
           <section className="rounded-lg border border-[var(--danger)] bg-surface p-5">
             <h2 className="text-[length:var(--fs-h3)] font-semibold text-[var(--danger)]">
@@ -361,8 +475,25 @@ export default function TypeScale({ lang }: Props) {
                   const lleno = anchoParaFraccion(paso, 0.95, ajustes);
                   return (
                     <tr key={paso.indice} className="border-b border-line last:border-0">
-                      <th scope="row" className="p-3 text-left font-mono font-normal text-ink">
-                        {paso.nombre}
+                      {/* El nombre se edita aquí y no en una lista aparte:
+                          es donde ya se está mirando cada paso, y ahorra
+                          repetir la escala entera en otro sitio. */}
+                      <th scope="row" className="p-2 text-left font-normal">
+                        <span className="sr-only">{paso.nombre}</span>
+                        <span className="flex items-center font-mono text-ink">
+                          <span aria-hidden="true" className="pl-1 text-ink-soft">
+                            --{ajustes.prefijo}-
+                          </span>
+                          <input
+                            type="text"
+                            value={ajustes.nombres[String(paso.indice)] ?? String(paso.indice)}
+                            spellCheck={false}
+                            autoComplete="off"
+                            aria-label={`${tr('nombreDe')} ${paso.indice}`}
+                            className="w-24 rounded-md border border-transparent bg-transparent px-1 py-1 hover:border-line focus:border-line focus:outline-none"
+                            onChange={(e) => renombrar(paso.indice, e.target.value)}
+                          />
+                        </span>
                       </th>
                       {paso.enTabla.map((px, i) => (
                         <td key={ANCHOS_TABLA[i]} className="p-3 text-right text-ink-muted">

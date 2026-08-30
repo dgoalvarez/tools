@@ -11,7 +11,11 @@ import {
   buscarCruces,
   anchoParaFraccion,
   ANCHOS_TABLA,
+  ESQUEMAS,
   aCss,
+  aplicarEsquema,
+  buscarNombresRepetidos,
+  limpiarNombre,
   type Ajustes,
 } from '../src/lib/scale.ts';
 
@@ -61,6 +65,7 @@ const base: Ajustes = {
   anchoMin: 390,
   anchoMax: 1920,
   prefijo: 'step',
+  nombres: {},
 };
 
 console.log('\n0. El evaluador de CSS de esta prueba es correcto');
@@ -159,6 +164,48 @@ console.log('\n6. anchoParaFraccion: a qué anchura un paso casi ha terminado de
 
   const plano = construirEscala({ ...base, baseMax: 16, razonMax: 1.2 });
   afirmar(anchoParaFraccion(plano[0]!, 0.95, base) === null, 'un paso que no crece devuelve «no crece»');
+}
+
+console.log('\n7. Los nombres de cada paso');
+{
+  const semantico = ESQUEMAS.find((e) => e.clave === 'semantico')!;
+  const conNombres: Ajustes = {
+    ...base,
+    nombres: aplicarEsquema(semantico, base.abajo, base.arriba),
+  };
+
+  const pasos = construirEscala(conNombres);
+  const css = aCss(pasos);
+
+  afirmar(css.includes('--step-body:'), 'el paso 0 se llama body con el esquema semántico');
+  afirmar(css.includes('--step-title:'), 'el +1 se llama title');
+  afirmar(css.includes('--step-caption:'), 'el −1 se llama caption');
+
+  // El esquema semántico trae cuatro nombres hacia arriba y la escala tiene
+  // cinco pasos: el que sobra tiene que seguir numerado, no quedarse vacío.
+  afirmar(css.includes('--step-5:'), 'el paso que se queda sin nombre sigue numerado');
+
+  const tailwind = ESQUEMAS.find((e) => e.clave === 'tailwind')!;
+  const cssTw = aCss(
+    construirEscala({ ...base, nombres: aplicarEsquema(tailwind, base.abajo, base.arriba) })
+  );
+  afirmar(cssTw.includes('--step-base:') && cssTw.includes('--step-2xl:'), 'el esquema de Tailwind se ancla en base');
+
+  afirmar(limpiarNombre('mi nombre!! raro') === 'minombreraro', 'los nombres se limpian de lo que no vale en CSS');
+  afirmar(limpiarNombre('a'.repeat(80)).length === 32, 'y se recortan a 32 caracteres');
+  afirmar(limpiarNombre('') === '', 'un nombre vacío sigue vacío, y el paso vuelve a su número');
+
+  afirmar(buscarNombresRepetidos(construirEscala(base)).length === 0, 'la escala numérica no repite ningún nombre');
+
+  const repes = buscarNombresRepetidos(
+    construirEscala({ ...base, nombres: { '0': 'title', '1': 'title' } })
+  );
+  afirmar(repes.length === 1 && repes[0] === '--step-title', `dos pasos con el mismo nombre se detectan (${repes.join(', ')})`);
+
+  // Un nombre inventado en la dirección no debe poder colarse en el bloque
+  // de CSS que alguien va a pegar en su proyecto.
+  const sucio = aCss(construirEscala({ ...base, nombres: { '0': limpiarNombre('x; } body { display:none') } }));
+  afirmar(!sucio.includes('display:none'), 'un nombre con CSS dentro no sobrevive a la limpieza');
 }
 
 console.log(fallos === 0 ? '\nTODO CORRECTO\n' : `\n${fallos} FALLOS\n`);

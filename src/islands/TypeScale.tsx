@@ -286,9 +286,9 @@ export default function TypeScale({ lang }: Props) {
   // ---------- pintado ----------
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-start">
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,var(--col-controles))_minmax(0,1fr)] lg:items-start">
       {/* ---------------- Controles ---------------- */}
-      <div className="grid gap-4">
+      <div className="columna-herramienta gap-4">
         <fieldset className="tarjeta-control" data-tour="base">
           <legend className="sr-only">{tr('ajustes')}</legend>
           <p className="titulo" aria-hidden="true">
@@ -455,7 +455,7 @@ export default function TypeScale({ lang }: Props) {
       </div>
 
       {/* ---------------- Resultados ---------------- */}
-      <div className="grid gap-8">
+      <div className="columna-herramienta gap-8">
         {repetidos.length > 0 && (
           <section className="rounded-lg border border-[var(--danger)] bg-surface p-5">
             <h2 className="text-[length:var(--fs-h3)] font-semibold text-[var(--danger)]">
@@ -497,11 +497,20 @@ export default function TypeScale({ lang }: Props) {
             {tr('muestraIntro')}
           </p>
 
-          <div className="mt-4 grid gap-1 overflow-hidden rounded-lg border border-line bg-surface p-5">
+          {/*
+            El `min-w-0` de la caja y el de cada fila no son decoración.
+            Un elemento de rejilla nace con `min-width: auto`, así que no
+            encoge por debajo del ancho de su contenido — y aquí el
+            contenido es un texto de muestra a 61 px con `nowrap`. La
+            fila medía 792 px dentro de una caja de 653 y la etiqueta de
+            tamaño de la derecha se salía y quedaba recortada: los «40 →
+            61 px» simplemente no se veían.
+          */}
+          <div className="mt-4 grid min-w-0 gap-1 overflow-hidden rounded-lg border border-line bg-surface p-5">
             {alReves.map((paso) => (
               <div
                 key={paso.indice}
-                className={`flex items-baseline gap-4 rounded-md px-2 py-1.5 ${
+                className={`flex min-w-0 items-baseline gap-4 rounded-md px-2 py-1.5 ${
                   paso.omitido ? 'opacity-45' : ''
                 }`}
               >

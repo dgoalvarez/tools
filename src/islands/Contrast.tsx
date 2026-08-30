@@ -170,9 +170,9 @@ export default function Contrast({ lang }: Props) {
   // ---------- pintado ----------
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:items-start">
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,var(--col-controles))_minmax(0,1fr)] lg:items-start">
       {/* ---------------- Controles ---------------- */}
-      <div className="grid gap-5">
+      <div className="columna-herramienta gap-5">
         <SelectorColor
           lang={lang}
           id="color-texto"
@@ -219,7 +219,7 @@ export default function Contrast({ lang }: Props) {
       </div>
 
       {/* ---------------- Resultados ---------------- */}
-      <div className="grid gap-5">
+      <div className="columna-herramienta gap-5">
         {/*
           El tamaño y el grosor estaban al final de la columna de
           controles, detrás de un scroll, y pasaban por decoración. No lo

@@ -187,6 +187,18 @@
   --fs-body: clamp(0.95rem, 0.9vw, 1rem);
   --fs-small: 0.8125rem;
 
+  /*
+   * El ancho de la columna de controles de una herramienta.
+   *
+   * Estaba escrito a mano en cada isla y cada una tenía el suyo —23, 22 y
+   * 20 rem— sin ningún motivo. Ahora es un número y está aquí porque no
+   * solo lo usan las islas: la nota de los datos de husos vive FUERA de
+   * la isla y tiene que alinearse con esa columna, porque visualmente
+   * cuelga de ella. Con el número en dos sitios se habrían separado a la
+   * primera.
+   */
+  --col-controles: 22rem;
+
   --pad-x: clamp(20px, 4vw, 56px);
   --pad-y: clamp(28px, 3.5vw, 56px);
   --measure: 68ch;
@@ -788,6 +800,36 @@
 }
 
 /* ============================================================
+   Las dos columnas de una herramienta
+
+   Existe por una trampa del CSS que costó un desborde real: un elemento
+   de rejilla nace con `min-width: auto`, o sea que NO encoge por debajo
+   del ancho mínimo de su contenido. El `minmax(0, 1fr)` del contenedor
+   de fuera solo arregla el primer nivel; los hijos de la rejilla de
+   dentro siguen sin poder encoger.
+
+   En la escala tipográfica eso hacía que la página entera midiera 1565
+   px de ancho en una ventana de 1440 y se fuera de lado: la rampa, la
+   tabla y el bloque de CSS empujaban desde dentro. Se veía como un
+   scroll horizontal en una herramienta que no tiene nada que desplazar.
+
+   Con esto, cualquier columna de una herramienta puede encoger, y lo
+   que de verdad no quepa —una tabla ancha— se desplaza dentro de su
+   propia caja, que es donde debe.
+   ============================================================ */
+
+@layer components {
+  .columna-herramienta {
+    display: grid;
+    min-width: 0;
+  }
+
+  .columna-herramienta > * {
+    min-width: 0;
+  }
+}
+
+/* ============================================================
    La tarjeta de controles
 
    La pauta: todo lo que se toca va dentro de una tarjeta. Antes solo el
@@ -1270,6 +1312,7 @@
   .nota-datos {
     max-width: var(--measure);
     margin-block-start: 2rem;
+    /* Ver abajo: a partir de `lg` se ata al ancho de la columna. */
     font-size: 0.72rem;
     line-height: 1.6;
     color: var(--ink-soft);
@@ -1329,5 +1372,21 @@
 
   .nota-datos a:hover {
     color: var(--brand);
+  }
+
+  /*
+    A partir del ancho en que la herramienta se parte en dos columnas, la
+    nota queda justo debajo de la columna de controles y se lee como
+    parte de ella. Así que mide lo que mide esa columna: estirada hasta
+    la medida de lectura se salía por la derecha de las tarjetas de
+    encima y el conjunto parecía descuadrado.
+
+    El 64rem es el `lg` de Tailwind, que es donde las islas cambian a dos
+    columnas.
+  */
+  @media (width >= 64rem) {
+    .nota-datos {
+      max-width: var(--col-controles);
+    }
   }
 }

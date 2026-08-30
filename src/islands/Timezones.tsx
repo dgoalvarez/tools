@@ -266,9 +266,9 @@ export default function Timezones({ lang }: Props) {
   // ---------- pintado ----------
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)] lg:items-start">
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,var(--col-controles))_minmax(0,1fr)] lg:items-start">
       {/* ---------------- Controles ---------------- */}
-      <div className="grid gap-4">
+      <div className="columna-herramienta gap-4">
         <section className="tarjeta-control" data-tour="cita">
           <h2 className="titulo">{tr('origenTitulo')}</h2>
 
@@ -347,7 +347,7 @@ export default function Timezones({ lang }: Props) {
       </div>
 
       {/* ---------------- Resultados ---------------- */}
-      <div className="grid gap-5">
+      <div className="columna-herramienta gap-5">
         {/* Los dos domingos del año en que la hora pedida es rara. */}
         {resultado?.ambiguedad === 'no-existe' && (
           <section className="rounded-lg border border-[var(--danger)] bg-surface p-5">

@@ -73,12 +73,35 @@ export default function Tour({ lang, tool }: Props) {
         // driver.js viene con un blanco fijo y una tipografía propia que
         // en modo oscuro cantarían muchísimo.
         popoverClass: 'tour-dgo',
-        // driver.js no deja poner texto al botón de cerrar, solo una «×».
-        // Una aspa en la esquina no dice «puedes salirte de aquí» con la
-        // misma claridad que la palabra, y salirse tiene que ser evidente.
-        onPopoverRender: (popover) => {
+        /*
+          Dos cosas que driver.js no deja configurar y hay que hacer aquí.
+
+          Una: el botón de cerrar solo admite una «×». Una aspa en la
+          esquina no dice «puedes salirte de aquí» con la misma claridad
+          que la palabra, y salirse tiene que ser evidente.
+
+          Y dos: ese botón lo pinta como una caja ABSOLUTA de 32 px en la
+          esquina del título, pensada para el aspa. Una palabra dentro de
+          32 px se desborda por los dos lados, que es exactamente lo que
+          pasaba: «Saltar» quedaba a caballo del borde de la tarjeta. Se
+          mueve al pie, con «Atrás» y «Siguiente», que además es donde le
+          toca: saltar es navegar, no cerrar una ventana.
+        */
+        onPopoverRender: (popover, opts) => {
           popover.closeButton.textContent = saltar;
           popover.closeButton.setAttribute('aria-label', saltar);
+
+          // En el último paso, «Saltar» y «Listo» hacen exactamente lo
+          // mismo. Dos botones para una sola acción es una duda que no
+          // hacía falta plantear, así que ahí se queda solo «Listo».
+          popover.closeButton.hidden = opts.state.activeIndex === pasos.length - 1;
+          // Va al FINAL del pie, no al principio, aunque se vea el
+          // primero de los tres botones: driver.js pone el foco en el
+          // primer botón que encuentra, y con «Saltar» ahí, pulsar Enter
+          // sin mirar se salía del paso a paso. Último en el DOM y
+          // primero a la vista lo arregla el `order` del CSS, que cambia
+          // lo que se ve sin tocar el orden de tabulación.
+          popover.footer.append(popover.closeButton);
         },
       }).drive();
     } finally {

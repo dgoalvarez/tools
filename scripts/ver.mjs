@@ -77,13 +77,59 @@ const VISTAS = [
   { nombre: 'husos-ventana-baja', ruta: 'es/horarios', ancho: 1280, alto: 420 },
   { nombre: 'escala-estrecho', ruta: 'es/escala', ancho: 485, alto: 760 },
   { nombre: 'contraste-estrecho', ruta: 'es/contraste', ancho: 485, alto: 760 },
+
+  // El paso a paso. Se mira el primero, uno de en medio y el último,
+  // que es donde «Saltar» desaparece porque «Listo» hace lo mismo.
+  { nombre: 'tour-1', ruta: 'es/escala', ancho: 1440, alto: 760, tour: 0 },
+  { nombre: 'tour-6', ruta: 'es/escala', ancho: 1440, alto: 760, tour: 5 },
+  { nombre: 'tour-9', ruta: 'es/escala', ancho: 1440, alto: 900, tour: 8 },
+  { nombre: 'tour-claro', ruta: 'es/contraste', ancho: 1440, alto: 760, tema: 'light', tour: 2 },
 ];
 
-/** Una copia de la página con el tema forzado, para poder verlo en claro. */
-function conTema(ruta, tema) {
-  const original = join(dist, `${ruta}.html`);
-  const copia = join(dist, `_ver_${tema}_${ruta.replace(/\//g, '_')}.html`);
-  const html = readFileSync(original, 'utf8').replace('<html ', `<html data-theme="${tema}" `);
+/**
+ * El guion que abre el paso a paso solo y avanza hasta el paso pedido.
+ *
+ * La animación de entrada se pone a cero: con el tiempo virtual de Chrome
+ * una captura la pilla a medias y la tarjeta sale traslúcida, que parece
+ * un fallo y no lo es.
+ */
+const abrirTour = (avanzar) => `<style>
+  /* La animación de entrada, apagada del todo. Bajo el tiempo virtual de
+     Chrome no llega a completarse, y la captura pilla la tarjeta a medio
+     aparecer: sale traslúcida y se lee la página por debajo. Parece un
+     fallo de la tarjeta y no lo es. */
+  .driver-fade .driver-popover { animation: none !important; opacity: 1 !important; }
+</style>
+<script>
+window.addEventListener('load', () => {
+  let hechos = 0;
+  const t = setInterval(() => {
+    const b = document.querySelector('button.ayuda');
+    if (!b) return;
+    clearInterval(t);
+    b.click();
+    const paso = setInterval(() => {
+      if (hechos >= ${avanzar}) { clearInterval(paso); return; }
+      const n = document.querySelector('.driver-popover-next-btn');
+      if (n) { n.click(); hechos++; }
+    }, 300);
+  }, 120);
+});
+<\/script>`;
+
+/**
+ * Una copia de la página, retocada para poder mirar lo que no se ve solo:
+ * el tema claro —que no hay bandera de Chrome para pedirlo— y el paso a
+ * paso, que solo aparece si alguien pulsa el botón.
+ */
+function preparar(ruta, { tema, tour }) {
+  const marca = [tema ?? '', tour === undefined ? '' : `t${tour}`].filter(Boolean).join('_');
+  const copia = join(dist, `_ver_${marca}_${ruta.replace(/\//g, '_')}.html`);
+
+  let html = readFileSync(join(dist, `${ruta}.html`), 'utf8');
+  if (tema) html = html.replace('<html ', `<html data-theme="${tema}" `);
+  if (tour !== undefined) html = html.replace('</body>', abrirTour(tour) + '</body>');
+
   writeFileSync(copia, html);
   return copia;
 }
@@ -102,8 +148,8 @@ await new Promise((r) => setTimeout(r, 700));
 try {
   for (const vista of VISTAS) {
     let ruta = vista.ruta;
-    if (vista.tema) {
-      const copia = conTema(vista.ruta, vista.tema);
+    if (vista.tema || vista.tour !== undefined) {
+      const copia = preparar(vista.ruta, { tema: vista.tema, tour: vista.tour });
       temporales.push(copia);
       ruta = copia.slice(dist.length + 1).replace(/\\/g, '/').replace(/\.html$/, '');
     }
@@ -117,7 +163,10 @@ try {
         '--hide-scrollbars',
         '--force-device-scale-factor=2',
         `--window-size=${vista.ancho + MARCO},${vista.alto}`,
-        '--virtual-time-budget=7000',
+        // El paso a paso necesita más tiempo: hay que abrirlo y pulsar
+        // «Siguiente» una vez por cada paso que se quiera avanzar. Se
+        // compara con undefined y no por verdadero: el primer paso es 0.
+        `--virtual-time-budget=${vista.tour !== undefined ? 9000 + vista.tour * 1400 : 7000}`,
         `--screenshot=${archivo}`,
         `http://localhost:${PUERTO}/${ruta}.html`,
       ],

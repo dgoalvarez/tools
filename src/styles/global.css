@@ -1479,7 +1479,15 @@
   .fila-rampa {
     display: grid;
     grid-template-columns: auto minmax(4rem, 9rem) minmax(0, 1fr) auto;
-    align-items: baseline;
+    /* Centrado y no `baseline`.
+
+       Con `baseline`, el nombre de la variable y los números se alinean
+       con la línea base del texto de muestra, y como la muestra puede
+       medir 61 px, todo lo pequeño quedaba pegado abajo mientras la
+       casilla asomaba por arriba: la fila se veía escalonada en vez de
+       en línea. Centrado, las cuatro cosas quedan a la misma altura
+       mida lo que mida la muestra. */
+    align-items: center;
     column-gap: 0.875rem;
     padding: 0.3125rem 0.5rem;
     border-radius: var(--radius-md);

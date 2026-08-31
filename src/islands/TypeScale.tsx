@@ -49,7 +49,17 @@ import { escribirParams, leerParams } from '@/lib/url-state';
  * que Tailwind trae de serie.
  */
 const INICIAL: Ajustes = {
-  fluida: true,
+  /*
+    Apagada de fábrica.
+
+    Una escala fluida es lo que distingue a esta herramienta, pero es
+    también la respuesta a una pregunta que no todo el mundo se ha hecho
+    todavía. Empezar por lo simple —un tamaño por paso— y dejar que
+    quien lo necesite encienda el interruptor de arriba es menos
+    intimidante que abrir con cuatro campos que hay que entender antes
+    de tocar nada.
+  */
+  fluida: false,
   baseMin: 16,
   baseMax: 20,
   razonMin: 1.2,
@@ -141,8 +151,9 @@ export default function TypeScale({ lang }: Props) {
     const enlaceOmitidos = params.get('x');
     if (enlaceOmitidos) leidos.omitidos = textoAOmitidos(enlaceOmitidos);
 
-    // `f=0` apaga lo fluido. Solo viaja cuando se aparta de lo normal.
-    if (params.get('f') === '0') leidos.fluida = false;
+    // `f=1` la enciende. Solo viaja cuando se aparta de lo de fábrica,
+    // que ahora es apagada.
+    if (params.get('f') === '1') leidos.fluida = true;
 
     for (const [campo, clave] of Object.entries(CLAVES) as [
       Exclude<keyof Ajustes, 'nombres' | 'omitidos' | 'fluida'>,
@@ -187,7 +198,7 @@ export default function TypeScale({ lang }: Props) {
     ][]) {
       salida[clave] = ajustes[campo] === INICIAL[campo] ? null : String(ajustes[campo]);
     }
-    salida.f = ajustes.fluida ? null : '0';
+    salida.f = ajustes.fluida ? '1' : null;
     salida.n =
       nombresATexto(ajustes.nombres) === nombresATexto(INICIAL.nombres)
         ? null
@@ -557,7 +568,7 @@ export default function TypeScale({ lang }: Props) {
                   data-tour={paso.indice === 0 ? 'saltar' : undefined}
                   aria-label={`${paso.nombre} · ${tr(paso.omitido ? 'encender' : 'apagar')}`}
                   title={tr(paso.omitido ? 'encender' : 'apagar')}
-                  className="size-4 cursor-pointer self-center accent-[var(--acento)]"
+                  className="size-4 cursor-pointer accent-[var(--acento)]"
                 />
 
                 <code className="variable truncate">{paso.nombre}</code>

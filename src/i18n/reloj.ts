@@ -69,6 +69,17 @@ export const RELOJ = {
   reiniciar: { es: 'Reiniciar', en: 'Reset' },
   atajos: { es: 'De un toque', en: 'Quick set' },
   temporizadorSonando: { es: 'Se acabó', en: 'Time is up' },
+  /** Lo que lleva sonando sin que nadie lo pare. */
+  llevaSonando: { es: 'Lleva', en: 'Ringing for' },
+  /**
+   * Añadir tiempo sin volver a empezar.
+   *
+   * Es lo que separa un temporizador de cocina de uno de laboratorio: al
+   * arroz le faltan dos minutos más y nadie quiere volver a teclear la
+   * cuenta entera.
+   */
+  masTiempo: { es: 'Añadir', en: 'Add' },
+  pararTemporizador: { es: 'Parar', en: 'Stop' },
 
   // ---------- El aviso ----------
   aviso: { es: 'Aviso', en: 'Alert' },

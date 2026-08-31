@@ -103,6 +103,40 @@ const VISTAS = [
   { nombre: 'reloj-claro', ruta: 'es/reloj', ancho: 1440, alto: 1100, tema: 'light' },
   { nombre: 'reloj-esfera', ruta: 'es/reloj', ancho: 1440, alto: 1100, query: 'c=analogica' },
   { nombre: 'reloj-estrecho', ruta: 'es/reloj', ancho: 485, alto: 900 },
+  // Doce vueltas: es donde la lista deja de crecer y pasa a desplazarse
+  // dentro de su caja.
+  {
+    nombre: 'reloj-muchas-vueltas',
+    ruta: 'es/reloj',
+    ancho: 1440,
+    alto: 1200,
+    guion: `
+      const mandos = await esperar(() => document.querySelector('[data-tour="cronometro"] .mandos-modo'));
+      mandos.querySelectorAll('button')[0].click();
+      for (let i = 0; i < 12; i++) {
+        document.querySelectorAll('[data-tour="cronometro"] .mandos-modo button')[1].click();
+        await new Promise((r) => setTimeout(r, 60));
+      }
+    `,
+  },
+  // El temporizador ya cumplido: contando hacia arriba y ofreciendo más
+  // tiempo. No se llega pulsando; hay que poner un segundo y esperar.
+  {
+    nombre: 'reloj-cumplido',
+    ruta: 'es/reloj',
+    ancho: 1440,
+    alto: 1200,
+    guion: `
+      const campo = await esperar(() => document.querySelector('#puesta-minutos'));
+      esc(campo, '0');
+      const seg = document.querySelector('#puesta-segundos');
+      esc(seg, '1');
+      await new Promise((r) => setTimeout(r, 200));
+      const botones = document.querySelectorAll('[data-tour="temporizador"] button');
+      botones[botones.length - 1].click();
+      await new Promise((r) => setTimeout(r, 2500));
+    `,
+  },
   // El cronómetro con vueltas: se arranca y se le sacan tres, que es lo
   // único que hace aparecer la tabla.
   {
@@ -215,6 +249,28 @@ window.addEventListener('load', () => {
 });
 </script>`;
 
+/**
+ * Un guion libre que se ejecuta al cargar.
+ *
+ * Los clics llegan hasta donde llega un botón. Para ver un temporizador
+ * ya cumplido hay que escribir en un campo y esperar a que la cuenta
+ * llegue a cero, y eso no es una pulsación.
+ */
+const guionLibre = (cuerpo) => `<script>
+window.addEventListener('load', () => {
+  function esc(el, v) {
+    const s = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    s.call(el, v); el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  function esperar(fn) {
+    return new Promise((ok) => {
+      const t = setInterval(() => { const r = fn(); if (r) { clearInterval(t); ok(r); } }, 100);
+    });
+  }
+  (async () => { ${cuerpo} })();
+});
+</script>`;
+
 /** Siembra `sessionStorage` antes de que hidrate la isla. */
 const sembrar = (cuenta) => `<script>
   try { sessionStorage.setItem('dgo-pomodoro', '${JSON.stringify(cuenta)}'); } catch (e) {}
@@ -225,8 +281,8 @@ const sembrar = (cuenta) => `<script>
  * el tema claro —que no hay bandera de Chrome para pedirlo— y el paso a
  * paso, que solo aparece si alguien pulsa el botón.
  */
-function preparar(ruta, { tema, tour, siembra, clics }) {
-  const marca = [tema ?? '', tour === undefined ? '' : `t${tour}`, siembra ? 's' : '', clics ? 'c' : '']
+function preparar(ruta, { tema, tour, siembra, clics, guion }) {
+  const marca = [tema ?? '', tour === undefined ? '' : `t${tour}`, siembra ? 's' : '', clics ? 'c' : '', guion ? 'g' : '']
     .filter(Boolean)
     .join('_');
   const copia = join(dist, `_ver_${marca}_${ruta.replace(/\//g, '_')}.html`);
@@ -238,6 +294,7 @@ function preparar(ruta, { tema, tour, siembra, clics }) {
   if (siembra) html = html.replace('</head>', sembrar(siembra) + '</head>');
   if (tour !== undefined) html = html.replace('</body>', abrirTour(tour) + '</body>');
   if (clics) html = html.replace('</body>', pulsar(clics) + '</body>');
+  if (guion) html = html.replace('</body>', guionLibre(guion) + '</body>');
 
   writeFileSync(copia, html);
   return copia;
@@ -257,12 +314,13 @@ await new Promise((r) => setTimeout(r, 700));
 try {
   for (const vista of VISTAS) {
     let ruta = vista.ruta;
-    if (vista.tema || vista.tour !== undefined || vista.siembra || vista.clics) {
+    if (vista.tema || vista.tour !== undefined || vista.siembra || vista.clics || vista.guion) {
       const copia = preparar(vista.ruta, {
         tema: vista.tema,
         tour: vista.tour,
         siembra: vista.siembra,
         clics: vista.clics,
+        guion: vista.guion,
       });
       temporales.push(copia);
       ruta = copia.slice(dist.length + 1).replace(/\\/g, '/').replace(/\.html$/, '');

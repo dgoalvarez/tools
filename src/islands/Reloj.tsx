@@ -58,6 +58,8 @@ import {
   avanceTemporizador,
   comoCronometro,
   comoCuenta,
+  conMasTiempo,
+  excedidoMs,
   extremos,
   faltaParaAlarma,
   fechaEscrita,
@@ -124,7 +126,9 @@ export default function Reloj({ lang }: Props) {
 
   /** El latido: dos relojes, porque cada cosa cuenta contra el suyo. */
   const [ahora, setAhora] = useState(() => Date.now());
-  const [mono, setMono] = useState(() => (typeof performance !== 'undefined' ? performance.now() : 0));
+  const [mono, setMono] = useState(() =>
+    typeof performance !== 'undefined' ? performance.now() : 0
+  );
 
   // ---------- al llegar ----------
 
@@ -175,7 +179,12 @@ export default function Reloj({ lang }: Props) {
   // ---------- el latido ----------
 
   const corriendo =
-    crono.estado === 'andando' || temporizador.estado === 'andando' || alarma.activa;
+    crono.estado === 'andando' ||
+    temporizador.estado === 'andando' ||
+    // Sonando también: ahí la cuenta va hacia arriba y tiene que verse
+    // moverse, que es lo que dice cuánto lleva esperando.
+    temporizador.estado === 'sonando' ||
+    alarma.activa;
 
   useEffect(() => {
     /*
@@ -222,7 +231,7 @@ export default function Reloj({ lang }: Props) {
   useEffect(() => {
     if (temporizador.estado !== 'andando' || quedaTemporizador > 0) return;
 
-    setTemporizador({ estado: 'sonando', total: temporizador.total });
+    setTemporizador({ estado: 'sonando', total: temporizador.total, desde: Date.now() });
     if (conSonido) sonar(false, 4);
     notificar(tr('avisoTemporizadorTitulo'), tr('avisoTemporizadorCuerpo'), 'dgo-reloj-temp');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -285,7 +294,12 @@ export default function Reloj({ lang }: Props) {
       setCrono((c) =>
         c.estado === 'andando'
           ? c
-          : { estado: 'andando', acumulado: c.acumulado, desde: performance.now(), vueltas: c.vueltas }
+          : {
+              estado: 'andando',
+              acumulado: c.acumulado,
+              desde: performance.now(),
+              vueltas: c.vueltas,
+            }
       )
     );
   }
@@ -330,6 +344,12 @@ export default function Reloj({ lang }: Props) {
 
   function tempReiniciar() {
     setTemporizador(TEMPORIZADOR_INICIAL);
+  }
+
+  /** Le añade minutos a uno que ya sonó y lo vuelve a poner en marcha. */
+  function tempAnadir(minutos: number) {
+    conGesto(() => setTemporizador(conMasTiempo(minutos, Date.now())));
+    setAhora(Date.now());
   }
 
   // ---------- pintado ----------
@@ -587,55 +607,145 @@ export default function Reloj({ lang }: Props) {
           </div>
 
           {lista.length > 0 && (
-            <table className="tabla-vueltas">
-              <caption className="sr-only">{tr('vueltas')}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">{tr('vueltaNum')}</th>
-                  <th scope="col">{tr('duracion')}</th>
-                  <th scope="col">{tr('total')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lista.map((v) => (
-                  <tr
-                    key={v.numero}
-                    className={
-                      v.numero === marcas.rapida
-                        ? 'rapida'
-                        : v.numero === marcas.lenta
-                          ? 'lenta'
-                          : undefined
-                    }
-                  >
-                    <th scope="row">
-                      {v.numero}
-                      {v.numero === marcas.rapida && (
-                        <span className="marca">{tr('masRapida')}</span>
-                      )}
-                      {v.numero === marcas.lenta && <span className="marca">{tr('masLenta')}</span>}
-                    </th>
-                    <td>{comoCronometro(v.duracion)}</td>
-                    <td>{comoCronometro(v.total)}</td>
+            <div className="caja-vueltas">
+              <table className="tabla-vueltas">
+                <caption className="sr-only">{tr('vueltas')}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">{tr('vueltaNum')}</th>
+                    <th scope="col">{tr('duracion')}</th>
+                    <th scope="col">{tr('total')}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {lista.map((v) => (
+                    <tr
+                      key={v.numero}
+                      className={
+                        v.numero === marcas.rapida
+                          ? 'rapida'
+                          : v.numero === marcas.lenta
+                            ? 'lenta'
+                            : undefined
+                      }
+                    >
+                      <th scope="row">
+                        {v.numero}
+                        {v.numero === marcas.rapida && (
+                          <span className="marca">{tr('masRapida')}</span>
+                        )}
+                        {v.numero === marcas.lenta && (
+                          <span className="marca">{tr('masLenta')}</span>
+                        )}
+                      </th>
+                      <td>{comoCronometro(v.duracion)}</td>
+                      <td>{comoCronometro(v.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
 
-        {/* ---------------- Temporizador ---------------- */}
+        {/*
+          ---------------- Temporizador ----------------
+
+            Tres pantallas, no una con todo puesto.
+
+            Parado enseña SOLO cómo se pone: los campos y los atajos. La
+            cuenta atrás y el anillo no dicen ahí nada que los campos no
+            digan ya —«5:00» encima de un campo que pone 5— y se llevaban
+            media tarjeta para repetirlo. En marcha desaparecen los campos y
+            manda el anillo, que es lo que se mira.
+
+            Y cuando se cumple no se apaga solo: sigue contando hacia
+            arriba hasta que alguien lo para, y ofrece añadir tiempo sin
+            volver a teclear la cuenta. Al arroz le faltan dos minutos más
+            bastante a menudo.
+          */}
         <section className="tarjeta-modo" data-tour="temporizador">
           <p className="titulo">{tr('temporizador')}</p>
 
           {temporizador.estado === 'sonando' ? (
-            <div className="sonando">
+            <div className="cumplido">
               <p className="titular">{tr('temporizadorSonando')}</p>
+
+              <p className="excedido" aria-live="polite">
+                {tr('llevaSonando')} <strong>{comoCuenta(excedidoMs(temporizador, ahora))}</strong>
+              </p>
+
+              <div className="anadir">
+                <span className="etiqueta">{tr('masTiempo')}</span>
+                {[1, 5, 10].map((min) => (
+                  <Button key={min} variant="outline" size="sm" onClick={() => tempAnadir(min)}>
+                    +{min}
+                  </Button>
+                ))}
+                <span className="unidad-atajos">{tr('minutos')}</span>
+              </div>
+
               <Button onClick={tempReiniciar} className={BOTON}>
-                <ArrowCounterClockwiseIcon aria-hidden="true" />
-                {tr('reiniciar')}
+                <StopIcon aria-hidden="true" weight="fill" />
+                {tr('pararTemporizador')}
               </Button>
             </div>
+          ) : temporizador.estado === 'parado' ? (
+            <>
+              <div className="campos-puesta">
+                {(['horas', 'minutos', 'segundos'] as const).map((clave) => (
+                  <div key={clave} className="campo-puesta">
+                    <Input
+                      id={`puesta-${clave}`}
+                      type="number"
+                      inputMode="numeric"
+                      min={LIMITES_PUESTA[clave].min}
+                      max={LIMITES_PUESTA[clave].max}
+                      value={puesta[clave]}
+                      onChange={(e) =>
+                        setPuesta((p) => ({
+                          ...p,
+                          [clave]: limitarPuesta(Number(e.target.value), clave),
+                        }))
+                      }
+                      className="w-[3.75rem] text-center"
+                    />
+                    <Label htmlFor={`puesta-${clave}`}>
+                      {clave === 'horas'
+                        ? tr('horas')
+                        : clave === 'minutos'
+                          ? tr('minutos')
+                          : tr('segundos')}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+
+              {/* Los ratos que se ponen de verdad, a un toque. Poner cinco
+                    minutos no debería costar tres campos. */}
+              <div className="atajos">
+                <span className="unidad-atajos">
+                  {tr('atajos')} · {tr('minutos')}
+                </span>
+                <div className="numeros">
+                  {ATAJOS.map((min) => (
+                    <Button
+                      key={min}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPuesta({ horas: 0, minutos: min, segundos: 0 })}
+                    >
+                      {min}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <Button onClick={tempEmpezar} className={BOTON} disabled={puestaMs(puesta) <= 0}>
+                <PlayIcon aria-hidden="true" weight="fill" />
+                {tr('empezar')}
+              </Button>
+            </>
           ) : (
             <>
               <div className="anillo-temporizador">
@@ -654,59 +764,6 @@ export default function Reloj({ lang }: Props) {
                 <p className="numero-grande">{comoCuenta(quedaTemporizador)}</p>
               </div>
 
-              {temporizador.estado === 'parado' && (
-                <>
-                  <div className="campos-puesta">
-                    {(['horas', 'minutos', 'segundos'] as const).map((clave) => (
-                      <div key={clave} className="campo-puesta">
-                        <Input
-                          id={`puesta-${clave}`}
-                          type="number"
-                          inputMode="numeric"
-                          min={LIMITES_PUESTA[clave].min}
-                          max={LIMITES_PUESTA[clave].max}
-                          value={puesta[clave]}
-                          onChange={(e) =>
-                            setPuesta((p) => ({
-                              ...p,
-                              [clave]: limitarPuesta(Number(e.target.value), clave),
-                            }))
-                          }
-                          className="w-[3.75rem] text-center"
-                        />
-                        <Label htmlFor={`puesta-${clave}`}>
-                          {clave === 'horas'
-                            ? tr('horas')
-                            : clave === 'minutos'
-                              ? tr('minutos')
-                              : tr('segundos')}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Los ratos que se ponen de verdad, a un toque. Poner
-                      cinco minutos no debería costar tres campos. */}
-                  <div className="atajos">
-                    <span className="unidad-atajos">
-                      {tr('atajos')} · {tr('minutos')}
-                    </span>
-                    <div className="numeros">
-                      {ATAJOS.map((min) => (
-                        <Button
-                          key={min}
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPuesta({ horas: 0, minutos: min, segundos: 0 })}
-                        >
-                          {min}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-
               <div className="mandos-modo">
                 {temporizador.estado === 'andando' ? (
                   <Button onClick={tempPausar} className={BOTON}>
@@ -714,21 +771,13 @@ export default function Reloj({ lang }: Props) {
                     {tr('pausar')}
                   </Button>
                 ) : (
-                  <Button
-                    onClick={tempEmpezar}
-                    className={BOTON}
-                    disabled={puestaMs(puesta) <= 0 && temporizador.estado === 'parado'}
-                  >
+                  <Button onClick={tempEmpezar} className={BOTON}>
                     <PlayIcon aria-hidden="true" weight="fill" />
-                    {temporizador.estado === 'pausa' ? tr('seguir') : tr('empezar')}
+                    {tr('seguir')}
                   </Button>
                 )}
 
-                <Button
-                  variant="outline"
-                  onClick={tempReiniciar}
-                  disabled={temporizador.estado === 'parado'}
-                >
+                <Button variant="outline" onClick={tempReiniciar}>
                   <ArrowCounterClockwiseIcon aria-hidden="true" />
                   {tr('reiniciar')}
                 </Button>
@@ -755,6 +804,10 @@ export default function Reloj({ lang }: Props) {
  * como en un reloj de pared. Rotarlos con su ángulo dejaría el 6 boca
  * abajo.
  *
+ * Y nada más: ni aro exterior ni marcas de minuto. Los números ya dibujan
+ * el círculo, y las marcas entre número y número no informaban de nada
+ * teniéndolos. El porqué largo está en `global.css`.
+ *
  * Las agujas se mueven de forma continua —el porqué está en la
  * librería— y el segundero solo aparece si se han pedido los segundos,
  * porque si no repintaría cuatro veces por segundo para nada.
@@ -773,8 +826,6 @@ function Esfera({
   return (
     <div className="esfera" role="img" aria-label={fecha.toLocaleTimeString(locale)}>
       <svg viewBox="0 0 100 100" aria-hidden="true">
-        <circle className="borde" cx="50" cy="50" r="48" />
-
         {Array.from({ length: 12 }, (_, i) => {
           const hora = i === 0 ? 12 : i;
           // El cero de un reloj está ARRIBA y no a la derecha, así que el
@@ -784,9 +835,9 @@ function Esfera({
           return (
             <text
               key={hora}
-              className="numero"
-              x={50 + 35 * Math.sin(angulo)}
-              y={50 - 35 * Math.cos(angulo)}
+              className={hora === 12 ? 'numero cardinal' : 'numero'}
+              x={50 + 38 * Math.sin(angulo)}
+              y={50 - 38 * Math.cos(angulo)}
               textAnchor="middle"
               dominantBaseline="central"
             >
@@ -795,25 +846,12 @@ function Esfera({
           );
         })}
 
-        {/* Las marcas de los minutos, entre número y número. */}
-        {Array.from({ length: 12 }, (_, i) => (
-          <line
-            key={i}
-            className="marca"
-            x1="50"
-            y1="6"
-            x2="50"
-            y2="10"
-            transform={`rotate(${i * 30 + 15} 50 50)`}
-          />
-        ))}
-
         <line
           className="aguja horas"
           x1="50"
           y1="50"
           x2="50"
-          y2="30"
+          y2="32"
           transform={`rotate(${a.horas} 50 50)`}
         />
         <line
@@ -821,21 +859,21 @@ function Esfera({
           x1="50"
           y1="50"
           x2="50"
-          y2="20"
+          y2="24"
           transform={`rotate(${a.minutos} 50 50)`}
         />
         {conSegundos && (
           <line
             className="aguja segundos"
             x1="50"
-            y1="56"
+            y1="58"
             x2="50"
-            y2="16"
+            y2="22"
             transform={`rotate(${a.segundos} 50 50)`}
           />
         )}
 
-        <circle className="eje" cx="50" cy="50" r="2.5" />
+        <circle className="eje" cx="50" cy="50" r="1.75" />
       </svg>
     </div>
   );

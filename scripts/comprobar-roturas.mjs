@@ -215,6 +215,19 @@ const RELOJ_VUELTAS = `
 })()
 `;
 
+/** El temporizador ya cumplido: cuenta hacia arriba y ofrece más tiempo. */
+const RELOJ_CUMPLIDO = `
+(async () => {
+  const min = await __esperar(() => document.querySelector('#puesta-minutos'));
+  __escribir(min, '0');
+  __escribir(document.querySelector('#puesta-segundos'), '1');
+  await new Promise((r) => setTimeout(r, 200));
+  const botones = document.querySelectorAll('[data-tour="temporizador"] button');
+  botones[botones.length - 1].click();
+  await new Promise((r) => setTimeout(r, 2500));
+})()
+`;
+
 /**
  * Qué se somete a qué.
  *
@@ -260,6 +273,7 @@ const CASOS = [
   { nombre: 'reloj · esfera', ruta: 'es/reloj', query: 'c=analogica' },
   { nombre: 'reloj · alarma puesta', ruta: 'es/reloj', hacer: RELOJ_ALARMA },
   { nombre: 'reloj · cronómetro con vueltas', ruta: 'es/reloj', hacer: RELOJ_VUELTAS },
+  { nombre: 'reloj · temporizador cumplido', ruta: 'es/reloj', hacer: RELOJ_CUMPLIDO },
   { nombre: 'reloj · en inglés', ruta: 'en/clock', query: 'h=12' },
   { nombre: 'portada', ruta: 'es' },
   { nombre: 'portada en inglés', ruta: 'en' },

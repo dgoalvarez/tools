@@ -16,6 +16,8 @@ import {
   agujas,
   avanceTemporizador,
   comoCronometro,
+  conMasTiempo,
+  excedidoMs,
   comoCuenta,
   extremos,
   faltaParaAlarma,
@@ -246,7 +248,44 @@ console.log('\n6. El temporizador');
   );
 }
 
-console.log('\n7. Los dos formatos redondean en sentidos contrarios');
+console.log('\n7. Cuando se cumple, sigue contando');
+{
+  const t0 = 1_800_000_000_000;
+  const sonando: Temporizador = { estado: 'sonando', total: 300_000, desde: t0 };
+
+  // Cuenta hacia ARRIBA mientras nadie lo para. Un temporizador que se
+  // apaga solo no deja saber cuánto lleva sonando, y «se me pasó el
+  // arroz» empieza justo ahí: quien vuelve a la cocina necesita saber si
+  // llega tarde por medio minuto o por diez.
+  afirmar(excedidoMs(sonando, t0) === 0, 'nada más cumplirse, cero');
+  afirmar(excedidoMs(sonando, t0 + 34_000) === 34_000, 'medio minuto después, 34 s');
+  afirmar(comoCuenta(excedidoMs(sonando, t0 + 90_000)) === '1:30', 'y se lee «1:30»');
+
+  // Fuera de ese estado no hay exceso que contar.
+  afirmar(excedidoMs({ estado: 'parado' }, t0) === 0, 'parado no excede nada');
+  afirmar(
+    excedidoMs({ estado: 'andando', terminaEn: t0 + 1000, total: 1000 }, t0) === 0,
+    'y andando tampoco'
+  );
+
+  // Añadir tiempo lo vuelve a poner en marcha con lo añadido como total,
+  // no con el original: si conservara el viejo, añadir un minuto a un
+  // temporizador de una hora dejaría el anillo lleno desde el principio.
+  const mas = conMasTiempo(5, t0);
+  afirmar(mas.estado === 'andando', 'añadir tiempo lo pone en marcha');
+  afirmar(
+    mas.estado === 'andando' && mas.terminaEn === t0 + 300_000,
+    'cinco minutos más acaban cinco minutos después'
+  );
+  afirmar(mas.estado === 'andando' && mas.total === 300_000, 'y el total pasa a ser lo añadido');
+  afirmar(avanceTemporizador(mas, PUESTA_INICIAL, t0) === 0, 'así el anillo arranca vacío');
+  afirmar(
+    Math.abs(avanceTemporizador(mas, PUESTA_INICIAL, t0 + 150_000) - 0.5) < 0.001,
+    'y va por la mitad a los dos minutos y medio'
+  );
+}
+
+console.log('\n8. Los dos formatos redondean en sentidos contrarios');
 {
   // La cuenta atrás, hacia ARRIBA: mientras quede un resto, todavía no
   // es cero.

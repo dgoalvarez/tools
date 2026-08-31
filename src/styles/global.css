@@ -2210,7 +2210,24 @@
     }
   }
 
-  /* ---------- La esfera ---------- */
+  /*
+    ---------- La esfera ----------
+
+    Lo que se quitó, y por qué. Tenía un aro exterior, doce marcas de
+    minuto y doce números en gris medio, y las tres cosas competían por la
+    misma atención que las agujas — que son lo único que hay que mirar.
+
+      · **El aro se va.** Los propios números dibujan el círculo. Un aro
+        además obliga a decidir su grosor y su color, y cualquiera de los
+        dos se lee como un borde de caja, no como un reloj.
+      · **Las marcas se van.** Con los doce números puestos no informan de
+        nada: solo hacen ruido entre número y número.
+      · **Los números adelgazan.** En peso 300 y en tinta suave se leen
+        igual de bien y dejan de pelearse con las agujas.
+
+    Lo que queda es lo que hace un reloj caro: mucho aire, tres líneas y
+    un punto.
+  */
   .esfera {
     width: min(100%, 20rem);
     aspect-ratio: 1;
@@ -2221,25 +2238,17 @@
     height: 100%;
   }
 
-  .esfera .borde {
-    fill: none;
-    stroke: var(--line);
-    stroke-width: 1.5;
-  }
-
-  .esfera .marca {
-    stroke: var(--ink-soft);
-    stroke-width: 1.25;
-    stroke-linecap: round;
-  }
-
-  /* Los doce números. Sin ellos hay que contar marcas desde arriba para
-     saber si la aguja está en el 4 o en el 5, y una esfera que hay que
-     descifrar no sirve para lo único que sirve una esfera. */
   .esfera .numero {
-    font-size: 9px;
-    font-weight: 500;
+    font-size: 8px;
+    font-weight: 300;
+    letter-spacing: 0.02em;
     font-variant-numeric: tabular-nums;
+    fill: var(--ink-soft);
+  }
+
+  /* La de las doce, un punto más marcada: es de donde se cuenta. */
+  .esfera .numero.cardinal {
+    font-weight: 500;
     fill: var(--ink-muted);
   }
 
@@ -2249,22 +2258,23 @@
   }
 
   .esfera .aguja.horas {
-    stroke-width: 4;
+    stroke-width: 3;
   }
 
   .esfera .aguja.minutos {
-    stroke-width: 2.75;
+    stroke-width: 2;
   }
 
-  /* El segundero en el acento: es la única aguja que se ve moverse, así
-     que es la que dice de un vistazo que el reloj está vivo. */
+  /* El segundero en el acento y finísimo: es la única aguja que se ve
+     moverse, así que es la que dice de un vistazo que el reloj está vivo,
+     y no necesita grosor para eso. */
   .esfera .aguja.segundos {
     stroke: var(--acento);
-    stroke-width: 1.25;
+    stroke-width: 0.9;
   }
 
   .esfera .eje {
-    fill: var(--acento);
+    fill: var(--ink);
   }
 
   /*
@@ -2398,6 +2408,24 @@
   }
 
   /* ---------- Las vueltas ---------- */
+  /*
+    La lista de vueltas no estira la tarjeta.
+
+    Sin tope, veinte vueltas hacían la tarjeta del cronómetro cuatro veces
+    más alta que las otras dos, y con las tres a la misma altura eso
+    arrastraba a la fila entera. Ocho vueltas caben; a partir de ahí, se
+    desplaza dentro de su caja.
+
+    La cabecera se queda pegada arriba: sin eso, al desplazar se pierde
+    qué columna es cuál justo cuando hay tantas filas que hace falta.
+  */
+  .caja-vueltas {
+    width: 100%;
+    max-height: 15rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
   .tabla-vueltas {
     width: 100%;
     border-collapse: collapse;
@@ -2413,6 +2441,10 @@
   }
 
   .tabla-vueltas thead th {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 1;
+    background: var(--surface);
     font-weight: 500;
     color: var(--ink-soft);
   }
@@ -2477,6 +2509,47 @@
     stroke: var(--acento);
     stroke-dasharray: 283;
     transition: stroke-dashoffset 0.3s linear;
+  }
+
+  /* ---------- El temporizador, cumplido ---------- */
+  .cumplido {
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+  }
+
+  .cumplido .titular {
+    margin: 0;
+    font-size: var(--fs-h2);
+    font-weight: 600;
+    color: var(--acento);
+  }
+
+  /* La cuenta hacia arriba: dice cuánto lleva esperando, que es lo que
+     separa «llego tarde por medio minuto» de «se me pasó el arroz». */
+  .cumplido .excedido {
+    margin: 0;
+    font-size: var(--fs-small);
+    color: var(--ink-muted);
+  }
+
+  .cumplido .excedido strong {
+    font-size: var(--fs-body);
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .anadir {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+  }
+
+  .anadir .etiqueta {
+    font-size: var(--fs-small);
+    color: var(--ink-soft);
   }
 
   .campos-puesta {

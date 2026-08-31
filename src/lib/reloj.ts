@@ -282,7 +282,16 @@ export type Temporizador =
   | { estado: 'parado' }
   | { estado: 'andando'; terminaEn: number; total: number }
   | { estado: 'pausa'; restanteMs: number; total: number }
-  | { estado: 'sonando'; total: number };
+  /**
+   * Llegó a cero y espera a que alguien lo apague.
+   *
+   * `desde` es el instante en que se cumplió, y sirve para contar hacia
+   * ARRIBA mientras nadie lo para. No es adorno: un temporizador que se
+   * apaga solo no deja saber cuánto tiempo lleva sonando, y «se me pasó
+   * el arroz» empieza justo ahí. Con la cuenta a la vista, quien vuelve
+   * a la cocina sabe si llega tarde por medio minuto o por diez.
+   */
+  | { estado: 'sonando'; total: number; desde: number };
 
 export const TEMPORIZADOR_INICIAL: Temporizador = { estado: 'parado' };
 
@@ -294,6 +303,25 @@ export function restanteTemporizador(t: Temporizador, puesta: Puesta, ahora: num
   // Parado enseña lo que se ha puesto, así que cambiar los campos se ve
   // al momento en el número grande.
   return puestaMs(puesta);
+}
+
+/** Lo que lleva sonando sin que nadie lo pare. */
+export function excedidoMs(t: Temporizador, ahora: number): number {
+  return t.estado === 'sonando' ? Math.max(0, ahora - t.desde) : 0;
+}
+
+/**
+ * Le añade tiempo a un temporizador que ya sonó, y lo vuelve a poner en
+ * marcha.
+ *
+ * El total pasa a ser lo añadido y no lo original, porque el anillo tiene
+ * que enseñar lo que queda de ESTE tramo: si conservara el total viejo,
+ * añadir un minuto a un temporizador de una hora dejaría el anillo
+ * prácticamente lleno desde el primer segundo.
+ */
+export function conMasTiempo(minutos: number, ahora: number): Temporizador {
+  const mas = Math.max(0, Math.round(minutos * 60_000));
+  return { estado: 'andando', terminaEn: ahora + mas, total: mas };
 }
 
 /** Cuánto lleva hecho, de 0 a 1. Es lo que dibuja el anillo. */

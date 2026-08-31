@@ -22,9 +22,19 @@ export const CONTRASTE = {
   cuentagotas: { es: 'Tomar un color de la pantalla', en: 'Pick a colour from the screen' },
   /** Lo que hace la muestra: abrir el selector del sistema. */
   elegirAMano: { es: 'Elegir un color', en: 'Choose a colour' },
-  formatoLibre: {
-    es: 'Hex, rgb(), hsl(), oklch() o un nombre como «teal».',
-    en: 'Hex, rgb(), hsl(), oklch() or a name like “teal”.',
+  /**
+   * En qué se puede escribir un color, dentro del propio campo.
+   *
+   * La frase entera —«Hex, rgb(), hsl(), oklch() o un nombre como
+   * teal»— vivía como una línea encima de las tarjetas. Ahí ocupaba un
+   * renglón para siempre y solo servía la primera vez. Como marcador de
+   * posición aparece justo donde se va a escribir y solo cuando el campo
+   * está vacío, que es exactamente cuando hace falta. La versión larga
+   * se cuenta en el paso a paso.
+   */
+  formatoPlaceholder: {
+    es: 'hex, rgb(), hsl(), oklch(), teal…',
+    en: 'hex, rgb(), hsl(), oklch(), teal…',
   },
   noEsColor: { es: 'Eso no es un color', en: 'That is not a colour' },
   avisoAlfa: {

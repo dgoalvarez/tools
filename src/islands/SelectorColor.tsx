@@ -156,6 +156,7 @@ export default function SelectorColor({
             id={id}
             value={bruto}
             onChange={(e) => onCambio(e.target.value)}
+            placeholder={tr('formatoPlaceholder')}
             spellCheck={false}
             autoComplete="off"
             aria-invalid={!valido}

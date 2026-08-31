@@ -4,6 +4,22 @@
 import type { T } from './config';
 
 export const ESCALA = {
+  // ---------- Escala fluida ----------
+  /**
+   * El mando que gobierna la herramienta entera.
+   *
+   * Encendido, cada paso es un `clamp()` que crece con la ventana y hay
+   * que decidir dos tamaños base, dos proporciones y entre qué anchuras.
+   * Apagado, cada paso es un número y todo eso sobra. Va arriba del todo
+   * porque es la primera decisión, no una más.
+   */
+  fluida: { es: 'Escala fluida', en: 'Fluid scale' },
+  fluidaSi: { es: 'Cada paso crece con la ventana', en: 'Each step grows with the window' },
+  fluidaNo: { es: 'Cada paso vale un solo tamaño', en: 'Each step is a single size' },
+  /** Los mismos campos, cuando no hay dos extremos que distinguir. */
+  baseUnica: { es: 'Tamaño base', en: 'Base size' },
+  razonUnica: { es: 'Proporción', en: 'Ratio' },
+
   // ---------- Los controles ----------
   ajustes: { es: 'La escala', en: 'The scale' },
   baseMin: { es: 'Base en la ventana estrecha', en: 'Base at the narrow end' },
@@ -54,6 +70,8 @@ export const ESCALA = {
 
   // ---------- La muestra ----------
   muestraTitulo: { es: 'La escala, a tu ventana', en: 'The scale, at your window' },
+  /** El mismo título cuando la escala no crece con la ventana. */
+  muestraTituloFijo: { es: 'La escala', en: 'The scale' },
   muestraTexto: { es: 'Tipografía que respira', en: 'Type that breathes' },
 
   // ---------- El CSS ----------

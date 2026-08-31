@@ -247,7 +247,7 @@ export default function Contrast({ lang }: Props) {
         />
 
         {textoAlpha < 1 && (
-          <p className="rounded-md border border-line bg-surface-2 p-3 text-[var(--fs-small)] text-ink-muted">
+          <p className="rounded-md border border-line bg-surface-2 p-3 text-[length:var(--fs-small)] text-ink-muted">
             {tr('avisoAlfa')} <code className="font-mono text-ink">{efectivo}</code>
           </p>
         )}
@@ -287,7 +287,7 @@ export default function Contrast({ lang }: Props) {
                 onChange={(e) => setPx(Math.max(8, Math.min(200, Number(e.target.value) || 8)))}
                 className="w-20"
               />
-              <span className="text-[var(--fs-small)] text-ink-soft">px</span>
+              <span className="text-[length:var(--fs-small)] text-ink-soft">px</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -309,7 +309,7 @@ export default function Contrast({ lang }: Props) {
             </div>
 
             {wcag.grande && (
-              <p className="text-[var(--fs-small)] text-ink-soft">
+              <p className="text-[length:var(--fs-small)] text-ink-soft">
                 <span className="font-medium text-ink-muted">{tr('textoGrande')}.</span>{' '}
                 {tr('textoGrandePor')}
               </p>
@@ -353,9 +353,9 @@ export default function Contrast({ lang }: Props) {
               {wcag.razon.toFixed(2)}
               <span className="text-base text-ink-soft">:1</span>
             </p>
-            <p className="mt-1 text-[var(--fs-small)] text-ink-soft">{tr('wcagRazon')}</p>
+            <p className="mt-1 text-[length:var(--fs-small)] text-ink-soft">{tr('wcagRazon')}</p>
 
-            <div className="mt-4 grid gap-2 text-[var(--fs-small)]">
+            <div className="mt-4 grid gap-2 text-[length:var(--fs-small)]">
               <Fila
                 nombre={`AA · ${wcag.umbralAA}:1`}
                 pasa={wcag.pasaAA}
@@ -389,12 +389,12 @@ export default function Contrast({ lang }: Props) {
                 {apca.lc.toFixed(1)}
                 <span className="text-base text-ink-soft"> Lc</span>
               </p>
-              <p className="mt-1 text-[var(--fs-small)] text-ink-soft">
+              <p className="mt-1 text-[length:var(--fs-small)] text-ink-soft">
                 {tr('apcaLc')} ·{' '}
                 {esPolaridadClara(apca.lc) ? tr('apcaPolaridadClara') : tr('apcaPolaridadOscura')}
               </p>
 
-              <div className="mt-4 text-[var(--fs-small)]">
+              <div className="mt-4 text-[length:var(--fs-small)]">
                 {apca.estado === 'pasa' && (
                   <Fila
                     nombre={`${tr('apcaMinimo')}: ${apca.minimoPx} px`}
@@ -445,7 +445,7 @@ export default function Contrast({ lang }: Props) {
                 <h3 className="text-[length:var(--fs-h3)] font-semibold text-ink">
                   {tr('desacuerdoTitulo')}
                 </h3>
-                <p className="mt-2 text-[var(--fs-small)] text-ink-muted">
+                <p className="mt-2 text-[length:var(--fs-small)] text-ink-muted">
                   {wcag.pasaAA ? tr('desacuerdoWcagSi') : tr('desacuerdoApcaSi')}
                 </p>
               </section>
@@ -479,7 +479,7 @@ export default function Contrast({ lang }: Props) {
                     <code className="font-mono text-[length:var(--fs-h3)] text-ink">
                       {sugerencia.hex}
                     </code>
-                    <p className="text-[var(--fs-small)] text-ink-soft tabular-nums">
+                    <p className="text-[length:var(--fs-small)] text-ink-soft tabular-nums">
                       {sugerencia.direccion === 'oscurecer'
                         ? tr('sugerenciaOscurecer')
                         : tr('sugerenciaAclarar')}{' '}
@@ -510,13 +510,13 @@ export default function Contrast({ lang }: Props) {
                   </Button>
                 </div>
 
-                <p className="mt-3 text-[var(--fs-small)] text-ink-soft">
+                <p className="mt-3 text-[length:var(--fs-small)] text-ink-soft">
                   {tr('sugerenciaComo')}
                   {sugerencia.cromaAjustado && ` ${tr('sugerenciaCroma')}`}
                 </p>
               </>
             ) : (
-              <p className="mt-2 text-[var(--fs-small)] text-ink-muted">
+              <p className="mt-2 text-[length:var(--fs-small)] text-ink-muted">
                 {tr('sugerenciaNinguna')}
               </p>
             )}

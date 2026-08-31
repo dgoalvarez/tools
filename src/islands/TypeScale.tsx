@@ -49,6 +49,7 @@ import { escribirParams, leerParams } from '@/lib/url-state';
  * que Tailwind trae de serie.
  */
 const INICIAL: Ajustes = {
+  fluida: true,
   baseMin: 16,
   baseMax: 20,
   razonMin: 1.2,
@@ -71,7 +72,7 @@ const INICIAL: Ajustes = {
  * `nombres` y `omitidos` no están aquí: no son números y se serializan
  * aparte.
  */
-const CLAVES: Record<Exclude<keyof Ajustes, 'nombres' | 'omitidos'>, string> = {
+const CLAVES: Record<Exclude<keyof Ajustes, 'nombres' | 'omitidos' | 'fluida'>, string> = {
   baseMin: 'bn',
   baseMax: 'bx',
   razonMin: 'rn',
@@ -140,8 +141,11 @@ export default function TypeScale({ lang }: Props) {
     const enlaceOmitidos = params.get('x');
     if (enlaceOmitidos) leidos.omitidos = textoAOmitidos(enlaceOmitidos);
 
+    // `f=0` apaga lo fluido. Solo viaja cuando se aparta de lo normal.
+    if (params.get('f') === '0') leidos.fluida = false;
+
     for (const [campo, clave] of Object.entries(CLAVES) as [
-      Exclude<keyof Ajustes, 'nombres' | 'omitidos'>,
+      Exclude<keyof Ajustes, 'nombres' | 'omitidos' | 'fluida'>,
       string,
     ][]) {
       const crudo = params.get(clave);
@@ -178,11 +182,12 @@ export default function TypeScale({ lang }: Props) {
 
     const salida: Record<string, string | null> = {};
     for (const [campo, clave] of Object.entries(CLAVES) as [
-      Exclude<keyof Ajustes, 'nombres' | 'omitidos'>,
+      Exclude<keyof Ajustes, 'nombres' | 'omitidos' | 'fluida'>,
       string,
     ][]) {
       salida[clave] = ajustes[campo] === INICIAL[campo] ? null : String(ajustes[campo]);
     }
+    salida.f = ajustes.fluida ? null : '0';
     salida.n =
       nombresATexto(ajustes.nombres) === nombresATexto(INICIAL.nombres)
         ? null
@@ -199,10 +204,13 @@ export default function TypeScale({ lang }: Props) {
     // El ancho máximo tiene que quedar por encima del mínimo o la recta se
     // vuelve del revés. Se corrige aquí y no en el campo, para que se pueda
     // teclear un número intermedio sin que salte nada.
-    const seguros: Ajustes = {
-      ...ajustes,
-      anchoMax: Math.max(ajustes.anchoMin + 1, ajustes.anchoMax),
-    };
+    // Sin escala fluida, los dos extremos son el mismo: cada paso vale
+    // un número y `construirEscala` emite un valor suelto en vez de un
+    // clamp(), que es lo que ya hacía cuando el mínimo y el máximo
+    // coincidían. La aritmética no cambia; cambia lo que se le pide.
+    const seguros: Ajustes = ajustes.fluida
+      ? { ...ajustes, anchoMax: Math.max(ajustes.anchoMin + 1, ajustes.anchoMax) }
+      : { ...ajustes, baseMax: ajustes.baseMin, razonMax: ajustes.razonMin };
     const pasos = construirEscala(seguros);
     return {
       pasos,
@@ -310,16 +318,42 @@ export default function TypeScale({ lang }: Props) {
     <div className="grid gap-8 lg:grid-cols-[minmax(0,var(--col-controles))_minmax(0,1fr)] lg:items-start">
       {/* ---------------- Controles ---------------- */}
       <div className="columna-herramienta gap-4">
+        {/*
+          La primera decisión, y la que cambia todo lo demás: si la
+          escala crece con la ventana o si cada paso vale un número.
+
+          Va arriba del todo y fuera de las tarjetas porque no es un
+          ajuste más entre otros: apagarla hace desaparecer la mitad de
+          los campos de abajo —los dos extremos de la base, los dos de la
+          proporción, y las anchuras enteras— y cambia el CSS que sale.
+          Un mando así puesto en la tercera tarjeta se encuentra tarde.
+        */}
+        <label className="interruptor tarjeta-control" data-tour="fluida">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={ajustes.fluida}
+            onChange={(e) => cambiar('fluida', e.target.checked)}
+          />
+          <span className="texto">
+            {tr('fluida')}
+            <span className="apunte">{ajustes.fluida ? tr('fluidaSi') : tr('fluidaNo')}</span>
+          </span>
+        </label>
+
         <fieldset className="tarjeta-control" data-tour="base">
           <legend className="sr-only">{tr('ajustes')}</legend>
           <p className="titulo" aria-hidden="true">
             {tr('ajustes')}
           </p>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/* Dos extremos solo si hay dos extremos. Sin escala fluida,
+              «Base en la ventana estrecha» y «ancha» serían la misma
+              pregunta hecha dos veces. */}
+          <div className={ajustes.fluida ? 'grid grid-cols-2 gap-3' : 'grid gap-3'}>
             <Numero
               id="base-min"
-              etiqueta={tr('baseMin')}
+              etiqueta={ajustes.fluida ? tr('baseMin') : tr('baseUnica')}
               valor={ajustes.baseMin}
               min={4}
               max={200}
@@ -327,35 +361,39 @@ export default function TypeScale({ lang }: Props) {
               unidad="px"
               onCambio={(v) => cambiar('baseMin', v)}
             />
-            <Numero
-              id="base-max"
-              etiqueta={tr('baseMax')}
-              valor={ajustes.baseMax}
-              min={4}
-              max={200}
-              paso={0.5}
-              unidad="px"
-              onCambio={(v) => cambiar('baseMax', v)}
-            />
+            {ajustes.fluida && (
+              <Numero
+                id="base-max"
+                etiqueta={tr('baseMax')}
+                valor={ajustes.baseMax}
+                min={4}
+                max={200}
+                paso={0.5}
+                unidad="px"
+                onCambio={(v) => cambiar('baseMax', v)}
+              />
+            )}
           </div>
 
           <div className="grid gap-3" data-tour="razon">
             <Razon
               id="razon-min"
-              etiqueta={tr('razonMin')}
+              etiqueta={ajustes.fluida ? tr('razonMin') : tr('razonUnica')}
               valor={ajustes.razonMin}
               lang={lang}
               personalizada={tr('personalizada')}
               onCambio={(v) => cambiar('razonMin', v)}
             />
-            <Razon
-              id="razon-max"
-              etiqueta={tr('razonMax')}
-              valor={ajustes.razonMax}
-              lang={lang}
-              personalizada={tr('personalizada')}
-              onCambio={(v) => cambiar('razonMax', v)}
-            />
+            {ajustes.fluida && (
+              <Razon
+                id="razon-max"
+                etiqueta={tr('razonMax')}
+                valor={ajustes.razonMax}
+                lang={lang}
+                personalizada={tr('personalizada')}
+                onCambio={(v) => cambiar('razonMax', v)}
+              />
+            )}
           </div>
         </fieldset>
 
@@ -386,34 +424,38 @@ export default function TypeScale({ lang }: Props) {
           </div>
         </fieldset>
 
-        <fieldset className="tarjeta-control" data-tour="ventana">
-          <legend className="sr-only">{tr('ventana')}</legend>
-          <p className="titulo" aria-hidden="true">
-            {tr('ventana')}
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            <Numero
-              id="ancho-min"
-              etiqueta={tr('anchoMin')}
-              valor={ajustes.anchoMin}
-              min={200}
-              max={3840}
-              paso={10}
-              unidad="px"
-              onCambio={(v) => cambiar('anchoMin', Math.round(v))}
-            />
-            <Numero
-              id="ancho-max"
-              etiqueta={tr('anchoMax')}
-              valor={ajustes.anchoMax}
-              min={200}
-              max={3840}
-              paso={10}
-              unidad="px"
-              onCambio={(v) => cambiar('anchoMax', Math.round(v))}
-            />
-          </div>
-        </fieldset>
+        {/* Entre qué anchuras crece. Sin escala fluida no crece entre
+            ninguna, así que la tarjeta entera sobra. */}
+        {ajustes.fluida && (
+          <fieldset className="tarjeta-control" data-tour="ventana">
+            <legend className="sr-only">{tr('ventana')}</legend>
+            <p className="titulo" aria-hidden="true">
+              {tr('ventana')}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <Numero
+                id="ancho-min"
+                etiqueta={tr('anchoMin')}
+                valor={ajustes.anchoMin}
+                min={200}
+                max={3840}
+                paso={10}
+                unidad="px"
+                onCambio={(v) => cambiar('anchoMin', Math.round(v))}
+              />
+              <Numero
+                id="ancho-max"
+                etiqueta={tr('anchoMax')}
+                valor={ajustes.anchoMax}
+                min={200}
+                max={3840}
+                paso={10}
+                unidad="px"
+                onCambio={(v) => cambiar('anchoMax', Math.round(v))}
+              />
+            </div>
+          </fieldset>
+        )}
 
         <fieldset className="tarjeta-control" data-tour="nombres">
           <legend className="sr-only">{tr('nombresTitulo')}</legend>
@@ -463,10 +505,10 @@ export default function TypeScale({ lang }: Props) {
             <h2 className="text-[length:var(--fs-h3)] font-semibold text-[var(--danger)]">
               {tr('repetidoTitulo')}
             </h2>
-            <p className="mt-2 font-mono text-[var(--fs-small)] text-ink-muted">
+            <p className="mt-2 font-mono text-[length:var(--fs-small)] text-ink-muted">
               {repetidos.join(' · ')}
             </p>
-            <p className="mt-3 text-[var(--fs-small)] text-ink-muted">
+            <p className="mt-3 text-[length:var(--fs-small)] text-ink-muted">
               {tr('repetidoCuerpo')}
             </p>
           </section>
@@ -477,16 +519,14 @@ export default function TypeScale({ lang }: Props) {
             <h2 className="text-[length:var(--fs-h3)] font-semibold text-[var(--danger)]">
               {tr('cruceTitulo')}
             </h2>
-            <ul className="mt-3 grid gap-1 font-mono text-[var(--fs-small)] text-ink-muted">
+            <ul className="mt-3 grid gap-1 font-mono text-[length:var(--fs-small)] text-ink-muted">
               {cruces.map((c) => (
                 <li key={`${c.menor}-${c.mayor}-${c.ancho}`}>
                   {c.menor} {tr('cruceEn')} {c.mayor} {tr('aA')} {c.ancho} px
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-[var(--fs-small)] text-ink-muted">
-              {tr('cruceCuerpo')}
-            </p>
+            <p className="mt-3 text-[length:var(--fs-small)] text-ink-muted">{tr('cruceCuerpo')}</p>
           </section>
         )}
 
@@ -496,7 +536,7 @@ export default function TypeScale({ lang }: Props) {
             paso. */}
         <section data-tour="rampa">
           <h2 className="text-[length:var(--fs-h3)] font-semibold text-ink">
-            {tr('muestraTitulo')}
+            {ajustes.fluida ? tr('muestraTitulo') : tr('muestraTituloFijo')}
           </h2>
 
           <div className="mt-3 grid min-w-0 gap-0.5 overflow-hidden rounded-lg border border-line bg-surface p-4">
@@ -535,20 +575,27 @@ export default function TypeScale({ lang }: Props) {
                   responder al zoom del navegador, y eso es un fallo de
                   accesibilidad, no una preferencia.
                 */}
+                {/* Un solo número cuando la escala no es fluida: «16 → 16
+                    px» sería escribir dos veces lo mismo con una flecha
+                    en medio. */}
                 <span className="medidas">
                   <b>
-                    {paso.minPx.toFixed(0)} → {paso.maxPx.toFixed(0)} px
+                    {ajustes.fluida
+                      ? `${paso.minPx.toFixed(0)} → ${paso.maxPx.toFixed(0)} px`
+                      : `${paso.minPx.toFixed(0)} px`}
                     {paso.indice === 0 && <span className="es-base"> {tr('esLaBase')}</span>}
                   </b>
-                  {cifra(paso.minPx / RAIZ_PX, 2)} → {cifra(paso.maxPx / RAIZ_PX, 2)} rem ·{' '}
-                  {cifra(paso.interlineado, 2)}
+                  {ajustes.fluida
+                    ? `${cifra(paso.minPx / RAIZ_PX, 2)} → ${cifra(paso.maxPx / RAIZ_PX, 2)} rem`
+                    : `${cifra(paso.minPx / RAIZ_PX, 2)} rem`}{' '}
+                  · {cifra(paso.interlineado, 2)}
                 </span>
               </div>
             ))}
           </div>
 
           {ajustes.omitidos.length > 0 && (
-            <p className="mt-3 text-[var(--fs-small)] text-ink-soft">
+            <p className="mt-3 text-[length:var(--fs-small)] text-ink-soft">
               {tr('saltadosAyuda')}
             </p>
           )}
@@ -558,96 +605,117 @@ export default function TypeScale({ lang }: Props) {
             Plegada, y no porque importe poco: importa mucho, pero solo
             cuando ya se ha decidido la escala. Abierta desde el principio
             eran cuarenta números encima de la rampa. */}
-        <details data-tour="tabla" className="acordeon">
-          <summary>{tr('tablaTitulo')}</summary>
+        {ajustes.fluida && (
+          <details data-tour="tabla" className="acordeon">
+            <summary>{tr('tablaTitulo')}</summary>
 
-          <div className="cuerpo">
-            <p className="intro">{tr('tablaIntro')}</p>
+            <div className="cuerpo">
+              <p className="intro">{tr('tablaIntro')}</p>
 
-            <div className="mt-3 overflow-x-auto">
-              <table className="w-full border-collapse text-[var(--fs-small)] tabular-nums">
-                <thead>
-                  <tr className="border-b border-line text-left">
-                    <th scope="col" className="p-3 font-medium text-ink-muted">
-                      {tr('columnaPaso')}
-                    </th>
-                    {ANCHOS_TABLA.map((ancho) => (
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full border-collapse text-[length:var(--fs-small)] tabular-nums">
+                  <thead>
+                    <tr className="border-b border-line text-left">
+                      <th scope="col" className="p-3 font-medium text-ink-muted">
+                        {tr('columnaPaso')}
+                      </th>
+                      {ANCHOS_TABLA.map((ancho) => (
+                        <th
+                          key={ancho}
+                          scope="col"
+                          className="p-3 text-right font-medium text-ink-muted"
+                        >
+                          {ancho}
+                        </th>
+                      ))}
                       <th
-                        key={ancho}
                         scope="col"
                         className="p-3 text-right font-medium text-ink-muted"
+                        title={tr('llenoAyuda')}
                       >
-                        {ancho}
+                        {tr('columnaLlenoCorto')}
                       </th>
-                    ))}
-                    <th
-                      scope="col"
-                      className="p-3 text-right font-medium text-ink-muted"
-                      title={tr('llenoAyuda')}
-                    >
-                      {tr('columnaLlenoCorto')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {alReves
-                    .filter((paso) => !paso.omitido)
-                    .map((paso) => {
-                      const lleno = anchoParaFraccion(paso, 0.95, ajustes);
-                      return (
-                        <tr key={paso.indice} className="border-b border-line last:border-0">
-                          {/* El nombre se edita aquí y no en una lista aparte:
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {alReves
+                      .filter((paso) => !paso.omitido)
+                      .map((paso) => {
+                        const lleno = anchoParaFraccion(paso, 0.95, ajustes);
+                        return (
+                          <tr key={paso.indice} className="border-b border-line last:border-0">
+                            {/* El nombre se edita aquí y no en una lista aparte:
                           es donde ya se está mirando cada paso, y ahorra
                           repetir la escala entera en otro sitio. */}
-                          <th scope="row" className="p-2 text-left font-normal">
-                            <span className="sr-only">{paso.nombre}</span>
-                            <span className="flex items-center font-mono text-ink">
-                              <span aria-hidden="true" className="pl-1 text-ink-soft">
-                                --{ajustes.prefijo}-
+                            <th scope="row" className="p-2 text-left font-normal">
+                              <span className="sr-only">{paso.nombre}</span>
+                              <span className="flex items-center font-mono text-ink">
+                                <span aria-hidden="true" className="pl-1 text-ink-soft">
+                                  --{ajustes.prefijo}-
+                                </span>
+                                <input
+                                  type="text"
+                                  value={
+                                    ajustes.nombres[String(paso.indice)] ?? String(paso.indice)
+                                  }
+                                  spellCheck={false}
+                                  autoComplete="off"
+                                  aria-label={`${tr('nombreDe')} ${paso.indice}`}
+                                  className="w-24 rounded-md border border-transparent bg-transparent px-1 py-1 hover:border-line focus:border-line focus:outline-none"
+                                  onChange={(e) => renombrar(paso.indice, e.target.value)}
+                                />
                               </span>
-                              <input
-                                type="text"
-                                value={ajustes.nombres[String(paso.indice)] ?? String(paso.indice)}
-                                spellCheck={false}
-                                autoComplete="off"
-                                aria-label={`${tr('nombreDe')} ${paso.indice}`}
-                                className="w-24 rounded-md border border-transparent bg-transparent px-1 py-1 hover:border-line focus:border-line focus:outline-none"
-                                onChange={(e) => renombrar(paso.indice, e.target.value)}
-                              />
-                            </span>
-                          </th>
-                          {paso.enTabla.map((px, i) => (
-                            <td key={ANCHOS_TABLA[i]} className="p-3 text-right text-ink-muted">
-                              {px.toFixed(1)}
+                            </th>
+                            {paso.enTabla.map((px, i) => (
+                              <td key={ANCHOS_TABLA[i]} className="p-3 text-right text-ink-muted">
+                                {px.toFixed(1)}
+                              </td>
+                            ))}
+                            <td className="p-3 text-right text-ink-soft">
+                              {lleno === null ? tr('nunca') : `${lleno} px`}
                             </td>
-                          ))}
-                          <td className="p-3 text-right text-ink-soft">
-                            {lleno === null ? tr('nunca') : `${lleno} px`}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
 
-            <p className="border-t border-line px-4 py-3 text-[var(--fs-small)] text-ink-soft">
-              {tr('llenoAyuda')}
-            </p>
-          </div>
-        </details>
+              <p className="border-t border-line px-4 py-3 text-[length:var(--fs-small)] text-ink-soft">
+                {tr('llenoAyuda')}
+              </p>
+            </div>
+          </details>
+        )}
 
         {/* -------- El CSS, también plegado --------
             Es el final del camino, no el principio: se abre cuando la
             escala ya está decidida y hay algo que llevarse. */}
         <details data-tour="css" className="acordeon">
-          <summary>{tr('cssTitulo')}</summary>
+          {/*
+            El botón de copiar, en la misma fila que el título.
 
-          <div className="cuerpo grid gap-3 p-4">
-            <p className="text-[var(--fs-small)] text-ink-soft">
-              {tr('cssRaiz')}
-            </p>
-            <Button variant="outline" size="sm" onClick={copiarCss} className="justify-self-start">
+            Va DENTRO del `<summary>`, que es la única forma de que se
+            vea con el acordeón cerrado — todo lo demás que hay en un
+            `<details>` se esconde al cerrarlo. Y es lo que queremos:
+            quien vuelve a por su CSS ya sabe lo que hay dentro, así que
+            copiarlo sin abrirlo es un clic menos.
+
+            El precio es que hay que parar el evento a mano: pulsar
+            cualquier cosa dentro de un `summary` abre o cierra el
+            acordeón, y copiar no debería hacer ni lo uno ni lo otro.
+          */}
+          <summary>
+            <span className="flex-1">{tr('cssTitulo')}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                copiarCss();
+              }}
+            >
               {copiado === 'css' ? (
                 <CheckIcon aria-hidden="true" />
               ) : (
@@ -655,6 +723,10 @@ export default function TypeScale({ lang }: Props) {
               )}
               {copiado === 'css' ? tr('copiado') : tr('copiarCss')}
             </Button>
+          </summary>
+
+          <div className="cuerpo grid gap-3 p-4">
+            <p className="text-[length:var(--fs-small)] text-ink-soft">{tr('cssRaiz')}</p>
 
             <pre className="overflow-x-auto rounded-lg border border-line bg-surface-2 p-4 font-mono text-[0.78rem] leading-relaxed text-ink">
               <code>{css}</code>
@@ -689,7 +761,7 @@ function Numero({
 }) {
   return (
     <div className="grid gap-1.5">
-      <Label htmlFor={id} className="text-[var(--fs-small)]">
+      <Label htmlFor={id} className="text-[length:var(--fs-small)]">
         {etiqueta}
       </Label>
       <div className="flex items-center gap-1.5">
@@ -706,7 +778,7 @@ function Numero({
             if (Number.isFinite(n)) onCambio(Math.max(min, Math.min(max, n)));
           }}
         />
-        {unidad && <span className="text-[var(--fs-small)] text-ink-soft">{unidad}</span>}
+        {unidad && <span className="text-[length:var(--fs-small)] text-ink-soft">{unidad}</span>}
       </div>
     </div>
   );

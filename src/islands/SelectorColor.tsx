@@ -177,7 +177,7 @@ export default function SelectorColor({
         </div>
 
         {!valido && (
-          <p className="text-[var(--fs-small)] text-[var(--danger)]">{tr('noEsColor')}</p>
+          <p className="text-[length:var(--fs-small)] text-[var(--danger)]">{tr('noEsColor')}</p>
         )}
       </div>
 
@@ -249,7 +249,7 @@ export default function SelectorColor({
           {/* El tono sí es una sola dimensión, así que aquí sí vale un
               range de verdad, con su teclado y su anuncio de fábrica. */}
           <div className="grid gap-1">
-            <div className="flex items-baseline justify-between gap-2 text-[var(--fs-small)]">
+            <div className="flex items-baseline justify-between gap-2 text-[length:var(--fs-small)]">
               <label htmlFor={`${id}-tono`} className="text-ink-muted">
                 {tr('tono')}
               </label>
@@ -281,7 +281,7 @@ export default function SelectorColor({
 
             return (
               <div key={canal.clave} className="grid gap-1">
-                <div className="flex items-baseline justify-between gap-2 text-[var(--fs-small)]">
+                <div className="flex items-baseline justify-between gap-2 text-[length:var(--fs-small)]">
                   <label htmlFor={idCanal} className="text-ink-muted">
                     {nombre}
                     <span className="ml-1 text-ink-soft uppercase">{canal.clave}</span>

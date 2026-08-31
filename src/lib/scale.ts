@@ -19,6 +19,16 @@ export const RAIZ_PX = 16;
 export const ANCHOS_TABLA = [390, 768, 1360, 1920] as const;
 
 export interface Ajustes {
+  /**
+   * Si la escala crece con la ventana o es de un solo tamaño.
+   *
+   * Apagada, `baseMax` y `razonMax` dejan de contar: cada paso vale un
+   * número y el CSS sale sin `clamp()`. No es un modo degradado — hay
+   * proyectos que quieren una escala fija y punto, y forzarles un clamp
+   * con los dos extremos iguales sería darles ruido en vez de una
+   * escala.
+   */
+  fluida: boolean;
   /** Tamaño del paso 0 en la ventana más estrecha, en px. */
   baseMin: number;
   /** Tamaño del paso 0 en la ventana más ancha, en px. */

@@ -300,7 +300,7 @@ export default function Timezones({ lang }: Props) {
             digo.
           */}
           <details className="rounded-lg border border-line" data-tour="origen">
-            <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2.5 text-[var(--fs-small)] marker:content-none">
+            <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2.5 text-[length:var(--fs-small)] marker:content-none">
               <span className="min-w-0 truncate text-ink-soft">
                 {tr('zonaOrigen')} <span className="font-medium text-ink">{origen.etiqueta}</span>
               </span>
@@ -354,7 +354,7 @@ export default function Timezones({ lang }: Props) {
             <h2 className="text-[length:var(--fs-h3)] font-semibold text-[var(--danger)]">
               {tr('noExisteTitulo')}
             </h2>
-            <p className="mt-2 text-[var(--fs-small)] text-ink-muted">
+            <p className="mt-2 text-[length:var(--fs-small)] text-ink-muted">
               {tr('noExisteCuerpo')} <strong className="text-ink">{resultado.horaCorregida}</strong>
             </p>
           </section>
@@ -365,7 +365,7 @@ export default function Timezones({ lang }: Props) {
             <h2 className="text-[length:var(--fs-h3)] font-semibold text-ink">
               {tr('dosVecesTitulo')}
             </h2>
-            <p className="mt-2 text-[var(--fs-small)] text-ink-muted">
+            <p className="mt-2 text-[length:var(--fs-small)] text-ink-muted">
               {tr('dosVecesCuerpo')}
             </p>
           </section>
@@ -482,7 +482,7 @@ export default function Timezones({ lang }: Props) {
           </div>
 
           {destinos.length === 0 && (
-            <p className="mt-3 text-[var(--fs-small)] text-ink-soft">
+            <p className="mt-3 text-[length:var(--fs-small)] text-ink-soft">
               {tr('vacio')}
             </p>
           )}

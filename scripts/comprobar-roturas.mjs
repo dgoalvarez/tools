@@ -144,6 +144,12 @@ const CASOS = [
       'p=prefijoLarguisimoDeVerdad&n=0:nombreExageradamenteLargoParaProbar,1:otroNombreMuyMuyLargo',
   },
   { nombre: 'escala · con pasos apagados', ruta: 'es/escala', query: 'x=2,4' },
+  { nombre: 'escala · sin escala fluida', ruta: 'es/escala', query: 'f=0' },
+  {
+    nombre: 'escala · fija y con nombres largos',
+    ruta: 'es/escala',
+    query: 'f=0&p=prefijoLarguisimoDeVerdad&n=0:nombreExageradamenteLargoParaProbar',
+  },
   { nombre: 'portada', ruta: 'es' },
   { nombre: 'portada en inglés', ruta: 'en' },
 ];

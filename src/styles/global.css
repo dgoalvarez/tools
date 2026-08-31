@@ -1605,3 +1605,87 @@
     color: var(--ink-soft);
   }
 }
+
+/* ============================================================
+   El interruptor
+
+   Un `<input type="checkbox">` con `role="switch"`: se enciende con la
+   barra espaciadora, se anuncia como interruptor, y no necesita ni una
+   línea de JavaScript para funcionar.
+
+   Existe porque hay decisiones que no son un ajuste más entre otros
+   —«¿la escala crece con la ventana, sí o no?»— y que cambian lo que se
+   ve en toda la página. Esas piden un mando que se lea de un vistazo,
+   no una casilla más en una lista.
+   ============================================================ */
+
+@layer components {
+  .interruptor {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+  }
+
+  .interruptor input {
+    appearance: none;
+    -webkit-appearance: none;
+    flex: none;
+    position: relative;
+    width: 2.25rem;
+    height: 1.3125rem;
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface-2);
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      border-color 0.15s;
+  }
+
+  .interruptor input::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 0.1875rem;
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 999px;
+    background: var(--ink-soft);
+    transform: translateY(-50%);
+    transition:
+      transform 0.15s,
+      background 0.15s;
+  }
+
+  .interruptor input:checked {
+    border-color: var(--acento);
+    background: var(--acento);
+  }
+
+  .interruptor input:checked::after {
+    background: var(--brand-ink);
+    transform: translateY(-50%) translateX(0.9375rem);
+  }
+
+  .interruptor input:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  .interruptor .texto {
+    min-width: 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .interruptor .apunte {
+    display: block;
+    margin-block-start: 0.125rem;
+    font-size: var(--fs-small);
+    font-weight: 400;
+    color: var(--ink-soft);
+  }
+}

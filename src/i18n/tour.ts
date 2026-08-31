@@ -184,6 +184,14 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
   // ---------------------------------------------------------- escala
   scale: [
     {
+      ancla: 'fluida',
+      titulo: { es: 'Lo primero: ¿crece o no?', en: 'First: does it grow?' },
+      cuerpo: {
+        es: 'Encendido, cada paso es un clamp() que crece con la ventana, y hay que decidir dos tamaños base, dos proporciones y entre qué anchuras. Apagado, cada paso vale un número y todo eso desaparece de la pantalla. Es la decisión que cambia todas las demás, por eso está arriba.',
+        en: 'Switched on, each step is a clamp() that grows with the window, and you decide two base sizes, two ratios and between which widths. Switched off, each step is a single number and all of that disappears from the screen. It is the decision that changes every other one, which is why it sits at the top.',
+      },
+    },
+    {
       ancla: 'base',
       titulo: { es: 'El tamaño base', en: 'The base size' },
       cuerpo: {
@@ -209,6 +217,7 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
     },
     {
       ancla: 'ventana',
+      opcional: true,
       titulo: { es: 'Entre qué anchuras se estira', en: 'Between which widths it stretches' },
       cuerpo: {
         es: 'Por debajo del mínimo el tamaño se queda quieto; por encima del máximo, también. Entre medias crece en línea recta, que es exactamente lo que hace clamp().',
@@ -241,6 +250,7 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
     },
     {
       ancla: 'tabla',
+      opcional: true,
       titulo: { es: 'A cuántos píxeles queda de verdad', en: 'What it really measures' },
       cuerpo: {
         es: 'El motivo de la herramienta. Aquí se ve que un titular ya está a tope en un portátil mientras el cuerpo sigue en su mínimo, y salta el aviso cuando dos pasos se cruzan a alguna anchura.',

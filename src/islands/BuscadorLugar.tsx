@@ -135,8 +135,8 @@ export default function BuscadorLugar({
         <p
           className={
             aviso
-              ? 'text-[var(--fs-small)] text-[var(--danger)]'
-              : 'text-[var(--fs-small)] text-ink-soft'
+              ? 'text-[length:var(--fs-small)] text-[var(--danger)]'
+              : 'text-[length:var(--fs-small)] text-ink-soft'
           }
         >
           {buscando ? textos.cargando : (aviso ?? textos.ayuda)}
@@ -154,7 +154,7 @@ export default function BuscadorLugar({
               <button
                 type="button"
                 onClick={() => elegir(s)}
-                className="grid w-full gap-0.5 rounded-md px-2.5 py-2 text-left text-[var(--fs-small)] hover:bg-surface-2"
+                className="grid w-full gap-0.5 rounded-md px-2.5 py-2 text-left text-[length:var(--fs-small)] hover:bg-surface-2"
               >
                 <span className="flex items-baseline gap-2">
                   <span className="min-w-0 flex-1 truncate font-medium text-ink">{s.ciudad}</span>

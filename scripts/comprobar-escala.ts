@@ -57,6 +57,7 @@ function evaluarCss(valor: string, ancho: number): number {
 }
 
 const base: Ajustes = {
+  fluida: true,
   baseMin: 16,
   baseMax: 20,
   razonMin: 1.2,
@@ -364,6 +365,34 @@ console.log('\nEl alto de línea sugerido');
   afirmar(
     lineas[iTam + 1]?.includes('--step-0-lh:') ?? false,
     'en el CSS va en la línea de justo debajo de su tamaño'
+  );
+}
+
+console.log('\nCon la escala fluida apagada');
+{
+  // Apagarla es pedirle a `construirEscala` que los dos extremos sean el
+  // mismo. La aritmética no cambia; cambia lo que se le pide, que es lo
+  // que hace la isla al leer `fluida`.
+  const fija: Ajustes = { ...base, fluida: false, baseMax: base.baseMin, razonMax: base.razonMin };
+  const pasos = construirEscala(fija);
+
+  afirmar(
+    pasos.every((p) => Math.abs(p.minPx - p.maxPx) < 0.001),
+    'cada paso vale un solo tamaño'
+  );
+
+  const css = aCss(pasos);
+  afirmar(!css.includes('clamp('), 'y el CSS sale sin clamp()');
+  afirmar(!css.includes('vw'), 'ni con vw, que es lo que lo haría crecer');
+  afirmar(css.includes('rem'), 'pero sigue en rem, así el zoom no se rompe');
+  afirmar((css.match(/-lh:/g) || []).length === 8, 'y cada paso mantiene su alto de línea');
+
+  // Y la tabla deja de tener nada que decir: las cuatro anchuras dan el
+  // mismo número. Por eso la interfaz la esconde.
+  const p0 = pasos.find((p) => p.indice === 0)!;
+  afirmar(
+    new Set(p0.enTabla.map((n) => n.toFixed(2))).size === 1,
+    `las cuatro anchuras dan lo mismo (${p0.enTabla.map((n) => n.toFixed(0)).join(', ')})`
   );
 }
 

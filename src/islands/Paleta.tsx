@@ -11,7 +11,14 @@
  * cuadrícula y el panel de detalle.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckIcon, PencilSimpleIcon, PlusIcon, TrashIcon, WarningIcon } from '@phosphor-icons/react';
+import {
+  CheckIcon,
+  CopySimpleIcon,
+  PencilSimpleIcon,
+  PlusIcon,
+  TrashIcon,
+  WarningIcon,
+} from '@phosphor-icons/react';
 
 import AvisoFlotante from '@/components/AvisoFlotante';
 import BotonCopiar from '@/components/BotonCopiar';
@@ -33,9 +40,9 @@ import {
   buscarNombresRepetidos,
   construirPaleta,
   limpiarNombre,
-  limiteDePolaridad,
   medirPaso,
   pasosIndistinguibles,
+  retoquesQueRompen,
   nombresPaso,
   retoquesDormidos,
   soltarRetoque,
@@ -59,25 +66,18 @@ const TEXTO = { px: 16, peso: 400 };
 const SEMILLAS = ['#3b82f6', '#16a34a', '#dc2626'] as const;
 
 /**
- * Los nombres de fábrica, en el idioma de la página.
+ * Los nombres de fábrica: color1, color2, color3.
  *
- * Estaban escritos en castellano y salían así también en inglés: quien
- * abría la herramienta en inglés se llevaba un `--azul-500` a su
- * proyecto. El nombre de la tonalidad ES el de la variable, así que es
- * contenido y no una etiqueta de interfaz.
+ * Neutros a propósito, y no «azul», «verde» y «rojo». Un nombre de
+ * variable no tiene idioma, y poner el color en él —«azul»— envejece mal:
+ * en cuanto alguien cambia ese azul por un turquesa, la variable se llama
+ * «azul» y no lo es. Que cada quien los llame como se llamen en su
+ * sistema: «marca», «peligro», «acento».
  */
-const NOMBRES_INICIALES: Record<Lang, string[]> = {
-  es: ['azul', 'verde', 'rojo'],
-  en: ['blue', 'green', 'red'],
-};
-
-/** Cómo se llama una tonalidad nueva, en el idioma de la página. */
-const NOMBRE_NUEVA: Record<Lang, string> = { es: 'color', en: 'colour' };
-
-function iniciales(lang: Lang): Tonalidad[] {
+function iniciales(): Tonalidad[] {
   return SEMILLAS.map((semilla, i) => ({
     id: ['a', 'b', 'c'][i],
-    nombre: NOMBRES_INICIALES[lang][i],
+    nombre: `color${i + 1}`,
     semilla,
     anclaForzada: null,
     retoques: {},
@@ -103,7 +103,7 @@ interface Props {
 export default function Paleta({ lang }: Props) {
   const tr = (clave: keyof typeof P) => t(P[clave], lang);
 
-  const [tonalidades, setTonalidades] = useState<Tonalidad[]>(() => iniciales(lang));
+  const [tonalidades, setTonalidades] = useState<Tonalidad[]>(iniciales);
   const [ajustes, setAjustes] = useState<Ajustes>(AJUSTES_INICIALES);
   const [prefijo, setPrefijo] = useState('');
   const [enlaceLeido, setEnlaceLeido] = useState(false);
@@ -151,7 +151,7 @@ export default function Paleta({ lang }: Props) {
           if (!color) return null;
           const leida: Tonalidad = {
             id: `u${i}`,
-            nombre: limpiarNombre(nombre ?? '') || `${NOMBRE_NUEVA[lang]}${i + 1}`,
+            nombre: limpiarNombre(nombre ?? '') || `color${i + 1}`,
             semilla: color.hex,
             anclaForzada: null,
             retoques: {},
@@ -175,7 +175,7 @@ export default function Paleta({ lang }: Props) {
     }
     salida.p = prefijo || null;
 
-    const dePartida = iniciales(lang);
+    const dePartida = iniciales();
     const iguales =
       tonalidades.length === dePartida.length &&
       tonalidades.every(
@@ -205,6 +205,10 @@ export default function Paleta({ lang }: Props) {
     () => paleta.rampas.some((r) => pasosIndistinguibles(r.pasos).length > 0),
     [paleta]
   );
+  const rompen = useMemo(
+    () => paleta.rampas.some((r) => retoquesQueRompen(r.pasos).length > 0),
+    [paleta]
+  );
 
   // ---------- los mandos ----------
 
@@ -227,12 +231,34 @@ export default function Paleta({ lang }: Props) {
       ...previas,
       {
         id: `n${Date.now()}`,
-        nombre: `${NOMBRE_NUEVA[lang]}${n}`,
+        nombre: `color${n}`,
         semilla: '#8b5cf6',
         anclaForzada: null,
         retoques: {},
       },
     ]);
+  }
+
+  /**
+   * Duplica una tonalidad.
+   *
+   * Construir una paleta casi nunca es empezar de cero cada tono: es
+   * tener el azul de la marca y querer «ese mismo pero un poco más
+   * apagado» al lado para compararlos. Sin esto había que copiar el
+   * hexadecimal a mano en una tonalidad nueva.
+   */
+  function duplicar(id: string) {
+    setTonalidades((previas) => {
+      const i = previas.findIndex((t) => t.id === id);
+      if (i === -1) return previas;
+      const copia: Tonalidad = {
+        ...previas[i],
+        id: `d${Date.now()}`,
+        nombre: `color${previas.length + 1}`,
+        retoques: { ...previas[i].retoques },
+      };
+      return [...previas.slice(0, i + 1), copia, ...previas.slice(i + 1)];
+    });
   }
 
   function quitar(id: string) {
@@ -292,6 +318,7 @@ export default function Paleta({ lang }: Props) {
                 onSemilla={(valor) => editar(tono.id, { semilla: valor })}
                 onNombre={(valor) => editar(tono.id, { nombre: limpiarNombre(valor) })}
                 onAncla={(valor) => editar(tono.id, { anclaForzada: valor })}
+                onDuplicar={() => duplicar(tono.id)}
                 onQuitar={() => quitar(tono.id)}
               />
             ))}
@@ -320,7 +347,7 @@ export default function Paleta({ lang }: Props) {
             {/* Cuatro mandos se desajustan enseguida, y volver a mano a
                 97/18/100/8 es imposible sin saberse los números. */}
             {!deFabrica && (
-              <Button variant="ghost" size="sm" onClick={() => setAjustes(AJUSTES_INICIALES)}>
+              <Button variant="outline" size="sm" onClick={() => setAjustes(AJUSTES_INICIALES)}>
                 {tr('deFabrica')}
               </Button>
             )}
@@ -412,7 +439,7 @@ export default function Paleta({ lang }: Props) {
               <Input
                 id="prefijo"
                 value={prefijo}
-                placeholder="color"
+                placeholder={lang === 'es' ? 'tema' : 'theme'}
                 onChange={(e) => setPrefijo(limpiarNombre(e.target.value))}
                 className="font-mono text-[0.8rem]"
               />
@@ -525,10 +552,6 @@ export default function Paleta({ lang }: Props) {
               </span>
               {tr('leyendaNinguno')}
             </li>
-            <li>
-              <span className="chip frontera" aria-hidden="true" />
-              {tr('leyendaFrontera')}
-            </li>
           </ul>
           </div>
         </details>
@@ -543,6 +566,12 @@ export default function Paleta({ lang }: Props) {
             <p className="aviso-paleta">
               <WarningIcon aria-hidden="true" />
               {tr('escaleraDeformada')}
+            </p>
+          )}
+          {rompen && (
+            <p className="aviso-paleta">
+              <WarningIcon aria-hidden="true" />
+              {tr('retoqueRompe')}
             </p>
           )}
           {juntos && (
@@ -609,6 +638,7 @@ function FilaTonalidad({
   onSemilla,
   onNombre,
   onAncla,
+  onDuplicar,
   onQuitar,
 }: {
   tono: Tonalidad;
@@ -618,6 +648,7 @@ function FilaTonalidad({
   onSemilla: (valor: string) => void;
   onNombre: (valor: string) => void;
   onAncla: (valor: number | null) => void;
+  onDuplicar: () => void;
   onQuitar: () => void;
 }) {
   const tr = (clave: keyof typeof P) => t(P[clave], lang);
@@ -720,16 +751,30 @@ function FilaTonalidad({
         className="min-w-0 font-mono text-[0.8rem]"
       />
 
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={onQuitar}
-        title={tr('quitar')}
-        aria-label={`${tr('quitar')} ${tono.nombre}`}
-        disabled={!sePuedeQuitar}
-      >
-        <TrashIcon aria-hidden="true" />
-      </Button>
+      {/* Contorno y no fantasma: un botón sin borde sobre una tarjeta no
+          se lee como pulsable hasta que el puntero pasa por encima, y en
+          una pantalla táctil no pasa por encima nunca. */}
+      <div className="acciones-tonalidad">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onDuplicar}
+          title={tr('duplicar')}
+          aria-label={`${tr('duplicar')} ${tono.nombre}`}
+        >
+          <CopySimpleIcon aria-hidden="true" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onQuitar}
+          title={tr('quitar')}
+          aria-label={`${tr('quitar')} ${tono.nombre}`}
+          disabled={!sePuedeQuitar}
+        >
+          <TrashIcon aria-hidden="true" />
+        </Button>
+      </div>
 
       {/*
         El color se escribe AQUÍ, en la tarjeta, y no solo dentro del
@@ -884,17 +929,6 @@ function FilaPaleta({
 function FilaTintas({ rampa, lang }: { rampa: Rampa; lang: Lang }) {
   const tr = (clave: keyof typeof P) => t(P[clave], lang);
 
-  /*
-   * Dónde cambia la polaridad: el primer paso sobre el que ya se escribe
-   * en blanco.
-   *
-   * Es el dato más útil de esta cuadrícula —«de aquí para abajo, texto
-   * blanco»— y sin marcarlo hay que deducirlo comparando once casillas.
-   * Se pinta como una línea del acento entre la última negra y la primera
-   * blanca.
-   */
-  const frontera = limiteDePolaridad(rampa.pasos, TEXTO);
-
   return (
     <>
       <span className="nombre-fila">{rampa.tonalidad.nombre}</span>
@@ -912,11 +946,7 @@ function FilaTintas({ rampa, lang }: { rampa: Rampa; lang: Lang }) {
         return (
           <span
             key={paso.nombre}
-            className={
-              'casilla-tinta' +
-              (blanco || negro ? '' : ' sin-tinta') +
-              (paso.indice === frontera ? ' frontera' : '')
-            }
+            className={'casilla-tinta' + (blanco || negro ? '' : ' sin-tinta')}
             style={{ background: paso.hex, color: blanco ? '#ffffff' : '#000000' }}
             title={titulo}
           >

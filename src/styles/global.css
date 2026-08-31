@@ -1645,8 +1645,24 @@
     border-radius: var(--radius-lg);
   }
 
+  /*
+    El relleno vive en el CUERPO y no en cada hijo.
+
+    Lo llevaba solo `.intro`, así que cualquier otra cosa que se metiera
+    dentro —una tabla, una cuadrícula, un bloque de código— quedaba pegada
+    al borde de la tarjeta mientras el párrafo de encima respetaba el
+    margen. Se veía como si el contenido se saliera.
+  */
   .acordeon .cuerpo {
+    display: grid;
+    gap: 0.875rem;
+    padding: 0.875rem 1rem 1rem;
     border-block-start: 1px solid var(--line);
+    min-width: 0;
+  }
+
+  .acordeon .cuerpo > * {
+    min-width: 0;
   }
 
   /* Sin tope de medida a propósito.
@@ -1657,7 +1673,6 @@
      medida que les toca. */
   .acordeon .cuerpo > .intro {
     margin: 0;
-    padding: 0.875rem 1rem 0;
     font-size: var(--fs-small);
     color: var(--ink-soft);
   }
@@ -2667,6 +2682,11 @@
     grid-column: 2 / -1;
   }
 
+  .acciones-tonalidad {
+    display: flex;
+    gap: 0.25rem;
+  }
+
   .lista-tonalidades > .fila-tonalidad + .fila-tonalidad {
     padding-block-start: 0.625rem;
     border-block-start: 1px solid var(--line);
@@ -2743,12 +2763,32 @@
       impide que se encojan y la tabla se sale de la tarjeta. Es el mismo
       fallo que rompió la columna de husos, y la misma cura.
     */
-    grid-template-columns: minmax(0, auto) repeat(var(--pasos, 11), minmax(0, 1fr));
+    /*
+      Las columnas de paso tienen un MÍNIMO, y ahí está la diferencia.
+
+      Con `minmax(0, 1fr)` la pista se encogía sin límite mientras la
+      casilla, que sí tiene un mínimo para poder pulsarla, se salía de
+      ella: la cuadrícula se comía el relleno de la tarjeta y el
+      `overflow-x` no llegaba a dispararse nunca. Con un mínimo en la
+      pista, la rejilla se ensancha de verdad y entonces sí se desplaza.
+    */
+    grid-template-columns: minmax(0, auto) repeat(var(--pasos, 11), minmax(1.75rem, 1fr));
     gap: 0.1875rem;
     align-items: center;
-    /* Con once pasos en un móvil las casillas quedan por debajo de lo que
-       se puede pulsar. Antes que encogerlas más, se desplaza. */
     overflow-x: auto;
+    /* El desplazamiento no arrastra a la página entera al llegar al final. */
+    overscroll-behavior-x: contain;
+    padding-block-end: 0.25rem;
+  }
+
+  /* El nombre de la tonalidad se queda pegado a la izquierda al
+     desplazar: sin él, una fila de once colores no dice de quién es. */
+  .rejilla-paleta .nombre-fila,
+  .rejilla-paleta .esquina {
+    position: sticky;
+    inset-inline-start: 0;
+    z-index: 1;
+    background: var(--surface);
   }
 
   .rejilla-paleta .esquina {
@@ -2787,7 +2827,6 @@
   */
   .casilla-paleta {
     position: relative;
-    min-width: 1.75rem;
     aspect-ratio: 1;
     border-radius: var(--radius-sm);
   }
@@ -2899,7 +2938,6 @@
   .casilla-tinta {
     display: grid;
     place-items: center;
-    min-width: 1.75rem;
     aspect-ratio: 1;
     border-radius: var(--radius-sm);
     font-size: 0.62rem;
@@ -2909,19 +2947,6 @@
   /* Donde cambia la polaridad: de aquí para abajo se escribe en blanco.
      La línea va en el acento porque es la única cosa de esta cuadrícula
      que no se puede deducir mirando una casilla sola. */
-  /*
-    La sombra sale FUERA además de dentro, para cruzar el hueco de tres
-    píxeles que hay entre columnas. Con la sombra solo por dentro salía un
-    pelo de dos píxeles pegado a un borde redondeado, y no se veía.
-    Cruzando el hueco, la frontera se lee como una regla vertical que
-    parte la rampa en dos.
-  */
-  .casilla-tinta.frontera {
-    box-shadow:
-      inset 3px 0 0 var(--acento),
-      -3px 0 0 0 var(--acento);
-  }
-
   /* Los pasos que no aguantan ninguna tinta se marcan además con una
      trama: distinguirlos solo por la rayita sería pedirle al ojo que
      compare un guion con dos letras sobre treinta y tres colores. */
@@ -2960,13 +2985,6 @@
   .leyenda-tintas .chip.vacio {
     border: 1px solid var(--line);
     background: var(--surface-2);
-  }
-
-  .leyenda-tintas .chip.frontera {
-    width: 0.375rem;
-    height: 1.25rem;
-    border-radius: 1px;
-    background: var(--acento);
   }
 
   /* El acordeón fino, para la ayuda de los mandos: sin borde propio, que

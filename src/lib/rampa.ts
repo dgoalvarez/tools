@@ -718,6 +718,28 @@ export function pasosIndistinguibles(pasos: Paso[]): number[] {
   return juntos;
 }
 
+/**
+ * Los retoques que rompen el orden de la rampa.
+ *
+ * Un retoque sustituye el color de un paso por el que se elija, y nada
+ * impide elegir uno más claro que el paso de arriba. La rampa deja de ir
+ * de claro a oscuro, y una rampa que no va de claro a oscuro deja de
+ * servir para lo único que sirve: elegir un paso por su peso.
+ *
+ * No se corrige —el retoque es de quien lo hace— pero hay que decirlo, o
+ * el descuadre se descubre en el proyecto de destino.
+ */
+export function retoquesQueRompen(pasos: Paso[]): number[] {
+  const rotos: number[] = [];
+  for (let i = 0; i < pasos.length; i++) {
+    if (!pasos[i].tocado) continue;
+    const arriba = pasos[i - 1];
+    const abajo = pasos[i + 1];
+    if ((arriba && pasos[i].l >= arriba.l) || (abajo && pasos[i].l <= abajo.l)) rotos.push(i);
+  }
+  return rotos;
+}
+
 /** Nombres de variable repetidos: el segundo pisaría al primero sin avisar. */
 export function buscarNombresRepetidos(paleta: Paleta): string[] {
   const vistos = new Set<string>();

@@ -37,8 +37,8 @@ export const PALETA = {
   nombres: { es: 'Los nombres', en: 'The names' },
   prefijo: { es: 'Prefijo', en: 'Prefix' },
   prefijoAyuda: {
-    es: 'Cada tonalidad usa su propio nombre. El prefijo va delante de todas: con «color» sale --color-azul-500.',
-    en: 'Each hue uses its own name. The prefix goes before all of them: with “color” you get --color-blue-500.',
+    es: 'Cada tonalidad usa su propio nombre. El prefijo va delante de todas: con «tema» sale --tema-color1-500. Vacío, salen sin prefijo.',
+    en: 'Each hue uses its own name. The prefix goes before all of them: with “theme” you get --theme-color1-500. Leave it empty and they come out bare.',
   },
 
   // ---------- La cuadrícula ----------
@@ -98,10 +98,6 @@ export const PALETA = {
   leyendaBlanco: { es: 'aguanta blanco', en: 'takes white' },
   leyendaNegro: { es: 'aguanta negro', en: 'takes black' },
   leyendaNinguno: { es: 'ninguno de los dos', en: 'neither one' },
-  leyendaFrontera: {
-    es: 'de aquí en adelante, blanco',
-    en: 'from here on, white',
-  },
 
   // ---------- Volver a lo de fábrica ----------
   deFabrica: { es: 'Volver a lo de fábrica', en: 'Back to defaults' },
@@ -116,6 +112,11 @@ export const PALETA = {
     es: 'Al forzar el anclaje, esta rampa deja de compartir la escalera con las demás: sus pasos ya no pesan lo mismo que los del resto.',
     en: 'Forcing the anchor makes this ramp stop sharing the ladder with the others: its steps no longer weigh the same as the rest.',
   },
+  retoqueRompe: {
+    es: 'Hay un paso retocado que se sale del orden: es más claro que el de arriba o más oscuro que el de abajo, así que la rampa deja de ir de claro a oscuro. Se respeta —el retoque es tuyo— pero conviene saberlo.',
+    en: 'A tuned step is out of order: it is lighter than the one above or darker than the one below, so the ramp stops going light to dark. It is respected — the tweak is yours — but worth knowing.',
+  },
+  duplicar: { es: 'Duplicar', en: 'Duplicate' },
   pasosJuntos: {
     es: 'Con este rango y este número de pasos, algunos quedan tan juntos que no se distinguen: son dos variables para el mismo color. Sube el rango de claridad o baja el número de pasos.',
     en: 'With this range and this step count, some steps land so close together that you cannot tell them apart: two variables for the same colour. Widen the lightness range or lower the step count.',

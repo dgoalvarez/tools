@@ -631,8 +631,11 @@
     inset-block-start: 0;
     z-index: 30;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
+    /* Los dos a la izquierda: el botón primero y la marca detrás. La hoja
+       sale de ese mismo borde, y pulsar donde nace el panel es lo que
+       explica sin palabras qué acaba de pasar. */
+    justify-content: flex-start;
+    gap: 0.625rem;
     min-height: var(--barra-movil);
     padding-inline: var(--pad-x);
     background: color-mix(in srgb, var(--bg) 88%, transparent);
@@ -657,7 +660,9 @@
     max-width: none;
     height: 100dvh;
     max-height: none;
-    padding: 0.75rem;
+    /* Arriba 0,625 rem para que la equis quede a la misma altura que la
+       hamburguesa de la barra, que se centra en sus 3,25 rem. */
+    padding: 0.625rem 0.75rem 0.75rem;
     border: 0;
     border-inline-end: 1px solid var(--line);
     background: var(--surface);
@@ -707,12 +712,16 @@
     border-block-end: 1px solid var(--line);
   }
 
+  /* La equis cae en el mismo punto que la hamburguesa que abrió la hoja:
+     la barra sangra `--pad-x` —20 px en móvil— y aquí son los 0,75 rem de
+     la hoja más estos 0,5, que son los mismos 20. El botón no se mueve, se
+     transforma. */
   .hoja-cabecera {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.25rem 0.5rem 0.5rem;
+    justify-content: flex-start;
+    gap: 0.625rem;
+    padding: 0 0.5rem 0.5rem;
   }
 
   .hoja-lista {

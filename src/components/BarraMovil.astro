@@ -22,9 +22,25 @@
  * como inerte. Escrito a mano, cada una de esas cuatro cosas es un fallo
  * de accesibilidad esperando.
  *
- * La hoja entra por la IZQUIERDA, que es donde vive la navegación en
- * todas partes. El botón que la abre, en cambio, va a la DERECHA de la
- * barra: es el lado que alcanza el pulgar sin recolocar el teléfono.
+ * ---------------------------------------------------------------------
+ * Por qué el botón va a la izquierda, pegado a la marca
+ *
+ * Estuvo a la derecha, por el pulgar: es el lado que se alcanza sin
+ * recolocar el teléfono. Pero la hoja entra por la IZQUIERDA —que es donde
+ * vive la navegación en todas partes, y donde está el riel en pantalla
+ * grande— y un botón que abre algo por el lado contrario de la pantalla se
+ * lee como dos cosas distintas.
+ *
+ * Gana la conexión. Pulsar y ver salir el panel de ese mismo punto es lo
+ * que explica sin palabras qué acaba de pasar; alcanzar el botón es medio
+ * centímetro de pulgar. Y hay una compensación: la hoja se cierra con la
+ * equis, con Escape, y pulsando fuera —que es el gesto que de verdad se
+ * usa, y ese sí cae donde quiera.
+ *
+ * La equis de la hoja cae en el MISMO punto que la hamburguesa, al píxel:
+ * la barra sangra `--pad-x` (20 px en móvil) y la hoja 0,75 rem más 0,5
+ * de su cabecera, que son los mismos 20. Así el botón no se mueve, se
+ * transforma — igual que en el riel de escritorio.
  */
 import Icono from './Icono.astro';
 import Marca from './Marca.astro';
@@ -45,10 +61,6 @@ const other = otherLang(lang);
 ---
 
 <header class="barra-movil">
-  <a href={route('home', lang)} class="marca-movil">
-    <Marca />
-  </a>
-
   {/* Se esconde desde el CSS mientras `data-js` no esté en el <html>: sin
       JavaScript no abriría la hoja, y la página sigue siendo navegable
       porque la portada lista todas las herramientas y el pie lleva a ella.
@@ -62,24 +74,32 @@ const other = otherLang(lang);
   >
     <Icono nombre="barras" tamano={18} />
   </button>
+
+  <a href={route('home', lang)} class="marca-movil">
+    <Marca />
+  </a>
 </header>
 
 <dialog class="hoja" data-hoja aria-label={t(UI.navTools, lang)}>
   {/* Misma división que en el riel: marca y buscador arriba, separados de
       las herramientas por una línea, y los ajustes al pie por otra. */}
   <div class="hoja-inicio">
+    {/* La equis primero y la marca después: es el orden de la barra, y
+        cae justo donde estaba la hamburguesa. Con la equis al otro lado se
+        volvía a perder la relación entre lo que se pulsa y lo que sale. */}
     <div class="hoja-cabecera">
-      <a href={route('home', lang)} class="riel-logo">
-        <Marca />
-      </a>
       <button
         type="button"
         class="pastilla cursor-pointer"
         data-hoja-cerrar
         aria-label={t(UI.cerrarMenu, lang)}
       >
-        <Icono nombre="cerrar" tamano={16} />
+        <Icono nombre="cerrar" tamano={18} />
       </button>
+
+      <a href={route('home', lang)} class="riel-logo">
+        <Marca />
+      </a>
     </div>
 
     <button type="button" class="riel-item cursor-pointer" data-bento>

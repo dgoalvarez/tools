@@ -171,7 +171,7 @@ export default function Contrast({ lang }: Props) {
 
   /*
     ---------------------------------------------------------------
-    Dos columnas, y el veredicto arriba del todo en la derecha.
+    Dos columnas, y a la derecha lo que sale de ellas.
 
     Hubo un intento de ponerlo todo en filas a lo ancho: los dos
     selectores de color uno al lado del otro, y debajo la muestra y los
@@ -185,14 +185,20 @@ export default function Contrast({ lang }: Props) {
     al final el número. Se había optimizado el alto de la página a costa
     de esconder lo único que la gente viene a ver.
 
-    En dos columnas los selectores y los veredictos ocupan el mismo alto
-    a la vez —la página mide lo que mida la más larga, no la suma— y la
-    respuesta queda arriba a la derecha, a la altura de los ojos, desde
-    el primer momento y sin moverse mientras se toquetean los colores.
+    En dos columnas los selectores y la respuesta ocupan el mismo alto a
+    la vez —la página mide lo que mida la más larga, no la suma— y todo
+    queda a la altura de los ojos desde el primer momento, sin moverse
+    mientras se toquetean los colores.
 
-    Por eso el orden de la derecha es: veredicto, muestra, y el color
-    que sí pasaría. Primero la respuesta, luego la prueba, luego la
-    salida.
+    El orden de la derecha es: la muestra, el veredicto, y el color que
+    sí pasaría. Primero lo que acabas de hacer, luego la nota que le
+    ponen, luego la salida si suspende.
+
+    La muestra va arriba y el número debajo, y no al revés, porque la
+    muestra es lo que se acaba de fabricar con los dos selectores de la
+    izquierda: queda a la misma altura que ellos y cambia a la vez.
+    Cuesta unos 190 px de bajada al veredicto, que es un precio muy
+    distinto de los 460 que costaba ponerlo todo en filas.
     ---------------------------------------------------------------
   */
   return (
@@ -249,123 +255,6 @@ export default function Contrast({ lang }: Props) {
 
       {/* ---------------- La respuesta ---------------- */}
       <div className="columna-herramienta gap-4">
-        {/* Los dos veredictos, uno al lado del otro y del mismo alto.
-            WCAG trae tres filas y APCA una, así que la celda de la
-            derecha apila dos módulos: el de APCA y, cuando los dos no
-            coinciden, el que lo explica. Apilar en vez de estirar es lo
-            que mantiene la fila cuadrada. */}
-        <div className="grid items-stretch gap-4 sm:grid-cols-2">
-          {/* -------- WCAG 2.2 -------- */}
-          <section
-            data-tour="wcag"
-            className="flex h-full flex-col rounded-lg border border-line bg-surface p-5"
-          >
-            <Cabecera titulo={tr('wcagTitulo')} etiqueta={tr('wcagEtiqueta')} destacada />
-
-            <p className="mt-4 font-mono text-4xl leading-none font-semibold text-ink tabular-nums">
-              {wcag.razon.toFixed(2)}
-              <span className="text-xl text-ink-soft">:1</span>
-            </p>
-            <p className="mt-1 text-[var(--fs-small)] text-ink-soft">{tr('wcagRazon')}</p>
-
-            <div className="mt-4 grid gap-2 text-[var(--fs-small)]">
-              <Fila
-                nombre={`AA · ${wcag.umbralAA}:1`}
-                pasa={wcag.pasaAA}
-                si={tr('pasa')}
-                no={tr('noPasa')}
-              />
-              <Fila
-                nombre={`AAA · ${wcag.umbralAAA}:1`}
-                pasa={wcag.pasaAAA}
-                si={tr('pasa')}
-                no={tr('noPasa')}
-              />
-              <Fila
-                nombre={tr('wcagComponentes')}
-                pasa={wcag.pasaComponentes}
-                si={tr('pasa')}
-                no={tr('noPasa')}
-              />
-            </div>
-          </section>
-
-          <div className="flex h-full flex-col gap-4">
-            {/* -------- APCA -------- */}
-            <section
-              data-tour="apca"
-              className="flex flex-1 flex-col rounded-lg border border-line bg-surface p-5"
-            >
-              <Cabecera titulo={tr('apcaTitulo')} etiqueta={tr('apcaEtiqueta')} />
-
-              <p className="mt-4 font-mono text-4xl leading-none font-semibold text-ink tabular-nums">
-                {apca.lc.toFixed(1)}
-                <span className="text-xl text-ink-soft"> Lc</span>
-              </p>
-              <p className="mt-1 text-[var(--fs-small)] text-ink-soft">
-                {tr('apcaLc')} ·{' '}
-                {esPolaridadClara(apca.lc) ? tr('apcaPolaridadClara') : tr('apcaPolaridadOscura')}
-              </p>
-
-              <div className="mt-4 text-[var(--fs-small)]">
-                {apca.estado === 'pasa' && (
-                  <Fila
-                    nombre={`${tr('apcaMinimo')}: ${apca.minimoPx} px`}
-                    pasa
-                    si={tr('apcaPasa')}
-                    no={tr('apcaInsuficiente')}
-                  />
-                )}
-                {apca.estado === 'insuficiente' && (
-                  <Fila
-                    nombre={`${tr('apcaMinimo')}: ${apca.minimoPx} px`}
-                    pasa={false}
-                    si={tr('apcaPasa')}
-                    no={tr('apcaInsuficiente')}
-                  />
-                )}
-                {apca.estado === 'solo-decorativo' && (
-                  <>
-                    <Fila
-                      nombre={tr('apcaSoloDecorativo')}
-                      pasa={false}
-                      si={tr('apcaPasa')}
-                      no={tr('apcaInsuficiente')}
-                    />
-                    <p className="mt-2 text-ink-soft">{tr('apcaSoloDecorativoPor')}</p>
-                  </>
-                )}
-                {apca.estado === 'prohibido' && (
-                  <>
-                    <Fila
-                      nombre={tr('apcaProhibido')}
-                      pasa={false}
-                      si={tr('apcaPasa')}
-                      no={tr('apcaInsuficiente')}
-                    />
-                    <p className="mt-2 text-ink-soft">{tr('apcaProhibidoPor')}</p>
-                  </>
-                )}
-              </div>
-            </section>
-
-            {/* -------- Cuando los dos no dicen lo mismo -------- */}
-            {desacuerdo && (
-              <section
-                data-tour="desacuerdo"
-                className="rounded-lg border border-line bg-surface-2 p-5"
-              >
-                <h3 className="text-[length:var(--fs-h3)] font-semibold text-ink">
-                  {tr('desacuerdoTitulo')}
-                </h3>
-                <p className="mt-2 text-[var(--fs-small)] text-ink-muted">
-                  {wcag.pasaAA ? tr('desacuerdoWcagSi') : tr('desacuerdoApcaSi')}
-                </p>
-              </section>
-            )}
-          </div>
-        </div>
-
         {/*
           -------- La muestra, con sus dos mandos dentro --------
 
@@ -447,12 +336,129 @@ export default function Contrast({ lang }: Props) {
           </div>
         </div>
 
+        {/* Los dos veredictos, uno al lado del otro y del mismo alto.
+            WCAG trae tres filas y APCA una, así que la celda de la
+            derecha apila dos módulos: el de APCA y, cuando los dos no
+            coinciden, el que lo explica. Apilar en vez de estirar es lo
+            que mantiene la fila cuadrada. */}
+        <div className="grid items-stretch gap-4 sm:grid-cols-2">
+          {/* -------- WCAG 2.2 -------- */}
+          <section
+            data-tour="wcag"
+            className="flex h-full flex-col rounded-lg border border-line bg-surface p-4"
+          >
+            <Cabecera titulo={tr('wcagTitulo')} etiqueta={tr('wcagEtiqueta')} destacada />
+
+            <p className="mt-3.5 font-mono text-[1.75rem] leading-none font-semibold text-ink tabular-nums">
+              {wcag.razon.toFixed(2)}
+              <span className="text-base text-ink-soft">:1</span>
+            </p>
+            <p className="mt-1 text-[var(--fs-small)] text-ink-soft">{tr('wcagRazon')}</p>
+
+            <div className="mt-4 grid gap-2 text-[var(--fs-small)]">
+              <Fila
+                nombre={`AA · ${wcag.umbralAA}:1`}
+                pasa={wcag.pasaAA}
+                si={tr('pasa')}
+                no={tr('noPasa')}
+              />
+              <Fila
+                nombre={`AAA · ${wcag.umbralAAA}:1`}
+                pasa={wcag.pasaAAA}
+                si={tr('pasa')}
+                no={tr('noPasa')}
+              />
+              <Fila
+                nombre={tr('wcagComponentes')}
+                pasa={wcag.pasaComponentes}
+                si={tr('pasa')}
+                no={tr('noPasa')}
+              />
+            </div>
+          </section>
+
+          <div className="flex h-full flex-col gap-4">
+            {/* -------- APCA -------- */}
+            <section
+              data-tour="apca"
+              className="flex flex-1 flex-col rounded-lg border border-line bg-surface p-4"
+            >
+              <Cabecera titulo={tr('apcaTitulo')} etiqueta={tr('apcaEtiqueta')} />
+
+              <p className="mt-3.5 font-mono text-[1.75rem] leading-none font-semibold text-ink tabular-nums">
+                {apca.lc.toFixed(1)}
+                <span className="text-base text-ink-soft"> Lc</span>
+              </p>
+              <p className="mt-1 text-[var(--fs-small)] text-ink-soft">
+                {tr('apcaLc')} ·{' '}
+                {esPolaridadClara(apca.lc) ? tr('apcaPolaridadClara') : tr('apcaPolaridadOscura')}
+              </p>
+
+              <div className="mt-4 text-[var(--fs-small)]">
+                {apca.estado === 'pasa' && (
+                  <Fila
+                    nombre={`${tr('apcaMinimo')}: ${apca.minimoPx} px`}
+                    pasa
+                    si={tr('apcaPasa')}
+                    no={tr('apcaInsuficiente')}
+                  />
+                )}
+                {apca.estado === 'insuficiente' && (
+                  <Fila
+                    nombre={`${tr('apcaMinimo')}: ${apca.minimoPx} px`}
+                    pasa={false}
+                    si={tr('apcaPasa')}
+                    no={tr('apcaInsuficiente')}
+                  />
+                )}
+                {apca.estado === 'solo-decorativo' && (
+                  <>
+                    <Fila
+                      nombre={tr('apcaSoloDecorativo')}
+                      pasa={false}
+                      si={tr('apcaPasa')}
+                      no={tr('apcaInsuficiente')}
+                    />
+                    <p className="mt-2 text-ink-soft">{tr('apcaSoloDecorativoPor')}</p>
+                  </>
+                )}
+                {apca.estado === 'prohibido' && (
+                  <>
+                    <Fila
+                      nombre={tr('apcaProhibido')}
+                      pasa={false}
+                      si={tr('apcaPasa')}
+                      no={tr('apcaInsuficiente')}
+                    />
+                    <p className="mt-2 text-ink-soft">{tr('apcaProhibidoPor')}</p>
+                  </>
+                )}
+              </div>
+            </section>
+
+            {/* -------- Cuando los dos no dicen lo mismo -------- */}
+            {desacuerdo && (
+              <section
+                data-tour="desacuerdo"
+                className="rounded-lg border border-line bg-surface-2 p-4"
+              >
+                <h3 className="text-[length:var(--fs-h3)] font-semibold text-ink">
+                  {tr('desacuerdoTitulo')}
+                </h3>
+                <p className="mt-2 text-[var(--fs-small)] text-ink-muted">
+                  {wcag.pasaAA ? tr('desacuerdoWcagSi') : tr('desacuerdoApcaSi')}
+                </p>
+              </section>
+            )}
+          </div>
+        </div>
+
         {/* -------- El color que sí pasaría --------
             Solo aparece cuando hace falta, y entonces cierra el
             recorrido: la pregunta era «¿pasa?», la respuesta fue «no», y
             esto es la salida. */}
         {!wcag.pasaAA && (
-          <section data-tour="sugerencia" className="rounded-lg border border-line bg-surface p-5">
+          <section data-tour="sugerencia" className="rounded-lg border border-line bg-surface p-4">
             <h3 className="text-[length:var(--fs-h3)] font-semibold text-ink">
               {tr('sugerenciaTitulo')}
             </h3>

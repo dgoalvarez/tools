@@ -75,15 +75,71 @@ window.__romperse = function () {
     const r = el.getBoundingClientRect();
     const rp = padre.getBoundingClientRect();
     if (r.width === 0 || rp.width === 0) continue;
+
     const exceso = Math.max(rp.left - r.left, r.right - rp.right);
     if (exceso > 1) {
       if (rotos.some((x) => x.el.contains(el))) continue;
-      rotos.push({ el, exceso });
+      rotos.push({ el, que: 'se sale ' + Math.round(exceso) + 'px' });
     }
   }
+
+  /*
+   * Segunda pregunta, y distinta de la primera: ¿hay alguna caja a la
+   * que no le quepan sus propios hijos a lo alto?
+   *
+   * Existe porque al llegar la quinta herramienta, la barra de abajo del
+   * móvil —que tiene el alto fijo— dejó de dar de sí: «Escala
+   * tipográfica» partió en dos líneas y la segunda se quedó por debajo
+   * del borde de la barra, encima de la página. De ANCHO no sobraba
+   * nada, así que la comprobación de arriba decía que todo iba bien.
+   *
+   * Se miran los HIJOS y no «scrollHeight», que era lo primero que se
+   * probó y marcaba las 39 comprobaciones. Un titular con el interlineado
+   * ajustado tiene «scrollHeight» mayor que «clientHeight» por dos o
+   * tres píxeles —el glifo asoma de su caja de línea— y eso es
+   * tipografía normal, no una rotura. Los hijos, en cambio, o caben o no
+   * caben.
+   */
+  for (const el of document.querySelectorAll('body *')) {
+    const c = getComputedStyle(el);
+    if (c.overflowY !== 'visible' || c.display === 'none') continue;
+    if (!el.firstElementChild) continue;
+
+    // Un <details> cerrado mide lo que mide su resumen, pero su cuerpo
+    // sigue devolviendo el alto entero. No se ve, así que no se sale.
+    if (el.tagName === 'DETAILS' && !el.open) continue;
+
+    const r = el.getBoundingClientRect();
+    if (r.height === 0) continue;
+
+    let sobra = 0;
+    for (const hijo of el.children) {
+      const ch = getComputedStyle(hijo);
+      if (ch.position === 'absolute' || ch.position === 'fixed' || ch.display === 'none') continue;
+
+      // Un hijo en línea devuelve sus cajas de LÍNEA, no una caja de
+      // bloque, y esas asoman por encima y por debajo de un padre con el
+      // interlineado ajustado. Es el mismo ruido tipográfico de antes,
+      // entrando por la puerta de al lado.
+      if (ch.display === 'inline') continue;
+
+      const rh = hijo.getBoundingClientRect();
+      if (rh.height === 0) continue;
+      sobra = Math.max(sobra, rh.bottom - r.bottom, r.top - rh.top);
+    }
+
+    if (sobra > 1) {
+      if (rotos.some((x) => x.el.contains(el))) continue;
+      rotos.push({
+        el,
+        que: 'no le caben sus hijos, le faltan ' + Math.round(sobra) + 'px de alto',
+      });
+    }
+  }
+
   return rotos.slice(0, 6).map((x) =>
     x.el.tagName.toLowerCase() + '.' + (String(x.el.className).slice(0, 30) || '-') +
-    ' se sale ' + Math.round(x.exceso) + 'px'
+    ' ' + x.que
   );
 };
 `;
@@ -121,6 +177,22 @@ const ORIGEN_LARGO = `
 })()
 `;
 
+
+/**
+ * El pomodoro en marcha y con varios tramos hechos: es cuando aparece
+ * «Empezar de cero» junto al título y los puntos del ciclo se llenan.
+ * Se llega pulsando, porque un estado en marcha no cabe en la dirección.
+ */
+const POMODORO_ANDANDO = `
+(async () => {
+  const mandos = await __esperar(() => document.querySelector('.reloj-pomodoro .mandos'));
+  mandos.querySelector('button').click();
+  const saltar = mandos.querySelectorAll('button')[2];
+  for (let i = 0; i < 5; i++) { saltar.click(); await new Promise((r) => setTimeout(r, 60)); }
+  await new Promise((r) => setTimeout(r, 400));
+})()
+`;
+
 /**
  * Qué se somete a qué.
  *
@@ -150,6 +222,18 @@ const CASOS = [
     ruta: 'es/escala',
     query: 'f=1&p=prefijoLarguisimoDeVerdad&n=0:nombreExageradamenteLargoParaProbar',
   },
+  {
+    nombre: 'pomodoro · duraciones al máximo',
+    ruta: 'es/pomodoro',
+    query: 'w=180&b=60&l=120&c=12',
+  },
+  {
+    nombre: 'pomodoro · en marcha, ciclo largo',
+    ruta: 'es/pomodoro',
+    query: 'c=12',
+    hacer: POMODORO_ANDANDO,
+  },
+  { nombre: 'pomodoro · en inglés', ruta: 'en/pomodoro', query: 'w=180&c=12' },
   { nombre: 'portada', ruta: 'es' },
   { nombre: 'portada en inglés', ruta: 'en' },
 ];

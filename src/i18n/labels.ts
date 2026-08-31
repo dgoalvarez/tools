@@ -67,6 +67,20 @@ export const ACENTO_POR_MATERIA: Record<MateriaKey, string> = {
   lugares: 'var(--brand)',
 };
 
+/**
+ * El relleno de los botones principales, por materia.
+ *
+ * No es el acento: un acento se derivó para leerse COMO TEXTO sobre el
+ * fondo, y rellenar un botón con él suspende en tema oscuro. El porqué,
+ * con los números medidos, está en `global.css` junto a estos valores.
+ */
+export const SOLIDO_POR_MATERIA: Record<MateriaKey, string> = {
+  tiempo: 'var(--solido-tiempo)',
+  color: 'var(--solido-color)',
+  tipografia: 'var(--solido-tipografia)',
+  lugares: 'var(--l-brand)',
+};
+
 // ------------------------------------------------------------------- tarea
 
 export const TAREAS = {
@@ -74,6 +88,7 @@ export const TAREAS = {
   comprobar: { es: 'Comprobar', en: 'Check' },
   generar: { es: 'Generar', en: 'Generate' },
   buscar: { es: 'Buscar', en: 'Find' },
+  cronometrar: { es: 'Cronometrar', en: 'Time it' },
 } satisfies Record<string, T>;
 
 export type TareaKey = keyof typeof TAREAS;

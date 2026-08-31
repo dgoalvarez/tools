@@ -1,0 +1,36 @@
+---
+/**
+ * La página del pomodoro.
+ *
+ * `client:load` como las demás: el HTML sale ya pintado del servidor, así
+ * que la cuenta atrás se ve en su sitio desde el primer momento en vez de
+ * aparecer de golpe cuando carga el JavaScript.
+ *
+ * Lo que explica la herramienta lo cuenta el paso a paso del botón «?».
+ * Aquí abajo no hay nada que no se pueda mover ahí: a diferencia de husos
+ * horarios, este no usa datos de nadie, así que no hay ninguna atribución
+ * que tenga que quedarse impresa.
+ */
+import Tool from '../layouts/Tool.astro';
+import Pomodoro from '../islands/Pomodoro';
+import { UI } from '../i18n/ui';
+import { t, type Lang } from '../i18n/config';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<Tool lang={lang} tool="pomodoro">
+  <Pomodoro client:load lang={lang} />
+
+  <noscript>
+    <p
+      class="mt-6 max-w-[var(--measure)] rounded-lg border border-line bg-surface-2 p-4 text-[length:var(--fs-small)] text-ink-muted"
+    >
+      {t(UI.sinJs, lang)}
+    </p>
+  </noscript>
+</Tool>

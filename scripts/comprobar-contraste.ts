@@ -190,5 +190,67 @@ console.log('\n9. Las barras del selector de color');
   );
 }
 
+/**
+ * El sitio publica una herramienta de contraste. Lo mínimo es que sus
+ * propios botones la aprueben, y de hecho no la aprobaban: el relleno era
+ * el acento con tinta oscura encima, que en tema oscuro pedía entre 18 y
+ * 26 px de letra según la materia. Aquí quedan clavados los pares que se
+ * usan de verdad —el de «Empezar», el de «usar este color» y el de
+ * «Siguiente» del paso a paso— para que cambiar un color de la paleta
+ * suene.
+ *
+ * Los valores están copiados de `global.css`. Si se separan, esta
+ * comprobación deja de decir la verdad; por eso van con su nombre de
+ * variable al lado.
+ */
+console.log('\n10. Los botones principales del propio sitio');
+{
+  /** El relleno de los botones, el mismo en los dos temas. */
+  const RELLENOS: [string, string][] = [
+    ['--solido-tiempo', '#946000'],
+    ['--solido-color', '#884fc4'],
+    ['--solido-tipografia', '#007872'],
+  ];
+  /** --solido-ink. */
+  const TINTA = '#ffffff';
+  /** El tamaño y el peso reales del botón. */
+  const BOTON = { px: 15, peso: 600 };
+
+  for (const [nombre, relleno] of RELLENOS) {
+    const w = medirWcag(TINTA, relleno, BOTON);
+    const a = medirApca(TINTA, relleno, BOTON);
+    afirmar(w.pasaAA, `${nombre}: la letra del botón pasa AA (${w.razon.toFixed(2)}:1)`);
+    afirmar(
+      a.estado === 'pasa',
+      `${nombre}: y pasa APCA a 15 px y peso 600 (Lc ${Math.round(a.lc)}, mínimo ${a.minimoPx} px)`
+    );
+  }
+
+  // El riesgo de rellenar con el acento oscuro es que el botón se pierda
+  // sobre el fondo oscuro. WCAG pide 3:1 a un componente frente a lo que
+  // tiene al lado.
+  for (const [nombre, relleno] of RELLENOS) {
+    const w = medirWcag(relleno, '#10191b', BOTON);
+    afirmar(
+      w.pasaComponentes,
+      `${nombre}: el botón se separa del fondo oscuro (${w.razon.toFixed(2)}:1)`
+    );
+  }
+
+  // Y lo que se descartó, para que quede escrito por qué: tinta oscura
+  // sobre el acento claro del tema oscuro no llega, y no es por poco.
+  for (const [nombre, acento] of [
+    ['--d-tiempo', '#e8a33d'],
+    ['--d-color', '#b47cf5'],
+    ['--d-tipografia', '#31c5bc'],
+  ] as [string, string][]) {
+    const a = medirApca('#10191b', acento, BOTON);
+    afirmar(
+      a.estado !== 'pasa',
+      `${nombre}: con tinta oscura NO pasaba, por eso no se usa (pediría ${a.minimoPx} px)`
+    );
+  }
+}
+
 console.log(fallos === 0 ? '\nTODO CORRECTO\n' : `\n${fallos} FALLOS\n`);
 process.exit(fallos === 0 ? 0 : 1);

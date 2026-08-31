@@ -17,6 +17,7 @@
  */
 import reloj from '@phosphor-icons/core/regular/clock.svg?raw';
 import contraste from '@phosphor-icons/core/regular/circle-half.svg?raw';
+import cronometro from '@phosphor-icons/core/regular/timer.svg?raw';
 import tipografia from '@phosphor-icons/core/regular/text-aa.svg?raw';
 import rejilla from '@phosphor-icons/core/regular/squares-four.svg?raw';
 import lupa from '@phosphor-icons/core/regular/magnifying-glass.svg?raw';
@@ -37,6 +38,7 @@ export const VIEWBOX = '0 0 256 256';
 export const ICONOS = {
   // --- de las herramientas ---
   reloj: interior(reloj),
+  cronometro: interior(cronometro),
   contraste: interior(contraste),
   tipografia: interior(tipografia),
 

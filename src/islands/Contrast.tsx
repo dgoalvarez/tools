@@ -504,7 +504,7 @@ export default function Contrast({ lang }: Props) {
                   */}
                   <Button
                     onClick={() => cambiarTexto(sugerencia.hex)}
-                    className="ml-auto h-10 border border-[var(--acento)] bg-[var(--acento)] px-4 text-[0.9rem] font-medium text-[var(--brand-ink)] hover:bg-[color-mix(in_srgb,var(--acento)_86%,var(--ink))]"
+                    className="ml-auto h-10 px-4 text-[0.9375rem] border border-[var(--solido)] bg-[var(--solido)] font-semibold text-[var(--solido-ink)] hover:bg-[color-mix(in_srgb,var(--solido)_86%,#000)]"
                   >
                     {tr('sugerenciaUsar')}
                   </Button>

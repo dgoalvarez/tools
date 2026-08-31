@@ -9,7 +9,7 @@
     "check": "astro check",
     "preview": "astro preview",
     "astro": "astro",
-    "comprobar": "node scripts/comprobar-contraste.ts && node scripts/comprobar-escala.ts && node scripts/comprobar-husos.ts && node scripts/comprobar-encabezado.ts",
+    "comprobar": "node scripts/comprobar-contraste.ts && node scripts/comprobar-escala.ts && node scripts/comprobar-husos.ts && node scripts/comprobar-pomodoro.ts && node scripts/comprobar-encabezado.ts",
     "build-data": "node scripts/build-data.mjs",
     "ver": "node scripts/ver.mjs",
     "romper": "node scripts/comprobar-roturas.mjs"

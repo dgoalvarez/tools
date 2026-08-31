@@ -99,6 +99,18 @@ const VISTAS = [
   { nombre: 'escala', ruta: 'es/escala', ancho: 1440, alto: 1000 },
   { nombre: 'contraste-claro', ruta: 'es/contraste', ancho: 1440, alto: 1000, tema: 'light' },
   { nombre: 'escala-claro', ruta: 'es/escala', ancho: 1440, alto: 1000, tema: 'light' },
+  { nombre: 'pomodoro', ruta: 'es/pomodoro', ancho: 1440, alto: 1000 },
+  { nombre: 'pomodoro-claro', ruta: 'es/pomodoro', ancho: 1440, alto: 1000, tema: 'light' },
+  // El ciclo largo con las duraciones al tope: doce puntos y «180:00»
+  // dentro del anillo, que es donde el reloj puede quedarse estrecho.
+  {
+    nombre: 'pomodoro-ciclo-largo',
+    ruta: 'es/pomodoro',
+    ancho: 1440,
+    alto: 1000,
+    query: 'w=180&b=60&l=120&c=12',
+  },
+  { nombre: 'pomodoro-estrecho', ruta: 'es/pomodoro', ancho: 485, alto: 900 },
   { nombre: 'husos-ventana-baja', ruta: 'es/horarios', ancho: 1280, alto: 420 },
   { nombre: 'escala-estrecho', ruta: 'es/escala', ancho: 485, alto: 760 },
   { nombre: 'contraste-estrecho', ruta: 'es/contraste', ancho: 485, alto: 760 },

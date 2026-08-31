@@ -60,6 +60,24 @@ export const TOOLS: Record<ToolKey, Tool> = {
     },
     icono: 'reloj',
   },
+  pomodoro: {
+    name: { es: 'Pomodoro', en: 'Pomodoro' },
+    // Lo que distingue a este de los cien que hay: cuenta contra el
+    // reloj del sistema, así que no se descuadra si cambias de pestaña o
+    // si el portátil se duerme. Eso es lo único que de verdad le pasa a
+    // un temporizador, y es lo que casi todos hacen mal.
+    summary: {
+      es: 'Trabaja en tramos, con descansos que no se te olvidan.',
+      en: 'Work in stretches, with breaks you will not forget.',
+    },
+    description: {
+      es: 'Un temporizador pomodoro con las duraciones y el ciclo a tu medida: los minutos de trabajo, los de cada descanso y cada cuántos toca el largo. Avisa con un sonido y con una notificación cuando acaba, y cuenta contra el reloj del sistema, así que no se atrasa aunque cambies de pestaña o el ordenador se suspenda.',
+      en: 'A pomodoro timer with the durations and the cycle set your way: minutes of work, minutes of each break, and how many stretches before the long one. It tells you with a sound and a notification when time is up, and it counts against the system clock, so it does not fall behind if you switch tabs or the computer sleeps.',
+    },
+    listo: true,
+    etiquetas: { ambito: ['productividad'], materia: 'tiempo', tarea: 'cronometrar' },
+    icono: 'cronometro',
+  },
   contrast: {
     name: { es: 'Contraste', en: 'Contrast' },
     summary: {
@@ -76,13 +94,17 @@ export const TOOLS: Record<ToolKey, Tool> = {
   },
   scale: {
     name: { es: 'Escala tipográfica', en: 'Type scale' },
+    // Describe lo que se ve al entrar. La escala fluida es lo que
+    // distingue a la herramienta, pero ahora vive detrás de un
+    // interruptor apagado, así que abrir prometiendo clamp() sería
+    // prometer una pantalla que no es la primera.
     summary: {
-      es: 'Una escala con clamp(), y la tabla de a cuántos píxeles queda de verdad.',
-      en: 'A scale with clamp(), and the table of what it really measures.',
+      es: 'Una rampa de tamaños con su alto de línea, y fluida si la necesitas.',
+      en: 'A ramp of sizes with its line heights, and fluid if you need it.',
     },
     description: {
-      es: 'Genera una escala tipográfica fluida con clamp(), lista para copiar como variables CSS, y enseña a cuántos píxeles queda cada paso en 390, 768, 1360 y 1920. Avisa cuando dos pasos se cruzan a algún ancho.',
-      en: 'Generate a fluid type scale with clamp(), ready to copy as CSS variables, and see what each step really measures at 390, 768, 1360 and 1920. It warns when two steps cross over at some width.',
+      es: 'Genera una escala tipográfica lista para copiar como variables CSS, con el alto de línea sugerido de cada paso y sus tamaños en píxeles y en rem. Si la haces fluida con clamp(), enseña además a cuántos píxeles queda cada paso en 390, 768, 1360 y 1920, y avisa cuando dos se cruzan a algún ancho.',
+      en: 'Generate a type scale ready to copy as CSS variables, with the suggested line height for each step and its sizes in pixels and rem. Make it fluid with clamp() and it also shows what each step really measures at 390, 768, 1360 and 1920, and warns when two cross over at some width.',
     },
     listo: true,
     etiquetas: { ambito: ['diseno'], materia: 'tipografia', tarea: 'generar' },

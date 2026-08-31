@@ -17,7 +17,7 @@ import Lanzador from '../components/Lanzador.astro';
 import Footer from '../components/Footer.astro';
 import { UI } from '../i18n/ui';
 import { TOOLS } from '../i18n/tools';
-import { ACENTO_POR_MATERIA } from '../i18n/labels';
+import { ACENTO_POR_MATERIA, SOLIDO_POR_MATERIA } from '../i18n/labels';
 import { t, otherLang, OG_LOCALE, DEFAULT_LANG, LANGS, type Lang } from '../i18n/config';
 import { route, type PageKey } from '../i18n/routes';
 import '../styles/global.css';
@@ -41,6 +41,11 @@ const herramienta = page === 'home' ? null : page;
 const acento = herramienta
   ? ACENTO_POR_MATERIA[TOOLS[herramienta].etiquetas.materia]
   : 'var(--brand)';
+
+/** El relleno de los botones principales. Va aparte del acento a propósito. */
+const solido = herramienta
+  ? SOLIDO_POR_MATERIA[TOOLS[herramienta].etiquetas.materia]
+  : 'var(--l-brand)';
 
 const site = Astro.site!;
 const canonical = new URL(route(page, lang), site).href;
@@ -144,7 +149,7 @@ const ogImage = new URL('/og.png', site).href;
     </script>
   </head>
 
-  <body style={`--acento: ${acento}`}>
+  <body style={`--acento: ${acento}; --solido: ${solido}`}>
     <a
       href="#main"
       class="sr-only rounded-md bg-primary px-3 py-2 text-primary-foreground focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50"

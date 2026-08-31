@@ -100,6 +100,42 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
     },
   ],
 
+  // --------------------------------------------------------- pomodoro
+  pomodoro: [
+    {
+      ancla: 'cuenta',
+      titulo: { es: 'La cuenta atrás', en: 'The countdown' },
+      cuerpo: {
+        es: 'El anillo se llena según pasa el tiempo, y no al revés: un pomodoro es algo que se completa, no algo que se agota. Al acabar una fase, la siguiente arranca sola — parar aquí obligaría a estar delante de la pantalla, que es justo lo que un temporizador viene a evitar.',
+        en: 'The ring fills as time passes, not the other way round: a pomodoro is something you complete, not something that runs out. When a phase ends the next one starts on its own — stopping here would mean having to sit and watch the screen, which is exactly what a timer is meant to avoid.',
+      },
+    },
+    {
+      ancla: 'duraciones',
+      titulo: { es: 'Todo se puede cambiar', en: 'Everything is yours to set' },
+      cuerpo: {
+        es: 'Los minutos de trabajo, los de cada descanso y cada cuántos pomodoros toca el largo. Veinticinco y cinco es lo que dice el método original, pero son números y no leyes. Lo que cambies con algo en marcha se aplica a la fase siguiente: cortar la que está corriendo sería castigarte por mirar los ajustes.',
+        en: 'Minutes of work, minutes of each break, and how many pomodoros before the long one. Twenty-five and five is what the original method says, but those are numbers, not laws. What you change while something is running applies to the next phase: cutting the current one short would punish you for looking at the settings.',
+      },
+    },
+    {
+      ancla: 'aviso',
+      titulo: { es: 'Cómo te avisa', en: 'How it tells you' },
+      cuerpo: {
+        es: 'Un tono corto al acabar —sube cuando termina el trabajo y baja cuando termina el descanso, así sabes cuál sin mirar— y, si le das permiso, una notificación del sistema. La cuenta va además en el título de la pestaña, para que se vea desde otra.',
+        en: 'A short tone when time is up — it goes up when work ends and down when the break ends, so you know which without looking — and, if you allow it, a system notification. The countdown also sits in the tab title, so you can see it from another tab.',
+      },
+    },
+    {
+      ancla: 'ciclo',
+      titulo: { es: 'Cuántos faltan para el largo', en: 'How many until the long one' },
+      cuerpo: {
+        es: 'Un punto por pomodoro del ciclo. Es la única cuenta que este método pide llevar en la cabeza, así que se ve de un vistazo en vez de contarla.',
+        en: 'One dot per pomodoro in the cycle. It is the only count this method asks you to keep in your head, so you can see it at a glance instead of counting.',
+      },
+    },
+  ],
+
   // -------------------------------------------------------- contraste
   contrast: [
     {

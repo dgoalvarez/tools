@@ -14,6 +14,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PlusIcon, TrashIcon, WarningIcon } from '@phosphor-icons/react';
 
 import BotonCopiar from '@/components/BotonCopiar';
+import SelectorColor from '@/islands/SelectorColor';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,11 +51,33 @@ const TEXTO = { px: 16, peso: 400 };
  * se ve. Los tres colores son los de una interfaz cualquiera —principal,
  * bien y mal— para que la primera pantalla ya se parezca a algo útil.
  */
-const INICIALES: Tonalidad[] = [
-  { id: 'a', nombre: 'azul', semilla: '#3b82f6', anclaForzada: null, retoques: {} },
-  { id: 'b', nombre: 'verde', semilla: '#16a34a', anclaForzada: null, retoques: {} },
-  { id: 'c', nombre: 'rojo', semilla: '#dc2626', anclaForzada: null, retoques: {} },
-];
+const SEMILLAS = ['#3b82f6', '#16a34a', '#dc2626'] as const;
+
+/**
+ * Los nombres de fábrica, en el idioma de la página.
+ *
+ * Estaban escritos en castellano y salían así también en inglés: quien
+ * abría la herramienta en inglés se llevaba un `--azul-500` a su
+ * proyecto. El nombre de la tonalidad ES el de la variable, así que es
+ * contenido y no una etiqueta de interfaz.
+ */
+const NOMBRES_INICIALES: Record<Lang, string[]> = {
+  es: ['azul', 'verde', 'rojo'],
+  en: ['blue', 'green', 'red'],
+};
+
+/** Cómo se llama una tonalidad nueva, en el idioma de la página. */
+const NOMBRE_NUEVA: Record<Lang, string> = { es: 'color', en: 'colour' };
+
+function iniciales(lang: Lang): Tonalidad[] {
+  return SEMILLAS.map((semilla, i) => ({
+    id: ['a', 'b', 'c'][i],
+    nombre: NOMBRES_INICIALES[lang][i],
+    semilla,
+    anclaForzada: null,
+    retoques: {},
+  }));
+}
 
 /** Las claves de la dirección, cortas para que el enlace no sea un muro. */
 const CLAVES: Record<keyof Ajustes, string> = {
@@ -74,7 +98,7 @@ interface Props {
 export default function Paleta({ lang }: Props) {
   const tr = (clave: keyof typeof P) => t(P[clave], lang);
 
-  const [tonalidades, setTonalidades] = useState<Tonalidad[]>(INICIALES);
+  const [tonalidades, setTonalidades] = useState<Tonalidad[]>(() => iniciales(lang));
   const [ajustes, setAjustes] = useState<Ajustes>(AJUSTES_INICIALES);
   const [prefijo, setPrefijo] = useState('');
   const [enlaceLeido, setEnlaceLeido] = useState(false);
@@ -119,7 +143,7 @@ export default function Paleta({ lang }: Props) {
           if (!color) return null;
           const leida: Tonalidad = {
             id: `u${i}`,
-            nombre: limpiarNombre(nombre ?? '') || `color${i + 1}`,
+            nombre: limpiarNombre(nombre ?? '') || `${NOMBRE_NUEVA[lang]}${i + 1}`,
             semilla: color.hex,
             anclaForzada: null,
             retoques: {},
@@ -143,9 +167,12 @@ export default function Paleta({ lang }: Props) {
     }
     salida.p = prefijo || null;
 
+    const dePartida = iniciales(lang);
     const iguales =
-      tonalidades.length === INICIALES.length &&
-      tonalidades.every((t, i) => t.nombre === INICIALES[i].nombre && t.semilla === INICIALES[i].semilla);
+      tonalidades.length === dePartida.length &&
+      tonalidades.every(
+        (t, i) => t.nombre === dePartida[i].nombre && t.semilla === dePartida[i].semilla
+      );
     salida.t = iguales ? null : tonalidades.map((t) => `${t.nombre}:${t.semilla.slice(1)}`).join(',');
 
     escribirParams(salida);
@@ -188,7 +215,7 @@ export default function Paleta({ lang }: Props) {
       ...previas,
       {
         id: `n${Date.now()}`,
-        nombre: `color${n}`,
+        nombre: `${NOMBRE_NUEVA[lang]}${n}`,
         semilla: '#8b5cf6',
         anclaForzada: null,
         retoques: {},
@@ -224,35 +251,15 @@ export default function Paleta({ lang }: Props) {
 
           <div className="lista-tonalidades">
             {tonalidades.map((tono) => (
-              <div key={tono.id} className="fila-tonalidad">
-                <span className="relative size-8 shrink-0">
-                  <input
-                    type="color"
-                    className="muestra-color"
-                    value={tono.semilla}
-                    aria-label={`${tr('colorSemilla')} ${tono.nombre}`}
-                    onChange={(e) => editar(tono.id, { semilla: e.target.value })}
-                  />
-                </span>
-
-                <Input
-                  value={tono.nombre}
-                  aria-label={`${tr('nombreTonalidad')} ${tono.nombre}`}
-                  onChange={(e) => editar(tono.id, { nombre: limpiarNombre(e.target.value) })}
-                  className="min-w-0 font-mono text-[0.8rem]"
-                />
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => quitar(tono.id)}
-                  title={tr('quitar')}
-                  aria-label={`${tr('quitar')} ${tono.nombre}`}
-                  disabled={tonalidades.length <= 1}
-                >
-                  <TrashIcon aria-hidden="true" />
-                </Button>
-              </div>
+              <FilaTonalidad
+                key={tono.id}
+                tono={tono}
+                lang={lang}
+                sePuedeQuitar={tonalidades.length > 1}
+                onSemilla={(valor) => editar(tono.id, { semilla: valor })}
+                onNombre={(valor) => editar(tono.id, { nombre: limpiarNombre(valor) })}
+                onQuitar={() => quitar(tono.id)}
+              />
             ))}
           </div>
 
@@ -440,20 +447,16 @@ export default function Paleta({ lang }: Props) {
         <details className="acordeon" data-tour="css">
           <summary>
             <span className="flex-1">{tr('cssTitulo')}</span>
-            <BotonCopiar
-              texto={() => css}
-              etiqueta={tr('copiarCss')}
-              etiquetaCopiado={tr('copiado')}
-              onAntes={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-            />
-          </summary>
-          <div className="cuerpo">
-            <p className="intro">{tr('cssIntro')}</p>
 
-            <div className="segmento" role="group" aria-label={tr('cssTitulo')}>
+            {/* El formato va JUNTO al botón de copiar y no dentro del
+                acordeón: se elige en el momento de llevárselo, que es
+                cuando se sabe cuál hace falta. */}
+            <div
+              className="segmento segmento-formato"
+              role="group"
+              aria-label={tr('formatoTitulo')}
+              onClick={(e) => e.stopPropagation()}
+            >
               {(['oklch', 'hex'] as const).map((f) => (
                 <label key={f}>
                   <input
@@ -467,6 +470,19 @@ export default function Paleta({ lang }: Props) {
               ))}
             </div>
 
+            <BotonCopiar
+              texto={() => css}
+              etiqueta={tr('copiarCss')}
+              etiquetaCopiado={tr('copiado')}
+              onAntes={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            />
+          </summary>
+          <div className="cuerpo">
+            <p className="intro">{tr('cssIntro')}</p>
+
             <pre className="overflow-x-auto rounded-lg border border-line bg-surface-2 p-4 font-mono text-[0.78rem] leading-relaxed text-ink">
               <code>{css}</code>
             </pre>
@@ -478,6 +494,118 @@ export default function Paleta({ lang }: Props) {
 }
 
 // ------------------------------------------------------------- auxiliares
+
+/**
+ * Una fila de la lista de tonalidades.
+ *
+ * El color se elige con el MISMO selector que la herramienta de contraste
+ * —hexadecimal, rgb(), oklch(), un nombre, el cuadro visual y las tres
+ * barras— pero dentro de un popover.
+ *
+ * Flotando y no desplegado debajo: con seis tonalidades, abrir los
+ * controles de una empujaba las otras cinco hacia abajo, y elegir un
+ * color acababa moviendo de sitio la cuadrícula que estabas mirando.
+ */
+function FilaTonalidad({
+  tono,
+  lang,
+  sePuedeQuitar,
+  onSemilla,
+  onNombre,
+  onQuitar,
+}: {
+  tono: Tonalidad;
+  lang: Lang;
+  sePuedeQuitar: boolean;
+  onSemilla: (valor: string) => void;
+  onNombre: (valor: string) => void;
+  onQuitar: () => void;
+}) {
+  const tr = (clave: keyof typeof P) => t(P[clave], lang);
+
+  /*
+   * El campo guarda lo tecleado tal cual y el color solo se mueve cuando
+   * lo escrito ya es un color. Si no, borrar un carácter de un
+   * hexadecimal dejaría la rampa entera en negro mientras se escribe el
+   * siguiente.
+   */
+  const [bruto, setBruto] = useState(tono.semilla);
+  useEffect(() => setBruto(tono.semilla), [tono.semilla]);
+
+  const color = leerColor(bruto);
+
+  function cambiar(valor: string) {
+    setBruto(valor);
+    const leido = leerColor(valor);
+    if (leido) onSemilla(leido.hex);
+  }
+
+  const [soportaCuentagotas, setSoportaCuentagotas] = useState(false);
+  useEffect(() => {
+    setSoportaCuentagotas(typeof window !== 'undefined' && 'EyeDropper' in window);
+  }, []);
+
+  async function usarCuentagotas() {
+    const Api = typeof window !== 'undefined' ? window.EyeDropper : undefined;
+    if (!Api) return;
+    try {
+      const { sRGBHex } = await new Api().open();
+      cambiar(sRGBHex);
+    } catch {
+      // Cancelar el cuentagotas no es un error: se cierra y ya.
+    }
+  }
+
+  return (
+    <div className="fila-tonalidad">
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="disparador-color"
+            style={{ background: tono.semilla }}
+            aria-label={`${tr('colorSemilla')} ${tono.nombre}`}
+          />
+        </PopoverTrigger>
+
+        {/* Al lado y no debajo: debajo tapaba las otras tonalidades de la
+            lista justo mientras se elige un color para compararlo con
+            ellas. Radix lo voltea solo cuando no cabe. */}
+        <PopoverContent side="right" align="start">
+          <SelectorColor
+            lang={lang}
+            id={`semilla-${tono.id}`}
+            etiqueta={`${tr('colorSemilla')} · ${tono.nombre}`}
+            bruto={bruto}
+            hex={tono.semilla}
+            valido={color !== null}
+            onCambio={cambiar}
+            onCuentagotas={soportaCuentagotas ? usarCuentagotas : undefined}
+            sinTarjeta
+          />
+        </PopoverContent>
+      </Popover>
+
+      <Input
+        value={tono.nombre}
+        aria-label={`${tr('nombreTonalidad')} ${tono.nombre}`}
+        onChange={(e) => onNombre(e.target.value)}
+        className="min-w-0 font-mono text-[0.8rem]"
+      />
+
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onQuitar}
+        title={tr('quitar')}
+        aria-label={`${tr('quitar')} ${tono.nombre}`}
+        disabled={!sePuedeQuitar}
+      >
+        <TrashIcon aria-hidden="true" />
+      </Button>
+    </div>
+  );
+}
 
 /** Una fila de la cuadrícula: el nombre de la tonalidad y sus casillas. */
 function Fila({

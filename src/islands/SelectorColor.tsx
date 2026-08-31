@@ -56,6 +56,13 @@ interface Props {
    * nada que pudiera hacer lo que su nombre dice.
    */
   onCuentagotas?: () => void;
+  /**
+   * Sin la tarjeta de alrededor.
+   *
+   * Dentro de un popover el panel ya trae su borde y su fondo, y los de
+   * la tarjeta se verían como una caja dentro de otra.
+   */
+  sinTarjeta?: boolean;
 }
 
 export default function SelectorColor({
@@ -67,6 +74,7 @@ export default function SelectorColor({
   valido,
   onCambio,
   onCuentagotas,
+  sinTarjeta = false,
 }: Props) {
   const tr = (clave: keyof typeof C) => t(C[clave], lang);
 
@@ -117,7 +125,10 @@ export default function SelectorColor({
   }
 
   return (
-    <div className="tarjeta-control" data-tour={id === 'color-texto' ? 'colores' : undefined}>
+    <div
+      className={sinTarjeta ? 'grid gap-3' : 'tarjeta-control'}
+      data-tour={id === 'color-texto' ? 'colores' : undefined}
+    >
       <div className="grid gap-1.5">
         <Label htmlFor={id}>{etiqueta}</Label>
 

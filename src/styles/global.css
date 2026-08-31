@@ -2608,6 +2608,46 @@
     gap: 0.5rem;
   }
 
+  /*
+    El cuadrado que abre el selector.
+
+    Es un botón y no un `<input type="color">`: el nativo abre el
+    selector del sistema, y lo que hace falta aquí es el selector del
+    sitio —hexadecimal, rgb(), oklch(), el cuadro visual y las barras—,
+    el mismo que la herramienta de contraste.
+  */
+  .disparador-color {
+    width: 2rem;
+    height: 2rem;
+    flex: none;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+  }
+
+  .disparador-color:hover {
+    border-color: var(--ink-soft);
+  }
+
+  .disparador-color:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  /* El segmento del formato vive dentro de un `<summary>`, al lado del
+     botón de copiar, así que no puede ocupar todo el ancho como el de la
+     herramienta de contraste. */
+  .segmento-formato {
+    width: auto;
+    flex: none;
+  }
+
+  .segmento-formato label {
+    flex: none;
+    font-size: 0.7rem;
+  }
+
   .fila-tonalidad {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;

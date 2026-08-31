@@ -98,6 +98,17 @@ const VISTAS = [
   { nombre: 'paleta', ruta: 'es/paleta', ancho: 1440, alto: 1200 },
   { nombre: 'paleta-claro', ruta: 'es/paleta', ancho: 1440, alto: 1200, tema: 'light' },
   { nombre: 'paleta-estrecho', ruta: 'es/paleta', ancho: 485, alto: 900 },
+  // El selector abierto: es lo que hay que mirar para saber si el popover
+  // tapa algo o si empuja la cuadrícula.
+  {
+    nombre: 'paleta-selector',
+    ruta: 'es/paleta',
+    ancho: 1440,
+    alto: 1200,
+    clics: ['.disparador-color'],
+  },
+  // En inglés, para ver que los nombres de las variables van en inglés.
+  { nombre: 'paleta-en', ruta: 'en/palette', ancho: 1440, alto: 1000 },
   // El detalle abierto, que es donde se leen los veredictos.
   {
     nombre: 'paleta-detalle',

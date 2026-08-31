@@ -38,7 +38,7 @@ export const PALETA = {
   prefijo: { es: 'Prefijo', en: 'Prefix' },
   prefijoAyuda: {
     es: 'Cada tonalidad usa su propio nombre. El prefijo va delante de todas: con «color» sale --color-azul-500.',
-    en: 'Each hue uses its own name. The prefix goes before all of them: with “color” you get --color-azul-500.',
+    en: 'Each hue uses its own name. The prefix goes before all of them: with “color” you get --color-blue-500.',
   },
 
   // ---------- La cuadrícula ----------
@@ -103,6 +103,7 @@ export const PALETA = {
     es: 'Sale en oklch() y no en hexadecimal a propósito: el hexadecimal es de ocho bits y redondearlo mueve la luminosidad lo bastante como para romper la escalera. Debajo tienes los hexadecimales por si los necesitas.',
     en: 'It comes out as oklch() and not hex on purpose: hex is eight bits and rounding it moves the lightness enough to break the ladder. Hex values are below if you need them.',
   },
+  formatoTitulo: { es: 'Formato', en: 'Format' },
   formatoOklch: { es: 'oklch()', en: 'oklch()' },
   formatoHex: { es: 'Hexadecimal', en: 'Hex' },
   copiarCss: { es: 'Copiar', en: 'Copy' },

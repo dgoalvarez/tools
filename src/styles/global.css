@@ -1461,3 +1461,142 @@
     outline-offset: 2px;
   }
 }
+
+/* ============================================================
+   La rampa de la escala
+
+   Una rejilla y no un flex, por lo de siempre: con la muestra en
+   `minmax(0, 1fr)` la fila no puede crecer más que su caja, pase lo que
+   pase con el tamaño del texto de muestra. Antes era un flex y la fila
+   medía 792 px dentro de una caja de 653, así que la columna de tamaños
+   caía fuera y no se veía.
+
+       ☑  --text-2xl   Tipografía que respira    28 → 39 px
+                                                 1,75 → 2,44 rem · 1,31
+   ============================================================ */
+
+@layer components {
+  .fila-rampa {
+    display: grid;
+    grid-template-columns: auto minmax(4rem, 9rem) minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: 0.875rem;
+    padding: 0.3125rem 0.5rem;
+    border-radius: var(--radius-md);
+  }
+
+  .fila-rampa.apagado {
+    opacity: 0.45;
+  }
+
+  .fila-rampa .variable {
+    min-width: 0;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+  }
+
+  .fila-rampa .muestra {
+    min-width: 0;
+    line-height: 1.15;
+    color: var(--ink);
+  }
+
+  /* Los números, en dos renglones cortos en vez de uno larguísimo. El
+     de arriba son los píxeles, que es lo que se mira; el de abajo los
+     rem y el alto de línea, que es lo que se copia. */
+  .fila-rampa .medidas {
+    text-align: end;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--ink-soft);
+  }
+
+  .fila-rampa .medidas b {
+    display: block;
+    font-weight: 500;
+    color: var(--ink-muted);
+  }
+
+  .fila-rampa .es-base {
+    color: var(--acento);
+  }
+}
+
+/* ============================================================
+   Los acordeones de una herramienta
+
+   Antes eran tarjetas con un título y tres líneas de descripción
+   siempre a la vista, y nada que dijera que se abrían. Ahora llevan su
+   flecha, el título dice lo que hay dentro, y la descripción se guarda
+   con el resto: cerrado, un acordeón tiene que ocupar un renglón.
+   ============================================================ */
+
+@layer components {
+  .acordeon {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .acordeon > summary {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.875rem 1rem;
+    cursor: pointer;
+    list-style: none;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .acordeon > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /* La flecha: lo único que dice «esto se abre» antes de tocarlo. */
+  .acordeon > summary::before {
+    content: '';
+    flex: none;
+    width: 0.4375rem;
+    height: 0.4375rem;
+    border-right: 1.5px solid var(--ink-soft);
+    border-bottom: 1.5px solid var(--ink-soft);
+    transform: rotate(-45deg);
+    transition: transform 0.15s;
+  }
+
+  .acordeon[open] > summary::before {
+    transform: rotate(45deg);
+  }
+
+  .acordeon > summary:hover {
+    color: var(--acento);
+  }
+
+  .acordeon > summary:hover::before {
+    border-color: var(--acento);
+  }
+
+  .acordeon > summary:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: -2px;
+    border-radius: var(--radius-lg);
+  }
+
+  .acordeon .cuerpo {
+    border-block-start: 1px solid var(--line);
+  }
+
+  .acordeon .cuerpo > .intro {
+    margin: 0;
+    padding: 0.875rem 1rem 0;
+    max-width: var(--measure);
+    font-size: var(--fs-small);
+    color: var(--ink-soft);
+  }
+}

@@ -9,7 +9,7 @@
  * La aritmética vive en src/lib/scale.ts.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckIcon, CopyIcon, LinkIcon } from '@phosphor-icons/react';
+import { CheckIcon, CopyIcon } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ import { t, type Lang } from '@/i18n/config';
 import { ESCALA as E, NOMBRES_ESQUEMA, NOMBRES_RAZON } from '@/i18n/scale';
 import {
   ANCHOS_TABLA,
+  RAIZ_PX,
   RAZONES,
   ESQUEMAS,
   aCss,
@@ -120,7 +121,7 @@ export default function TypeScale({ lang }: Props) {
 
   const [ajustes, setAjustes] = useState<Ajustes>(INICIAL);
   const [enlaceLeido, setEnlaceLeido] = useState(false);
-  const [copiado, setCopiado] = useState<'css' | 'enlace' | null>(null);
+  const [copiado, setCopiado] = useState<'css' | null>(null);
 
   const cambiar = useCallback(<K extends keyof Ajustes>(clave: K, valor: Ajustes[K]) => {
     setAjustes((previo) => ({ ...previo, [clave]: valor }));
@@ -211,6 +212,18 @@ export default function TypeScale({ lang }: Props) {
     };
   }, [ajustes]);
 
+  /**
+   * Un número escrito como se escribe en el idioma de la página: con
+   * coma decimal en español y con punto en inglés. `toFixed` siempre
+   * pone punto, y «1.26» en una interfaz en español se lee como mil
+   * doscientos veintiséis.
+   */
+  const cifra = (n: number, decimales: number) =>
+    n.toLocaleString(lang === 'es' ? 'es-ES' : 'en-US', {
+      minimumFractionDigits: decimales,
+      maximumFractionDigits: decimales,
+    });
+
   /** Renombra un paso. Un nombre vacío lo devuelve a su número. */
   function renombrar(indice: number, bruto: string) {
     const limpio = limpiarNombre(bruto);
@@ -274,12 +287,20 @@ export default function TypeScale({ lang }: Props) {
 
   const alReves = [...pasos].reverse();
 
-  async function copiar(que: 'css' | 'enlace') {
+  /**
+   * Copia el bloque de CSS.
+   *
+   * Había también un botón para copiar el enlace de la escala. Se ha
+   * quitado: el enlace ya está en la barra de direcciones y se actualiza
+   * solo con cada cambio, así que el botón repetía a un botón que todos
+   * los navegadores traen puesto.
+   */
+  async function copiarCss() {
     try {
-      await navigator.clipboard.writeText(que === 'css' ? css : window.location.href);
-      setCopiado(que);
+      await navigator.clipboard.writeText(css);
+      setCopiado('css');
     } catch {
-      // Sin portapapeles queda el bloque a la vista y el enlace en la barra.
+      // Sin portapapeles, el bloque se queda a la vista para seleccionarlo.
     }
   }
 
@@ -317,7 +338,6 @@ export default function TypeScale({ lang }: Props) {
               onCambio={(v) => cambiar('baseMax', v)}
             />
           </div>
-          <p className="text-[var(--fs-small)] text-ink-soft">{tr('baseAyuda')}</p>
 
           <div className="grid gap-3" data-tour="razon">
             <Razon
@@ -336,7 +356,6 @@ export default function TypeScale({ lang }: Props) {
               personalizada={tr('personalizada')}
               onCambio={(v) => cambiar('razonMax', v)}
             />
-            <p className="text-[var(--fs-small)] text-ink-soft">{tr('razonAyuda')}</p>
           </div>
         </fieldset>
 
@@ -394,7 +413,6 @@ export default function TypeScale({ lang }: Props) {
               onCambio={(v) => cambiar('anchoMax', Math.round(v))}
             />
           </div>
-          <p className="text-[var(--fs-small)] text-ink-soft">{tr('anchoAyuda')}</p>
         </fieldset>
 
         <fieldset className="tarjeta-control" data-tour="nombres">
@@ -435,23 +453,7 @@ export default function TypeScale({ lang }: Props) {
               }
             />
           </div>
-
-          <p className="text-[var(--fs-small)] text-ink-soft">{tr('nombresAyuda')}</p>
         </fieldset>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => copiar('enlace')}
-          className="justify-self-start"
-        >
-          {copiado === 'enlace' ? (
-            <CheckIcon aria-hidden="true" />
-          ) : (
-            <LinkIcon aria-hidden="true" />
-          )}
-          {copiado === 'enlace' ? tr('copiado') : tr('copiarEnlace')}
-        </Button>
       </div>
 
       {/* ---------------- Resultados ---------------- */}
@@ -489,31 +491,17 @@ export default function TypeScale({ lang }: Props) {
         )}
 
         {/* -------- La rampa, con los clamp() de verdad -------- */}
+        {/* La rampa se queda abierta y sin descripción: es lo que se
+            mira, y lo que hay que saber de ella lo cuenta el paso a
+            paso. */}
         <section data-tour="rampa">
           <h2 className="text-[length:var(--fs-h3)] font-semibold text-ink">
             {tr('muestraTitulo')}
           </h2>
-          <p className="mt-1 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
-            {tr('muestraIntro')}
-          </p>
 
-          {/*
-            El `min-w-0` de la caja y el de cada fila no son decoración.
-            Un elemento de rejilla nace con `min-width: auto`, así que no
-            encoge por debajo del ancho de su contenido — y aquí el
-            contenido es un texto de muestra a 61 px con `nowrap`. La
-            fila medía 792 px dentro de una caja de 653 y la etiqueta de
-            tamaño de la derecha se salía y quedaba recortada: los «40 →
-            61 px» simplemente no se veían.
-          */}
-          <div className="mt-4 grid min-w-0 gap-1 overflow-hidden rounded-lg border border-line bg-surface p-5">
+          <div className="mt-3 grid min-w-0 gap-0.5 overflow-hidden rounded-lg border border-line bg-surface p-4">
             {alReves.map((paso) => (
-              <div
-                key={paso.indice}
-                className={`flex min-w-0 items-baseline gap-4 rounded-md px-2 py-1.5 ${
-                  paso.omitido ? 'opacity-45' : ''
-                }`}
-              >
+              <div key={paso.indice} className={`fila-rampa${paso.omitido ? ' apagado' : ''}`}>
                 {/*
                   El interruptor de saltarse el paso.
 
@@ -529,28 +517,31 @@ export default function TypeScale({ lang }: Props) {
                   data-tour={paso.indice === 0 ? 'saltar' : undefined}
                   aria-label={`${paso.nombre} · ${tr(paso.omitido ? 'encender' : 'apagar')}`}
                   title={tr(paso.omitido ? 'encender' : 'apagar')}
-                  className="mt-1 size-4 shrink-0 cursor-pointer accent-[var(--acento)]"
+                  className="size-4 cursor-pointer self-center accent-[var(--acento)]"
                 />
 
-                <code className="w-40 shrink-0 truncate font-mono text-[0.72rem] text-ink-soft">
-                  {paso.nombre}
-                </code>
+                <code className="variable truncate">{paso.nombre}</code>
 
-                <span
-                  className="min-w-0 flex-1 truncate leading-tight text-ink"
-                  style={{ fontSize: paso.valor }}
-                >
+                <span className="muestra truncate" style={{ fontSize: paso.valor }}>
                   {tr('muestraTexto')}
                 </span>
 
-                {/* De qué tamaño es esto: el par que genera el clamp(). Sin
-                    esto la rampa se veía pero no se sabía en qué números
-                    estaba. */}
-                <span className="shrink-0 text-right font-mono text-[0.72rem] text-ink-soft tabular-nums">
-                  {paso.minPx.toFixed(0)} → {paso.maxPx.toFixed(0)} px
-                  {paso.indice === 0 && (
-                    <span className="ml-2 text-[var(--acento)]">{tr('esLaBase')}</span>
-                  )}
+                {/*
+                  De qué tamaño es esto, y con qué aire entre líneas.
+
+                  Los píxeles arriba, que es lo que se mira para juzgar;
+                  los rem y el alto de línea abajo, que es lo que se
+                  copia. En rem porque un `font-size` en píxeles deja de
+                  responder al zoom del navegador, y eso es un fallo de
+                  accesibilidad, no una preferencia.
+                */}
+                <span className="medidas">
+                  <b>
+                    {paso.minPx.toFixed(0)} → {paso.maxPx.toFixed(0)} px
+                    {paso.indice === 0 && <span className="es-base"> {tr('esLaBase')}</span>}
+                  </b>
+                  {cifra(paso.minPx / RAIZ_PX, 2)} → {cifra(paso.maxPx / RAIZ_PX, 2)} rem ·{' '}
+                  {cifra(paso.interlineado, 2)}
                 </span>
               </div>
             ))}
@@ -567,108 +558,96 @@ export default function TypeScale({ lang }: Props) {
             Plegada, y no porque importe poco: importa mucho, pero solo
             cuando ya se ha decidido la escala. Abierta desde el principio
             eran cuarenta números encima de la rampa. */}
-        <details data-tour="tabla" className="rounded-lg border border-line">
-          <summary className="cursor-pointer px-4 py-3 marker:content-none">
-            <span className="text-[length:var(--fs-h3)] font-semibold text-ink">
-              {tr('tablaTitulo')}
-            </span>
-            <span className="mt-0.5 block max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
-              {tr('tablaIntro')}
-            </span>
-          </summary>
+        <details data-tour="tabla" className="acordeon">
+          <summary>{tr('tablaTitulo')}</summary>
 
-          <div className="overflow-x-auto border-t border-line bg-surface">
-            <table className="w-full border-collapse text-[var(--fs-small)] tabular-nums">
-              <thead>
-                <tr className="border-b border-line text-left">
-                  <th scope="col" className="p-3 font-medium text-ink-muted">
-                    {tr('columnaPaso')}
-                  </th>
-                  {ANCHOS_TABLA.map((ancho) => (
+          <div className="cuerpo">
+            <p className="intro">{tr('tablaIntro')}</p>
+
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full border-collapse text-[var(--fs-small)] tabular-nums">
+                <thead>
+                  <tr className="border-b border-line text-left">
+                    <th scope="col" className="p-3 font-medium text-ink-muted">
+                      {tr('columnaPaso')}
+                    </th>
+                    {ANCHOS_TABLA.map((ancho) => (
+                      <th
+                        key={ancho}
+                        scope="col"
+                        className="p-3 text-right font-medium text-ink-muted"
+                      >
+                        {ancho}
+                      </th>
+                    ))}
                     <th
-                      key={ancho}
                       scope="col"
                       className="p-3 text-right font-medium text-ink-muted"
+                      title={tr('llenoAyuda')}
                     >
-                      {ancho}
+                      {tr('columnaLlenoCorto')}
                     </th>
-                  ))}
-                  <th
-                    scope="col"
-                    className="p-3 text-right font-medium text-ink-muted"
-                    title={tr('llenoAyuda')}
-                  >
-                    {tr('columnaLlenoCorto')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {alReves
-                  .filter((paso) => !paso.omitido)
-                  .map((paso) => {
-                    const lleno = anchoParaFraccion(paso, 0.95, ajustes);
-                    return (
-                      <tr key={paso.indice} className="border-b border-line last:border-0">
-                        {/* El nombre se edita aquí y no en una lista aparte:
+                  </tr>
+                </thead>
+                <tbody>
+                  {alReves
+                    .filter((paso) => !paso.omitido)
+                    .map((paso) => {
+                      const lleno = anchoParaFraccion(paso, 0.95, ajustes);
+                      return (
+                        <tr key={paso.indice} className="border-b border-line last:border-0">
+                          {/* El nombre se edita aquí y no en una lista aparte:
                           es donde ya se está mirando cada paso, y ahorra
                           repetir la escala entera en otro sitio. */}
-                        <th scope="row" className="p-2 text-left font-normal">
-                          <span className="sr-only">{paso.nombre}</span>
-                          <span className="flex items-center font-mono text-ink">
-                            <span aria-hidden="true" className="pl-1 text-ink-soft">
-                              --{ajustes.prefijo}-
+                          <th scope="row" className="p-2 text-left font-normal">
+                            <span className="sr-only">{paso.nombre}</span>
+                            <span className="flex items-center font-mono text-ink">
+                              <span aria-hidden="true" className="pl-1 text-ink-soft">
+                                --{ajustes.prefijo}-
+                              </span>
+                              <input
+                                type="text"
+                                value={ajustes.nombres[String(paso.indice)] ?? String(paso.indice)}
+                                spellCheck={false}
+                                autoComplete="off"
+                                aria-label={`${tr('nombreDe')} ${paso.indice}`}
+                                className="w-24 rounded-md border border-transparent bg-transparent px-1 py-1 hover:border-line focus:border-line focus:outline-none"
+                                onChange={(e) => renombrar(paso.indice, e.target.value)}
+                              />
                             </span>
-                            <input
-                              type="text"
-                              value={ajustes.nombres[String(paso.indice)] ?? String(paso.indice)}
-                              spellCheck={false}
-                              autoComplete="off"
-                              aria-label={`${tr('nombreDe')} ${paso.indice}`}
-                              className="w-24 rounded-md border border-transparent bg-transparent px-1 py-1 hover:border-line focus:border-line focus:outline-none"
-                              onChange={(e) => renombrar(paso.indice, e.target.value)}
-                            />
-                          </span>
-                        </th>
-                        {paso.enTabla.map((px, i) => (
-                          <td key={ANCHOS_TABLA[i]} className="p-3 text-right text-ink-muted">
-                            {px.toFixed(1)}
+                          </th>
+                          {paso.enTabla.map((px, i) => (
+                            <td key={ANCHOS_TABLA[i]} className="p-3 text-right text-ink-muted">
+                              {px.toFixed(1)}
+                            </td>
+                          ))}
+                          <td className="p-3 text-right text-ink-soft">
+                            {lleno === null ? tr('nunca') : `${lleno} px`}
                           </td>
-                        ))}
-                        <td className="p-3 text-right text-ink-soft">
-                          {lleno === null ? tr('nunca') : `${lleno} px`}
-                        </td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            </table>
-          </div>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
 
-          <p className="border-t border-line px-4 py-3 text-[var(--fs-small)] text-ink-soft">
-            {tr('llenoAyuda')}
-          </p>
+            <p className="border-t border-line px-4 py-3 text-[var(--fs-small)] text-ink-soft">
+              {tr('llenoAyuda')}
+            </p>
+          </div>
         </details>
 
         {/* -------- El CSS, también plegado --------
             Es el final del camino, no el principio: se abre cuando la
             escala ya está decidida y hay algo que llevarse. */}
-        <details data-tour="css" className="rounded-lg border border-line">
-          <summary className="cursor-pointer px-4 py-3 marker:content-none">
-            <span className="text-[length:var(--fs-h3)] font-semibold text-ink">
-              {tr('cssTitulo')}
-            </span>
-            <span className="mt-0.5 block max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
-              {tr('cssRaiz')}
-            </span>
-          </summary>
+        <details data-tour="css" className="acordeon">
+          <summary>{tr('cssTitulo')}</summary>
 
-          <div className="grid gap-3 border-t border-line p-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => copiar('css')}
-              className="justify-self-start"
-            >
+          <div className="cuerpo grid gap-3 p-4">
+            <p className="max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
+              {tr('cssRaiz')}
+            </p>
+            <Button variant="outline" size="sm" onClick={copiarCss} className="justify-self-start">
               {copiado === 'css' ? (
                 <CheckIcon aria-hidden="true" />
               ) : (

@@ -142,6 +142,30 @@ export function aplicarEsquema(
   return nombres;
 }
 
+/**
+ * El alto de línea que le va a un tamaño.
+ *
+ * Baja según sube el tamaño, y ese es todo el secreto: un renglón de
+ * texto grande necesita menos aire entre líneas que uno pequeño, porque
+ * el ojo ya tiene de sobra para volver al principio del siguiente.
+ *
+ *     11 px → 1,6      16 px → 1,5      31 px → 1,31     61 px → 1,2
+ *
+ * Se calcula sobre el tamaño MÍNIMO del paso y no sobre el máximo, y la
+ * dirección importa: el mínimo da la proporción más holgada de las dos,
+ * y pasarse de holgado se nota mucho menos que quedarse corto. Un
+ * titular con las líneas pegadas es ilegible; el mismo titular con una
+ * pizca de aire de más, no.
+ *
+ * Es una sugerencia, no una ley: la tipografía que se acabe usando puede
+ * pedir otra cosa. Por eso sale como una variable aparte, fácil de
+ * cambiar, y no metida dentro del `font-size`.
+ */
+export function alturaDeLinea(px: number): number {
+  const bruto = 1.1 + 0.4 * (16 / px);
+  return Number(Math.min(1.6, Math.max(1.1, bruto)).toFixed(2));
+}
+
 export interface Paso {
   /** 0 es el tamaño base; los negativos van por debajo. */
   indice: number;
@@ -153,6 +177,8 @@ export interface Paso {
   valor: string;
   /** Los píxeles a cada anchura de ANCHOS_TABLA, en el mismo orden. */
   enTabla: number[];
+  /** El alto de línea sugerido para este paso. */
+  interlineado: number;
   /** Apagado: se ve en la rampa, pero no sale ni en el CSS ni en la tabla. */
   omitido: boolean;
 }
@@ -234,6 +260,7 @@ export function construirEscala(ajustes: Ajustes): Paso[] {
       maxPx,
       valor,
       enTabla: [],
+      interlineado: alturaDeLinea(minPx),
       omitido: ajustes.omitidos.includes(i),
     };
 
@@ -348,8 +375,16 @@ export function aCss(pasos: Paso[]): string {
   const vivos = pasos.filter((p) => !p.omitido);
   if (!vivos.length) return ':root {\n}';
 
-  const ancho = Math.max(...vivos.map((p) => p.nombre.length));
-  const lineas = vivos.map((p) => `  ${(p.nombre + ':').padEnd(ancho + 1)} ${p.valor};`);
+  // El tamaño y su alto de línea van juntos, uno debajo del otro, y no
+  // en dos listas separadas: quien pega esto usa los dos a la vez, y
+  // buscar el `-lh` de cada paso al final del bloque sería un paseo.
+  const ancho = Math.max(...vivos.map((p) => p.nombre.length + 3));
+
+  const lineas = vivos.flatMap((p) => [
+    `  ${(p.nombre + ':').padEnd(ancho + 1)} ${p.valor};`,
+    `  ${(p.nombre + '-lh:').padEnd(ancho + 1)} ${p.interlineado};`,
+  ]);
+
   return `:root {\n${lineas.join('\n')}\n}`;
 }
 

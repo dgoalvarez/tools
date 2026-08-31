@@ -13,6 +13,7 @@ import {
   ANCHOS_TABLA,
   ESQUEMAS,
   aCss,
+  alturaDeLinea,
   aplicarEsquema,
   buscarNombresRepetidos,
   limpiarNombre,
@@ -154,7 +155,11 @@ console.log('\n4. El CSS generado es válido');
 {
   const css = aCss(construirEscala(base));
   afirmar(css.startsWith(':root {') && css.trim().endsWith('}'), 'el bloque abre y cierra');
-  afirmar((css.match(/--step-/g) || []).length === 8, 'declara los ocho pasos');
+  // Cada paso emite DOS variables: su tamaño y su alto de línea. Se
+  // cuentan solo las de tamaño, que son las que no acaban en `-lh`.
+  const tamanos = (css.match(/--step-[\w-]+:/g) || []).filter((v) => !v.endsWith('-lh:'));
+  afirmar(tamanos.length === 8, `declara los ocho pasos (${tamanos.length})`);
+  afirmar((css.match(/-lh:/g) || []).length === 8, 'y el alto de línea de cada uno');
   afirmar(!/NaN|Infinity|undefined/.test(css), 'no hay NaN ni Infinity en el CSS');
   afirmar(
     /rem/.test(css) && /vw/.test(css),
@@ -289,10 +294,8 @@ console.log('\nSaltarse pasos');
   );
 
   const css = aCss(pasosConSalto);
-  afirmar(
-    (css.match(/--text-/g) || []).length === 7,
-    `el CSS declara 7 variables y no 8 (${(css.match(/--text-/g) || []).length})`
-  );
+  const tamanos = (css.match(/--text-[\w-]+:/g) || []).filter((v) => !v.endsWith('-lh:'));
+  afirmar(tamanos.length === 7, `el CSS declara 7 tamaños y no 8 (${tamanos.length})`);
 
   // Y la otra mitad, que es la que hace útil la función: los nombres se
   // corren para no dejar hueco. Saltarse el +2 no deja «lg» y luego
@@ -324,6 +327,44 @@ console.log('\nSaltarse pasos');
     construirEscala({ ...base, nombres: { '0': 'title', '1': 'title' }, omitidos: [1] })
   );
   afirmar(repesApagadas.length === 0, 'dos nombres iguales no chocan si uno está apagado');
+}
+
+console.log('\nEl alto de línea sugerido');
+{
+  // Lo único que no puede fallar: que baje al subir el tamaño. Si en
+  // algún tramo subiera, la sugerencia estaría diciendo lo contrario de
+  // lo que dice explicar.
+  let monotono = true;
+  let previo = Infinity;
+  for (let px = 8; px <= 200; px++) {
+    const lh = alturaDeLinea(px);
+    if (lh > previo + 0.0001) monotono = false;
+    previo = lh;
+  }
+  afirmar(monotono, 'nunca sube: a más tamaño, menos aire entre líneas');
+
+  afirmar(alturaDeLinea(16) === 1.5, `16 px pide 1,5 (${alturaDeLinea(16)})`);
+  afirmar(alturaDeLinea(61) < 1.3, `61 px pide menos de 1,3 (${alturaDeLinea(61)})`);
+  afirmar(alturaDeLinea(11) === 1.6, `11 px se queda en el tope de 1,6 (${alturaDeLinea(11)})`);
+  afirmar(alturaDeLinea(400) >= 1.1, `un tamaño absurdo no baja del suelo (${alturaDeLinea(400)})`);
+
+  // Sale del tamaño MÍNIMO del paso, que es la proporción más holgada de
+  // las dos. Pasarse de holgado se nota menos que quedarse corto.
+  const pasos = construirEscala(base);
+  const p3 = pasos.find((p) => p.indice === 3)!;
+  afirmar(
+    p3.interlineado === alturaDeLinea(p3.minPx),
+    `el paso +3 usa su mínimo (${p3.minPx.toFixed(0)} px → ${p3.interlineado})`
+  );
+
+  // Y llega al CSS pegado a su tamaño, no en una lista aparte al final.
+  const css = aCss(pasos);
+  const lineas = css.split('\n');
+  const iTam = lineas.findIndex((l) => l.includes('--step-0:'));
+  afirmar(
+    lineas[iTam + 1]?.includes('--step-0-lh:') ?? false,
+    'en el CSS va en la línea de justo debajo de su tamaño'
+  );
 }
 
 console.log(fallos === 0 ? '\nTODO CORRECTO\n' : `\n${fallos} FALLOS\n`);

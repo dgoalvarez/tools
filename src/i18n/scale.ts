@@ -8,16 +8,8 @@ export const ESCALA = {
   ajustes: { es: 'La escala', en: 'The scale' },
   baseMin: { es: 'Base en la ventana estrecha', en: 'Base at the narrow end' },
   baseMax: { es: 'Base en la ventana ancha', en: 'Base at the wide end' },
-  baseAyuda: {
-    es: 'El paso 0, que suele ser el texto del cuerpo.',
-    en: 'Step 0, usually your body text.',
-  },
   razonMin: { es: 'Proporción estrecha', en: 'Narrow ratio' },
   razonMax: { es: 'Proporción ancha', en: 'Wide ratio' },
-  razonAyuda: {
-    es: 'Cuánto crece cada paso respecto al anterior. Dos proporciones distintas hacen que en pantallas grandes la jerarquía se abra más.',
-    en: 'How much each step grows over the previous one. Two different ratios let the hierarchy open up more on large screens.',
-  },
   personalizada: { es: 'A medida', en: 'Custom' },
   pasos: { es: 'Pasos', en: 'Steps' },
   arriba: { es: 'Arriba', en: 'Up' },
@@ -25,14 +17,19 @@ export const ESCALA = {
   ventana: { es: 'Ventana', en: 'Viewport' },
   anchoMin: { es: 'Ancho mínimo', en: 'Minimum width' },
   anchoMax: { es: 'Ancho máximo', en: 'Maximum width' },
-  anchoAyuda: {
-    es: 'Entre estos dos anchos el tamaño crece; fuera, se queda fijo.',
-    en: 'Between these two widths the size grows; outside them it stays put.',
-  },
   prefijo: { es: 'Prefijo', en: 'Prefix' },
 
   // ---------- La tabla ----------
-  tablaTitulo: { es: 'A cuántos píxeles queda de verdad', en: 'What it really measures' },
+  /**
+   * Los títulos de los dos acordeones dicen QUÉ hay dentro, no para qué
+   * sirve. Cerrado, el título es lo único que se ve: «A cuántos píxeles
+   * queda de verdad» describía una idea; «La tabla de tamaños» dice que
+   * dentro hay una tabla, que es lo que hay que decidir antes de abrir.
+   */
+  tablaTitulo: {
+    es: 'La tabla de tamaños, anchura por anchura',
+    en: 'The table of sizes, width by width',
+  },
   tablaIntro: {
     es: 'Esta es la tabla que casi ninguna herramienta enseña, y es donde se ven los problemas: un titular que ya está al tope en un portátil mientras el cuerpo sigue pegado a su mínimo se lee «grande y apretado» a la vez.',
     en: 'This is the table almost no tool shows, and it is where the problems appear: a heading already maxed out on a laptop while the body is still stuck at its minimum reads as “big and cramped” at once.',
@@ -56,22 +53,17 @@ export const ESCALA = {
   nunca: { es: 'no crece', en: 'does not grow' },
 
   // ---------- La muestra ----------
-  muestraTitulo: { es: 'A tu ventana, ahora mismo', en: 'At your window, right now' },
-  muestraIntro: {
-    es: 'Cada línea usa su clamp() de verdad. Estrecha o ensancha la ventana y verás la escala moverse.',
-    en: 'Each line uses its real clamp(). Narrow or widen the window and you will see the scale move.',
-  },
+  muestraTitulo: { es: 'La escala, a tu ventana', en: 'The scale, at your window' },
   muestraTexto: { es: 'Tipografía que respira', en: 'Type that breathes' },
 
   // ---------- El CSS ----------
-  cssTitulo: { es: 'Para pegar en tu hoja de estilos', en: 'To paste into your stylesheet' },
+  cssTitulo: { es: 'El CSS, listo para copiar', en: 'The CSS, ready to copy' },
   cssRaiz: {
     es: 'Calculado sobre una raíz de 16 px, que es lo que traen todos los navegadores. El término en rem no es adorno: un font-size que fuera solo vw dejaría de responder al zoom.',
     en: 'Computed against a 16 px root, which is what every browser ships. The rem term is not decoration: a font-size made only of vw would stop responding to zoom.',
   },
   copiarCss: { es: 'Copiar el CSS', en: 'Copy the CSS' },
   copiado: { es: 'Copiado', en: 'Copied' },
-  copiarEnlace: { es: 'Copiar el enlace de esta escala', en: 'Copy the link to this scale' },
 
   // ---------- Avisos ----------
   cruceTitulo: { es: 'Dos pasos se cruzan', en: 'Two steps cross over' },
@@ -86,10 +78,6 @@ export const ESCALA = {
   esquema: { es: 'Esquema', en: 'Scheme' },
   aMedida: { es: 'A medida', en: 'Custom' },
   nombreDe: { es: 'Nombre del paso', en: 'Name of step' },
-  nombresAyuda: {
-    es: 'Cada paso se puede renombrar en la tabla. Un nombre vacío lo devuelve a su número.',
-    en: 'Each step can be renamed in the table. An empty name sends it back to its number.',
-  },
   repetidoTitulo: { es: 'Hay nombres repetidos', en: 'Some names are repeated' },
   repetidoCuerpo: {
     es: 'Dos pasos con el mismo nombre declaran dos veces la misma variable CSS: la segunda pisa a la primera y uno de los dos tamaños desaparece sin avisar.',

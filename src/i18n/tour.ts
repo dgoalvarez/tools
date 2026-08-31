@@ -227,8 +227,8 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
       ancla: 'rampa',
       titulo: { es: 'La escala', en: 'The scale' },
       cuerpo: {
-        es: 'Cada línea trae su nombre de variable y el par de tamaños que genera: el mínimo y el máximo del clamp(). El nombre se edita aquí mismo, pulsando encima.',
-        en: 'Each line carries its variable name and the pair of sizes it generates: the clamp’s minimum and maximum. Names are edited right here, by clicking on them.',
+        es: 'Cada línea trae su nombre de variable, el par de tamaños que genera —el mínimo y el máximo del clamp()— en píxeles y en rem, y el alto de línea que le va. El alto de línea baja según sube el tamaño: un renglón grande necesita menos aire que uno pequeño. Es una sugerencia, y sale como variable aparte para que puedas cambiarla. El nombre se edita aquí mismo, pulsando encima.',
+        en: 'Each line carries its variable name, the pair of sizes it generates — the clamp’s minimum and maximum — in pixels and in rem, and the line height that suits it. Line height goes down as size goes up: a big line needs less air than a small one. It is a suggestion, and it comes out as a separate variable so you can change it. Names are edited right here, by clicking on them.',
       },
     },
     {
@@ -251,8 +251,8 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
       ancla: 'css',
       titulo: { es: 'Listo para pegar', en: 'Ready to paste' },
       cuerpo: {
-        es: 'El bloque de variables, con los pasos apagados fuera. Va en :root, o donde tu proyecto guarde sus variables.',
-        en: 'The block of variables, with any switched-off steps left out. It goes in :root, or wherever your project keeps its variables.',
+        es: 'El bloque de variables, con los pasos apagados fuera. Cada paso trae dos: su tamaño y su alto de línea, uno debajo del otro. Va en :root, o donde tu proyecto guarde sus variables.',
+        en: 'The block of variables, with any switched-off steps left out. Each step brings two: its size and its line height, one under the other. It goes in :root, or wherever your project keeps its variables.',
       },
     },
   ],

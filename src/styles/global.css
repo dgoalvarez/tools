@@ -1592,10 +1592,15 @@
     border-block-start: 1px solid var(--line);
   }
 
+  /* Sin tope de medida a propósito.
+     `--measure` son 68 ch, que a 13 px se quedan en unos 476 px dentro
+     de una tarjeta de 700: la descripción ocupaba dos tercios de su caja
+     y el resto quedaba en blanco, con el texto pareciendo recortado. Son
+     dos o tres líneas, no un artículo; el ancho de la tarjeta es la
+     medida que les toca. */
   .acordeon .cuerpo > .intro {
     margin: 0;
     padding: 0.875rem 1rem 0;
-    max-width: var(--measure);
     font-size: var(--fs-small);
     color: var(--ink-soft);
   }

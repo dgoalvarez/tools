@@ -466,7 +466,7 @@ export default function TypeScale({ lang }: Props) {
             <p className="mt-2 font-mono text-[var(--fs-small)] text-ink-muted">
               {repetidos.join(' · ')}
             </p>
-            <p className="mt-3 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-muted">
+            <p className="mt-3 text-[var(--fs-small)] text-ink-muted">
               {tr('repetidoCuerpo')}
             </p>
           </section>
@@ -484,7 +484,7 @@ export default function TypeScale({ lang }: Props) {
                 </li>
               ))}
             </ul>
-            <p className="mt-3 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-muted">
+            <p className="mt-3 text-[var(--fs-small)] text-ink-muted">
               {tr('cruceCuerpo')}
             </p>
           </section>
@@ -548,7 +548,7 @@ export default function TypeScale({ lang }: Props) {
           </div>
 
           {ajustes.omitidos.length > 0 && (
-            <p className="mt-3 max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
+            <p className="mt-3 text-[var(--fs-small)] text-ink-soft">
               {tr('saltadosAyuda')}
             </p>
           )}
@@ -644,7 +644,7 @@ export default function TypeScale({ lang }: Props) {
           <summary>{tr('cssTitulo')}</summary>
 
           <div className="cuerpo grid gap-3 p-4">
-            <p className="max-w-[var(--measure)] text-[var(--fs-small)] text-ink-soft">
+            <p className="text-[var(--fs-small)] text-ink-soft">
               {tr('cssRaiz')}
             </p>
             <Button variant="outline" size="sm" onClick={copiarCss} className="justify-self-start">

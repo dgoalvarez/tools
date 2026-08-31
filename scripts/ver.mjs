@@ -69,6 +69,23 @@ if (!existsSync(dist)) {
  */
 const VISTAS = [
   { nombre: 'portada', ruta: 'es', ancho: 1440, alto: 900 },
+  // El riel desplegado, que es el estado que hay que mirar además del
+  // plegado: se guarda en el <html> antes del primer pintado.
+  {
+    nombre: 'riel-abierto',
+    ruta: 'es/paleta',
+    ancho: 1440,
+    alto: 1000,
+    guion: "document.documentElement.dataset.riel = 'abierto';",
+  },
+  // La hoja de móvil abierta.
+  {
+    nombre: 'hoja-movil',
+    ruta: 'es/paleta',
+    ancho: 485,
+    alto: 900,
+    clics: ['[data-hoja-abrir]'],
+  },
   { nombre: 'husos', ruta: 'es/horarios', ancho: 1440, alto: 900 },
   // Con ciudades de verdad: es donde se ve si la lista aguanta. Van por
   // la dirección, que es como se comparte un cálculo en este sitio.

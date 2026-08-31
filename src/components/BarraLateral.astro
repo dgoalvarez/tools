@@ -1,115 +1,109 @@
 ---
 /**
- * La barra lateral de una herramienta.
+ * El riel: la navegación de escritorio.
  *
- * Está siempre desplegada, y ese es el cambio que importa respecto a lo
- * que había: el riel que se abría al pasar por encima obligaba a un gesto
- * que no existe con teclado ni en una tableta.
+ * ---------------------------------------------------------------------
+ * Por qué se pliega
  *
- * La herramienta abierta se fija arriba, bajo su propio rótulo y con el
- * acento de su materia, y **sale de su grupo**: cambia de sitio, no
- * aparece dos veces. Con la barra al lado no hacen falta migas de pan: la
- * ruta ya está a la vista.
+ * La barra de antes medía entre 272 y 340 px y estaba siempre abierta,
+ * con el nombre y el resumen de cada herramienta. Con tres eso era una
+ * guía; con seis es una pared, y con doce será una lista que hay que
+ * leer entera para encontrar algo. Y todo ese ancho lo paga la
+ * herramienta, que es lo que se ha venido a usar.
  *
- * Es HTML de verdad —enlaces, no botones— porque es navegación: tiene que
- * funcionar aunque el JavaScript no llegue.
+ * Plegado son 4,25 rem de iconos. Se abre con el botón de arriba y **la
+ * herramienta se corre**: no flota encima ni tapa nada, así que abrirlo
+ * para leer un nombre no esconde lo que estabas mirando. Lo que se elija
+ * se recuerda.
+ *
+ * ---------------------------------------------------------------------
+ * El orden
+ *
+ * Marca, buscador, herramientas, idioma y tema. De arriba abajo por
+ * frecuencia: la marca y el buscador son la salida, las herramientas son
+ * el trabajo, y el idioma y el tema se tocan una vez en la vida — por eso
+ * están al pie y no compitiendo con lo demás.
  */
 import Icono from './Icono.astro';
 import Marca from './Marca.astro';
+import NavHerramientas from './NavHerramientas.astro';
 import ThemeToggle from './ThemeToggle';
 import { UI } from '../i18n/ui';
-import { TOOLS } from '../i18n/tools';
-import { AMBITOS, ORDEN_AMBITOS, ambitoPrincipal } from '../i18n/labels';
 import { t, otherLang, LANG_NAME, type Lang } from '../i18n/config';
-import { route, TOOL_KEYS, type ToolKey } from '../i18n/routes';
+import { route, type PageKey, type ToolKey } from '../i18n/routes';
 
 interface Props {
   lang: Lang;
-  /** La herramienta abierta: la que se fija arriba. */
-  abierta: ToolKey;
+  /** La herramienta abierta, o null en la portada. */
+  abierta: ToolKey | null;
+  /** La página actual, para que el conmutador de idioma no salga de ella. */
+  pagina: PageKey;
 }
 
-const { lang, abierta } = Astro.props;
+const { lang, abierta, pagina } = Astro.props;
 const other = otherLang(lang);
-
-/** Las demás, agrupadas por ámbito. La abierta ya no está en su grupo. */
-const grupos = ORDEN_AMBITOS.map((ambito) => ({
-  ambito,
-  herramientas: TOOL_KEYS.filter(
-    (key) => key !== abierta && ambitoPrincipal(TOOLS[key].etiquetas) === ambito
-  ),
-})).filter((grupo) => grupo.herramientas.length > 0);
 ---
 
-<nav class="barra-lateral" aria-label={t(UI.navTools, lang)}>
-  {/* La marca a la izquierda y el buscador a la derecha: cada uno en su
-      borde, que es lo que hace que la fila se lea como dos cosas y no
-      como una. */}
-  <div class="barra-marca">
-    <a href={route('home', lang)} class="hover:text-[var(--acento)]">
+<nav class="riel" aria-label={t(UI.navTools, lang)}>
+  <div class="riel-marca">
+    <a href={route('home', lang)} class="riel-logo" title={t(UI.siteName, lang)}>
       <Marca />
     </a>
 
-    {/* Sin JavaScript este botón no abriría nada, así que nace oculto y
-        es el script quien lo enseña. */}
-    <button type="button" class="pastilla cursor-pointer" data-bento hidden>
-      <Icono nombre="lupa" tamano={16} titulo={t(UI.verTodas, lang)} />
+    {/*
+      El botón de plegar nace oculto: sin JavaScript no plegaría nada, y
+      un botón que no responde es peor que uno que no está. Con el riel
+      plegado la marca no cabe, así que este botón pasa a ser lo único de
+      la fila y se centra solo.
+    */}
+    <button
+      type="button"
+      class="riel-plegar"
+      data-riel-plegar
+      aria-expanded="false"
+      aria-label={t(UI.desplegarMenu, lang)}
+      title={t(UI.desplegarMenu, lang)}
+      data-desplegar={t(UI.desplegarMenu, lang)}
+      data-plegar={t(UI.plegarMenu, lang)}
+      hidden
+    >
+      <Icono nombre="barras" tamano={18} />
     </button>
   </div>
 
-  <div class="barra-lista">
-    <p class="barra-grupo">{t(UI.abierta, lang)}</p>
-    <a href={route(abierta, lang)} class="barra-item" aria-current="page">
-      <span class="icono"><Icono nombre={TOOLS[abierta].icono} tamano={19} /></span>
-      <span class="min-w-0">
-        <span class="nombre">{t(TOOLS[abierta].name, lang)}</span>
-        <span class="resumen">{t(TOOLS[abierta].summary, lang)}</span>
-      </span>
-    </a>
+  {/* Sin JavaScript no abriría el buscador, así que también nace oculto. */}
+  <button
+    type="button"
+    class="riel-item riel-buscar"
+    data-bento
+    title={t(UI.verTodas, lang)}
+    hidden
+  >
+    <span class="icono"><Icono nombre="lupa" tamano={18} /></span>
+    <span class="nombre">{t(UI.verTodas, lang)}</span>
+  </button>
 
-    <div class="barra-corte"></div>
-
-    {
-      grupos.map((grupo) => (
-        <>
-          <p class="barra-grupo">{t(AMBITOS[grupo.ambito], lang)}</p>
-          {grupo.herramientas.map((key) => (
-            <a href={route(key, lang)} class="barra-item">
-              <span class="icono">
-                <Icono nombre={TOOLS[key].icono} tamano={19} />
-              </span>
-              <span class="min-w-0">
-                <span class="nombre">{t(TOOLS[key].name, lang)}</span>
-                <span class="resumen">{t(TOOLS[key].summary, lang)}</span>
-              </span>
-            </a>
-          ))}
-        </>
-      ))
-    }
-
-    {/* En móvil la barra es una fila de iconos abajo y no caben ni la
-        marca ni el pie, así que idioma y tema se quedarían fuera de
-        alcance. Este «Más» abre el lanzador, que los lleva dentro. */}
-    <button type="button" class="barra-item solo-movil cursor-pointer" data-bento hidden>
-      <span class="icono"><Icono nombre="mas" tamano={19} /></span>
-      <span class="min-w-0">
-        <span class="nombre">{t(UI.mas, lang)}</span>
-      </span>
-    </button>
+  <div class="riel-lista">
+    <NavHerramientas lang={lang} abierta={abierta} />
   </div>
 
-  <div class="barra-pie">
+  <div class="riel-pie">
     <a
-      href={route(abierta, other)}
-      class="pastilla"
+      href={route(pagina, other)}
+      class="riel-item"
       lang={other}
       hreflang={other}
       title={t(UI.switchLanguage, lang)}
     >
-      {LANG_NAME[other]}
+      <span class="icono idioma">{LANG_NAME[other].slice(0, 2)}</span>
+      <span class="nombre">{LANG_NAME[other]}</span>
     </a>
 
-    <ThemeToggle client:load toDark={t(UI.toDarkMode, lang)} toLight={t(UI.toLightMode, lang)} />
+    <ThemeToggle
+      client:load
+      toDark={t(UI.toDarkMode, lang)}
+      toLight={t(UI.toLightMode, lang)}
+      conNombre
+    />
   </div>
 </nav>

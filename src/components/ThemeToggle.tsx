@@ -18,9 +18,17 @@ interface Props {
   toDark: string;
   /** «Cambiar a modo claro», en el idioma de la página. */
   toLight: string;
+  /**
+   * Con el nombre al lado del icono, como el resto del riel.
+   *
+   * En el riel es una fila más y necesita su etiqueta cuando está
+   * desplegado; en la barra de la portada es una pastilla redonda y solo
+   * lleva icono.
+   */
+  conNombre?: boolean;
 }
 
-export default function ThemeToggle({ toDark, toLight }: Props) {
+export default function ThemeToggle({ toDark, toLight, conNombre = false }: Props) {
   function toggle() {
     const el = document.documentElement;
     const chosen = el.dataset.theme;
@@ -38,6 +46,21 @@ export default function ThemeToggle({ toDark, toLight }: Props) {
       // Navegación privada o almacenamiento bloqueado: el tema cambia
       // igual, solo que no se recuerda al recargar.
     }
+  }
+
+  if (conNombre) {
+    return (
+      <button type="button" onClick={toggle} className="riel-item cursor-pointer">
+        <span className="icono">
+          <MoonIcon aria-hidden="true" size={18} className="dark:hidden" />
+          <SunIcon aria-hidden="true" size={18} className="hidden dark:block" />
+        </span>
+        {/* El nombre se ve con el riel desplegado y lo lee siempre un
+            lector de pantalla, plegado o no. */}
+        <span className="nombre dark:hidden">{toDark}</span>
+        <span className="nombre hidden dark:inline">{toLight}</span>
+      </button>
+    );
   }
 
   return (

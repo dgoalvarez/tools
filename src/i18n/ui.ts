@@ -43,6 +43,10 @@ export const UI = {
   abierta: { es: 'Abierta', en: 'Open' },
   cerrar: { es: 'Cerrar', en: 'Close' },
   /** El cuarto elemento de la barra de móvil: abre el lanzador. */
+  desplegarMenu: { es: 'Desplegar el menú', en: 'Expand the menu' },
+  plegarMenu: { es: 'Plegar el menú', en: 'Collapse the menu' },
+  abrirMenu: { es: 'Abrir el menú', en: 'Open the menu' },
+  cerrarMenu: { es: 'Cerrar el menú', en: 'Close the menu' },
   mas: { es: 'Más', en: 'More' },
 
   // ---------- Portada ----------

@@ -9,6 +9,18 @@
  *
  * La aritmética vive en `src/lib/rampa.ts`. Aquí solo están el estado, la
  * cuadrícula y el panel de detalle.
+ *
+ * ---------------------------------------------------------------------
+ * Nada viaja en la dirección, y es a propósito
+ *
+ * Las otras herramientas guardan sus ajustes en la URL para poder
+ * compartir un cálculo por un enlace. Esta no. Una paleta a medio hacer
+ * —seis tonalidades, tres retocadas a mano— no es un cálculo que se
+ * mande: es un borrador, y un borrador que se lleva en la barra de
+ * direcciones acaba compartido sin querer, o pisado al abrir un enlace
+ * viejo. Aquí lo que se comparte es el CSS, que es el resultado.
+ *
+ * Recargar empieza de cero, y eso también es la decisión.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckIcon, PencilSimpleIcon, PlusIcon, TrashIcon, WarningIcon } from '@phosphor-icons/react';
@@ -43,7 +55,6 @@ import {
   type Rampa,
   type Tonalidad,
 } from '@/lib/rampa';
-import { escribirParams, leerParams } from '@/lib/url-state';
 
 /** El texto con el que se juzga cada paso: cuerpo normal. */
 const TEXTO = { px: 16, peso: 400 };
@@ -77,15 +88,6 @@ function iniciales(): Tonalidad[] {
   }));
 }
 
-/** Las claves de la dirección, cortas para que el enlace no sea un muro. */
-const CLAVES: Record<keyof Ajustes, string> = {
-  pasos: 'n',
-  claridadMax: 'lx',
-  claridadMin: 'ln',
-  cromaCentro: 'cc',
-  derivaTono: 'dt',
-};
-
 const BOTON =
   'border border-[var(--solido)] bg-[var(--solido)] font-semibold text-[var(--solido-ink)] hover:bg-[color-mix(in_srgb,var(--solido)_86%,#000)]';
 
@@ -99,7 +101,6 @@ export default function Paleta({ lang }: Props) {
   const [tonalidades, setTonalidades] = useState<Tonalidad[]>(iniciales);
   const [ajustes, setAjustes] = useState<Ajustes>(AJUSTES_INICIALES);
   const [prefijo, setPrefijo] = useState('');
-  const [enlaceLeido, setEnlaceLeido] = useState(false);
 
   /** Qué casilla acaba de copiarse: «idDeTonalidad/nombreDePaso». */
   const [copiado, setCopiado] = useState<string | null>(null);
@@ -107,77 +108,6 @@ export default function Paleta({ lang }: Props) {
       el mismo color dos veces vuelva a avisar. */
   const [aviso, setAviso] = useState<{ texto: string; n: number } | null>(null);
   const [formato, setFormato] = useState<'oklch' | 'hex'>('hex');
-
-  // ---------- al llegar ----------
-
-  useEffect(() => {
-    const p = leerParams();
-    const leidos: Partial<Ajustes> = {};
-
-    for (const [campo, clave] of Object.entries(CLAVES) as [keyof Ajustes, string][]) {
-      const crudo = p.get(clave);
-      if (crudo === null) continue;
-      const n = Number(crudo);
-      if (!Number.isFinite(n)) continue;
-      const { min, max } = LIMITES[campo];
-      leidos[campo] = Math.min(max, Math.max(min, n));
-    }
-    if (Object.keys(leidos).length) setAjustes((previo) => ({ ...previo, ...leidos }));
-
-    const pre = p.get('p');
-    if (pre !== null) setPrefijo(limpiarNombre(pre));
-
-    /*
-     * Las tonalidades viajan como «nombre:hex» separadas por comas, y la
-     * lectura se sanea entera: el nombre pasa por `limpiarNombre` y el
-     * color por `leerColor`. Lo que llega por una dirección acaba dentro
-     * de un bloque de CSS que alguien va a pegar en su proyecto.
-     */
-    const crudas = p.get('t');
-    if (crudas) {
-      const leidas = crudas
-        .split(',')
-        .slice(0, 12)
-        .map((trozo, i) => {
-          const [nombre, hex] = trozo.split(':');
-          const color = leerColor(hex ?? '');
-          if (!color) return null;
-          const leida: Tonalidad = {
-            id: `u${i}`,
-            nombre: limpiarNombre(nombre ?? '') || `color${i + 1}`,
-            semilla: color.hex,
-            anclaForzada: null,
-            retoques: {},
-          };
-          return leida;
-        })
-        .filter((x): x is Tonalidad => x !== null);
-
-      if (leidas.length) setTonalidades(leidas);
-    }
-
-    setEnlaceLeido(true);
-  }, []);
-
-  useEffect(() => {
-    if (!enlaceLeido) return;
-
-    const salida: Record<string, string | null> = {};
-    for (const [campo, clave] of Object.entries(CLAVES) as [keyof Ajustes, string][]) {
-      salida[clave] = ajustes[campo] === AJUSTES_INICIALES[campo] ? null : String(ajustes[campo]);
-    }
-    salida.p = prefijo || null;
-
-    const dePartida = iniciales();
-    const iguales =
-      tonalidades.length === dePartida.length &&
-      tonalidades.every(
-        (t, i) => t.nombre === dePartida[i].nombre && t.semilla === dePartida[i].semilla
-      );
-    salida.t = iguales ? null : tonalidades.map((t) => `${t.nombre}:${t.semilla.slice(1)}`).join(',');
-
-    escribirParams(salida);
-  }, [enlaceLeido, ajustes, tonalidades, prefijo]);
 
   // ---------- lo calculado ----------
 

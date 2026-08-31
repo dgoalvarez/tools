@@ -336,323 +336,400 @@
 }
 
 /* ============================================================
-   La barra lateral
+   El riel
 
-   Es toda la navegación de una herramienta: la marca, la que está
-   abierta —fijada arriba—, las demás agrupadas por ámbito, y el idioma y
-   el tema abajo. La portada no la lleva: ahí manda una barra superior
-   fina, porque el home es la pantalla que se mira entera.
+   La navegación de una herramienta, y de la portada: la marca, el
+   buscador, las herramientas agrupadas por ámbito, y el idioma y el tema
+   al pie.
 
-   Tres reglas de fondo:
+   Tres decisiones, y las tres tienen la misma causa —que el número de
+   herramientas crece:
 
-   1. Está siempre desplegada. La versión que se plegaba obligaba a pasar
-      el ratón por encima para leer un nombre, y eso no existe con
-      teclado ni en una tableta.
-   2. Va con `position: fixed` y el contenido se aparta con un relleno, no
-      con una columna. Así la herramienta se desplaza sin que la
-      navegación se vaya con ella.
-   3. En un móvil se convierte en una barra inferior de iconos: donde no
-      hay ratón, el pulgar llega antes abajo que arriba.
+   1. **Se pliega.** La barra de antes medía hasta 340 px y estaba
+      siempre abierta con el nombre y el resumen de cada herramienta. Con
+      tres era una guía; con seis es una pared, y todo ese ancho lo paga
+      la herramienta, que es a lo que se ha venido. Plegado son 4,25 rem
+      de iconos.
+
+   2. **Está en el flujo, no encima.** Va en una fila con el contenido,
+      así que desplegarlo CORRE la herramienta en vez de taparla: se lee
+      un nombre sin perder de vista lo que se estaba mirando. La versión
+      anterior era `position: fixed` y el contenido se apartaba con un
+      relleno.
+
+   3. **En móvil no hay riel.** Hay una barra fina arriba y una hoja que
+      entra por la izquierda. La fila de iconos de abajo que había antes
+      dejó cada ficha en 55 px con seis herramientas, y con ocho no cabe:
+      su único techo es el ancho de la pantalla, y ese no crece.
    ============================================================ */
 
 :root {
-  --barra: clamp(272px, 20vw, 340px);
-  /* Alto de la barra de móvil. Da para el icono y DOS líneas de nombre:
-     con cinco herramientas «Escala tipográfica» ya no cabe en una, y con
-     4,25rem la segunda línea se salía por debajo de la barra. */
-  --barra-movil: 4.75rem;
+  /* Plegado y desplegado. La transición va entre estos dos. */
+  --riel: 4.25rem;
+  --riel-abierto: 15.5rem;
+  /* Alto de la barra de móvil. */
+  --barra-movil: 3.25rem;
 }
 
 @layer components {
-  .barra-lateral {
-    position: fixed;
-    inset-block: 0;
-    inset-inline-start: 0;
+  .marco {
+    display: flex;
+    align-items: stretch;
+    min-height: 100dvh;
+  }
+
+  .riel {
+    position: sticky;
+    inset-block-start: 0;
     z-index: 40;
+    flex: none;
+    align-self: flex-start;
 
     display: flex;
     flex-direction: column;
-    width: var(--barra);
+    gap: 0.25rem;
+    width: var(--riel);
+    height: 100dvh;
+    padding: 0.625rem 0.5rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 
     background: var(--surface);
     border-inline-end: 1px solid var(--line);
+
+    /* Solo el ancho se anima. Animar el contenido haría que los nombres
+       aparecieran estirándose, que se lee como un fallo de pintado. */
+    transition: width 0.18s ease;
   }
 
-  /* Solo las páginas de herramienta llevan barra; la portada no. */
-  .con-barra {
-    padding-inline-start: var(--barra);
+  :root[data-riel='abierto'] .riel {
+    width: var(--riel-abierto);
   }
 
-  /* Marca a la izquierda, buscador a la derecha. Cada uno en su borde:
-     con los dos pegados al mismo lado la fila parecía una sola pieza. */
-  .barra-marca {
+  @media (prefers-reduced-motion: reduce) {
+    .riel {
+      transition: none;
+    }
+  }
+
+  /* ---------- La marca y el botón de plegar ---------- */
+  .riel-marca {
     display: flex;
     align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding-inline: 0.25rem;
+  }
+
+  :root[data-riel='abierto'] .riel-marca {
     justify-content: space-between;
-    gap: 0.75rem;
-    min-height: 3.75rem;
-    padding-inline: 1.25rem;
-    border-block-end: 1px solid var(--line);
+    padding-inline: 0.5rem;
+  }
+
+  .riel-logo {
+    display: flex;
+    align-items: center;
+    min-width: 0;
     color: var(--ink);
   }
 
-  .barra-lista {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.4375rem;
-    padding: 0.875rem;
-    overflow-y: auto;
+  .riel-logo:hover {
+    color: var(--acento);
   }
 
-  .barra-grupo {
+  /* Plegado no cabe la marca, así que se va y el botón se queda solo en
+     el centro. Sigue llevando a la portada el logo de la hoja de móvil y
+     el del pie, así que no se pierde la salida. */
+  :root:not([data-riel='abierto']) .riel .riel-logo {
+    display: none;
+  }
+
+  .riel-plegar {
+    display: grid;
+    place-items: center;
     flex: none;
-    margin: 0;
-    padding: 0.75rem 0.625rem 0.1875rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: none;
+    color: var(--ink-muted);
+    cursor: pointer;
+  }
+
+  .riel-plegar:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+
+  .riel-plegar:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  /* ---------- Una fila del riel ---------- */
+  .riel-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-height: 2.5rem;
+    padding: 0.375rem 0.5rem;
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: none;
+    font: inherit;
+    font-size: 0.875rem;
+    color: var(--ink-muted);
+    text-align: start;
+    white-space: nowrap;
+  }
+
+  .riel-item:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+
+  .riel-item:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  .riel-item .icono {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .riel-item .icono.idioma {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .riel-item .nombre {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /*
+    Plegado, el nombre se esconde con `clip` y no con `display: none`.
+
+    La diferencia importa: lo que se quita del árbol deja de leerlo un
+    lector de pantalla, y entonces seis iconos sin nombre son seis
+    enlaces sin nombre. Recortado sigue ahí, se anuncia, y no ocupa.
+  */
+  :root:not([data-riel='abierto']) .riel .riel-item .nombre {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  :root:not([data-riel='abierto']) .riel .riel-item {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  /* La abierta, con el acento de su materia. Se queda en su sitio dentro
+     del grupo: fijarla arriba cambiaba el orden de la lista al navegar, y
+     la costumbre de dónde está cada cosa se rompía en cada clic. */
+  .riel-item[aria-current='page'] {
+    background: color-mix(in srgb, var(--acento) 14%, var(--surface));
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .riel-item[aria-current='page'] .icono {
+    color: var(--acento);
+  }
+
+  /* ---------- Los grupos ---------- */
+  .riel-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    flex: 1;
+    min-height: 0;
+    margin-block-start: 0.25rem;
+  }
+
+  .riel-grupo {
+    margin: 0.625rem 0 0.25rem;
+    padding-inline: 0.5rem;
     font-size: 0.66rem;
-    font-weight: 500;
-    letter-spacing: 0.12em;
+    font-weight: 600;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--ink-soft);
   }
 
-  .barra-item {
-    display: flex;
-    /* Sin esto, con la ventana baja la columna flexible aplastaba las
-       fichas por debajo de su contenido y el resumen se salía de la caja
-       y se comía el rótulo del grupo siguiente. La lista ya tiene
-       `overflow-y: auto`: lo correcto es que ruede, no que se aplaste. */
-    flex: none;
-    gap: 0.75rem;
-    min-height: 2.75rem;
-    padding: 0.75rem;
-    border: 1px solid var(--line);
-    border-radius: 0.6875rem;
-    color: var(--ink-muted);
-    text-decoration: none;
-  }
-
-  .barra-item:hover {
-    border-color: color-mix(in srgb, var(--acento) 45%, var(--line));
-    color: var(--ink);
-  }
-
-  .barra-item .icono {
-    flex: none;
-    display: grid;
-    place-items: center;
-    width: 2.125rem;
-    height: 2.125rem;
-    border-radius: 0.5625rem;
-    background: color-mix(in srgb, var(--ink) 7%, transparent);
-    color: var(--ink-muted);
-  }
-
-  .barra-item .nombre {
-    font-size: 0.875rem;
-    font-weight: 500;
-    letter-spacing: -0.01em;
-  }
-
-  .barra-item .resumen {
-    display: block;
-    margin-block-start: 0.1875rem;
-    font-size: 0.75rem;
-    line-height: 1.45;
-    color: var(--ink-soft);
-  }
-
-  /* La abierta sube al primer sitio con su acento, y sale de su grupo:
-     cambia de posición, no se duplica. */
-  .barra-item[aria-current='page'] {
-    background: color-mix(in srgb, var(--acento) 13%, transparent);
-    border-color: color-mix(in srgb, var(--acento) 45%, transparent);
-    color: var(--ink);
-  }
-
-  .barra-item[aria-current='page'] .icono {
-    background: var(--acento);
-    color: var(--brand-ink);
-  }
-
-  .barra-item[aria-current='page'] .nombre {
-    font-weight: 600;
-    color: var(--ink);
-  }
-
-  .barra-item[aria-current='page'] .resumen {
-    color: var(--ink-muted);
-  }
-
-  .barra-corte {
-    flex: none;
-    height: 1px;
-    margin: 0.75rem 0.125rem 0.25rem;
-    background: var(--line);
-  }
-
-  /* Lo mismo abajo: el idioma a la izquierda, el tema a la derecha. */
-  .barra-pie {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.4375rem;
-    padding: 0.6875rem 0.875rem;
+  .riel-corte {
+    height: 0;
+    margin: 0.375rem 0.5rem;
     border-block-start: 1px solid var(--line);
   }
 
-  /* ---------- La barra superior de la portada ---------- */
-  .barra-superior {
+  /* Plegado los rótulos se van y se queda la línea: es lo único de la
+     agrupación que sobrevive a los iconos solos, y sin ella seis iconos
+     seguidos no tienen ningún asidero. */
+  :root:not([data-riel='abierto']) .riel .riel-grupo {
+    display: none;
+  }
+
+  .riel-pie {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding-block-start: 0.375rem;
+    border-block-start: 1px solid var(--line);
+  }
+
+  /* ---------- La barra de móvil ---------- */
+  .barra-movil {
+    display: none;
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 30;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-height: var(--barra-movil);
+    padding-inline: var(--pad-x);
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-block-end: 1px solid var(--line);
+  }
+
+  .marca-movil {
     display: flex;
     align-items: center;
-    gap: 0.875rem;
-    padding-block: 1rem;
-    border-block-end: 1px solid var(--line);
+    min-width: 0;
     color: var(--ink);
   }
 
-  /* ---------- Piezas que comparten las dos ---------- */
-  .pastilla {
+  /* ---------- La hoja ---------- */
+  .hoja {
+    /* Pegada al borde izquierdo y a toda la altura. Un `<dialog>` viene
+       centrado, así que hay que soltarlo de los cuatro márgenes. */
+    margin: 0;
+    margin-inline-end: auto;
+    width: min(19rem, 86vw);
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    padding: 0.75rem;
+    border: 0;
+    border-inline-end: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    overflow-y: auto;
+  }
+
+  .hoja::backdrop {
+    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    backdrop-filter: blur(2px);
+  }
+
+  /*
+    El `display` va en `[open]` y no en la regla base.
+
+    Un `<dialog>` cerrado lo esconde la hoja del navegador con
+    `display: none`; declarar `display: flex` fuera de `[open]` la pisa y
+    el diálogo se queda a la vista siempre — que es exactamente lo que
+    pasó: salían dos rieles, uno al lado del otro.
+  */
+  .hoja[open] {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    animation: hoja-entra 0.18s ease;
+  }
+
+  @keyframes hoja-entra {
+    from {
+      transform: translateX(-100%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hoja[open] {
+      animation: none;
+    }
+  }
+
+  .hoja-cabecera {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.25rem 0.5rem 0.75rem;
+  }
+
+  .hoja-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .hoja-pie {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding-block-start: 0.5rem;
+    border-block-start: 1px solid var(--line);
+  }
+
+  /* ---------- La pastilla ---------- */
+  .pastilla {
+    display: inline-flex;
+    align-items: center;
     gap: 0.4375rem;
-    min-height: 2.5rem;
-    padding-inline: 0.8125rem;
+    height: 2rem;
+    padding-inline: 0.625rem;
     border: 1px solid var(--line);
     border-radius: 999px;
-    font-size: 0.84rem;
+    background: var(--surface);
+    font-size: 0.78rem;
     color: var(--ink-muted);
-    text-decoration: none;
-    white-space: nowrap;
   }
 
   .pastilla:hover {
-    border-color: color-mix(in srgb, var(--acento) 45%, var(--line));
+    border-color: var(--acento);
     color: var(--ink);
   }
 
   .pastilla kbd {
     font: inherit;
-    font-size: 0.72rem;
-    font-weight: 500;
-    padding: 0.125rem 0.375rem;
-    border: 1px solid var(--line);
-    border-radius: 0.3125rem;
+    font-size: 0.7rem;
     color: var(--ink-soft);
   }
 
-  /* Se enseña solo donde la barra es una fila de iconos abajo.
-     Va AQUÍ, antes de la consulta de medios, y no después: las dos reglas
-     tienen la misma especificidad, así que decide el orden. Estaba
-     después, ganaba siempre, y el «Más» de la barra de móvil no aparecía
-     nunca — con él, la única forma de llegar al idioma y al tema desde un
-     móvil. */
   .solo-movil {
     display: none;
   }
 
-  /* ---------- En móvil, una barra abajo ----------
-     El nombre se queda; lo que se va es el resumen, que no cabe. */
+  /* ---------- El corte de móvil ---------- */
   @media (width < 48rem) {
-    .barra-lateral {
-      inset-block: auto 0;
-      inset-inline: 0;
-      width: auto;
-      height: var(--barra-movil);
-
-      flex-direction: row;
-      gap: 0;
-      padding: 0.25rem 0.5rem;
-
-      border-inline-end: 0;
-      border-block-start: 1px solid var(--line);
+    /* El riel entero se va: en móvil manda la barra de arriba con su
+       hoja. No se esconde con `visibility`, se quita, para que no
+       ocupe una columna de cero ancho en la fila. */
+    .riel {
+      display: none;
     }
 
-    .barra-lista {
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-around;
-      padding: 0;
-      overflow: visible;
+    .barra-movil {
+      display: flex;
     }
 
-    .barra-item {
-      /* Aquí la barra es una FILA, así que el `flex: none` de arriba —que
-         existe para que la columna no aplaste las fichas— haría lo
-         contrario de lo que hace falta: cuatro elementos a su ancho
-         natural no caben en 390 px, la barra se desbordaba y con ella la
-         página entera, que se iba de lado y se llevaba el botón de ayuda
-         fuera de pantalla. En fila reparten a partes iguales. */
-      flex: 1 1 0;
-      min-width: 0;
-
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 0.1875rem;
-      min-height: 0;
-      padding: 0.375rem 0.375rem;
-      border-color: transparent;
-      background: none;
-      text-align: center;
-    }
-
-    /* «Escala tipográfica» no cabe en una línea de 78 px. Que parta, en
-       vez de empujar a los demás.
-
-       Dos líneas SIEMPRE reservadas, y como mucho dos:
-
-         · Sin reservarlas, cada ficha se centra por su cuenta y el icono
-           de la que parte en dos queda más alto que los demás.
-         · Sin el tope, un nombre más largo que los de hoy sacaría una
-           tercera línea por debajo de la barra. El tope hace que eso deje
-           de depender de lo que se llame la herramienta siguiente. */
-    .barra-item .nombre {
-      font-size: 0.66rem;
-      line-height: 1.2;
-      overflow-wrap: anywhere;
-      min-height: calc(2 * 1.2em);
-
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .barra-item > .min-w-0 {
-      min-width: 0;
-    }
-
-    .barra-item[aria-current='page'] {
-      background: none;
-      border-color: transparent;
-    }
-
-    .barra-item[aria-current='page'] .nombre {
-      color: var(--acento);
-    }
-
-    .barra-item .icono {
-      width: 1.5rem;
-      height: 1.5rem;
-      background: none;
-    }
-
-    .barra-item[aria-current='page'] .icono {
-      background: none;
-      color: var(--acento);
-    }
-
-    /* La fila de la marca y la del pie no caben en 4,25 rem de alto, así
-       que en móvil no se enseñan. Lo que llevaban —buscador, idioma y
-       tema— no desaparece: se va al «Más» de la barra, que abre el
-       lanzador. Sin eso, dentro de una herramienta y en un móvil no había
-       forma de cambiar de idioma ni de tema. */
-    .barra-marca,
-    .barra-grupo,
-    .barra-corte,
-    .barra-pie,
-    .barra-item .resumen,
     .solo-escritorio {
       display: none;
     }
@@ -660,20 +737,8 @@
     .solo-movil {
       display: flex;
     }
-
-    /* Sin esto, el «Más» aparecería aunque el JavaScript no haya llegado a
-       quitarle el `hidden`: una regla de autor gana siempre a la hoja del
-       navegador, y `display: flex` habría tapado su `display: none`. Un
-       botón que se ve y no responde es peor que uno que no está. */
-    .solo-movil[hidden] {
-      display: none;
-    }
-
-    .con-barra {
-      padding-inline-start: 0;
-      padding-block-end: calc(var(--barra-movil) + 0.5rem);
-    }
   }
+
 
   /* ---------- El lanzador ---------- */
   .bento::backdrop {

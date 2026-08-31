@@ -1,0 +1,67 @@
+---
+/**
+ * La lista de herramientas: los mismos enlaces para la barra de
+ * escritorio y para la hoja de móvil.
+ *
+ * Está aparte porque la alternativa era escribir dos veces la misma
+ * lista, y dos listas de navegación se separan a la primera herramienta
+ * que se añada.
+ *
+ * Agrupadas por ámbito, con una línea entre grupos. Con la barra plegada
+ * los rótulos de grupo desaparecen pero la línea se queda: es lo único de
+ * la agrupación que sobrevive a los iconos solos, y sin ella seis iconos
+ * seguidos no tienen ningún asidero.
+ *
+ * La herramienta abierta se queda EN SU SITIO, marcada. Antes se fijaba
+ * arriba, fuera de su grupo, y eso cambiaba el orden de la lista al
+ * navegar: la costumbre de «la escala está la última» se rompía cada vez
+ * que abrías la escala.
+ *
+ * Son enlaces de verdad, no botones: es navegación, y tiene que funcionar
+ * aunque el JavaScript no llegue.
+ */
+import Icono from './Icono.astro';
+import { TOOLS } from '../i18n/tools';
+import { AMBITOS, ORDEN_AMBITOS, ambitoPrincipal } from '../i18n/labels';
+import { t, type Lang } from '../i18n/config';
+import { route, TOOL_KEYS, type ToolKey } from '../i18n/routes';
+
+interface Props {
+  lang: Lang;
+  /** La herramienta abierta, o null en la portada. */
+  abierta: ToolKey | null;
+}
+
+const { lang, abierta } = Astro.props;
+
+const grupos = ORDEN_AMBITOS.map((ambito) => ({
+  ambito,
+  herramientas: TOOL_KEYS.filter((key) => ambitoPrincipal(TOOLS[key].etiquetas) === ambito),
+})).filter((grupo) => grupo.herramientas.length > 0);
+---
+
+{
+  grupos.map((grupo, i) => (
+    <>
+      {i > 0 && <div class="riel-corte" />}
+      <p class="riel-grupo">{t(AMBITOS[grupo.ambito], lang)}</p>
+
+      {/* Plegado solo se ve el icono, así que el nombre tiene que llegar
+          por otro lado: `title` para el ratón, y el texto de dentro —que
+          sigue en el DOM— para el lector de pantalla. */}
+      {grupo.herramientas.map((key) => (
+        <a
+          href={route(key, lang)}
+          class="riel-item"
+          aria-current={key === abierta ? 'page' : undefined}
+          title={t(TOOLS[key].name, lang)}
+        >
+          <span class="icono">
+            <Icono nombre={TOOLS[key].icono} tamano={19} />
+          </span>
+          <span class="nombre">{t(TOOLS[key].name, lang)}</span>
+        </a>
+      ))}
+    </>
+  ))
+}

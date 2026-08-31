@@ -26,6 +26,7 @@ import lupa from '@phosphor-icons/core/regular/magnifying-glass.svg?raw';
 import cerrar from '@phosphor-icons/core/regular/x.svg?raw';
 import casa from '@phosphor-icons/core/regular/house.svg?raw';
 import mas from '@phosphor-icons/core/regular/dots-three.svg?raw';
+import barras from '@phosphor-icons/core/regular/list.svg?raw';
 
 /**
  * Se queda solo lo de dentro del `<svg>`: la envoltura la pone
@@ -52,6 +53,7 @@ export const ICONOS = {
   cerrar: interior(cerrar),
   casa: interior(casa),
   mas: interior(mas),
+  barras: interior(barras),
 } satisfies Record<string, string>;
 
 export type IconoKey = keyof typeof ICONOS;

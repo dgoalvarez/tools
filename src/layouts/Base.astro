@@ -12,7 +12,7 @@
  * a su equivalente en el otro mediante hreflang.
  */
 import BarraLateral from '../components/BarraLateral.astro';
-import BarraSuperior from '../components/BarraSuperior.astro';
+import BarraMovil from '../components/BarraMovil.astro';
 import Lanzador from '../components/Lanzador.astro';
 import Footer from '../components/Footer.astro';
 import { UI } from '../i18n/ui';
@@ -143,7 +143,7 @@ const ogImage = new URL('/og.png', site).href;
         try {
           var tema = localStorage.getItem('dgo-tools-theme');
           if (tema === 'dark' || tema === 'light') raiz.dataset.theme = tema;
-          if (localStorage.getItem('dgo-tools-riel') === 'fijo') raiz.dataset.riel = 'fijo';
+          if (localStorage.getItem('dgo-tools-riel') === 'abierto') raiz.dataset.riel = 'abierto';
         } catch (e) {}
       })();
     </script>
@@ -157,26 +157,26 @@ const ogImage = new URL('/og.png', site).href;
       {t(UI.skipToContent, lang)}
     </a>
 
-    {
-      herramienta ? (
-        <BarraLateral lang={lang} abierta={herramienta} />
-      ) : (
-        <BarraSuperior lang={lang} />
-      )
-    }
-
     {/*
-      La barra lateral va por encima con `position: fixed`, así que el
-      contenido se aparta con un relleno y no con una columna: la
-      herramienta se desplaza sin llevarse la navegación con ella. La
-      portada no aparta nada porque no tiene barra al lado.
-    */}
-    <div class:list={['flex min-h-dvh flex-col', herramienta && 'con-barra']}>
-      <main id="main" class="flex-1">
-        <slot />
-      </main>
+      El riel está DENTRO del flujo, en una fila con el contenido, y no
+      encima con `position: fixed`. Es lo que hace que desplegarlo corra
+      la herramienta en vez de taparla: se lee un nombre sin perder de
+      vista lo que se estaba mirando.
 
-      <Footer lang={lang} />
+      En móvil el riel no se pinta y manda la barra de arriba con su hoja.
+    */}
+    <div class="marco">
+      <BarraLateral lang={lang} abierta={herramienta} pagina={page} />
+
+      <div class="flex min-w-0 flex-1 flex-col">
+        <BarraMovil lang={lang} abierta={herramienta} pagina={page} />
+
+        <main id="main" class="flex-1">
+          <slot />
+        </main>
+
+        <Footer lang={lang} />
+      </div>
     </div>
 
     <Lanzador lang={lang} pagina={page} />

@@ -33,9 +33,20 @@ export const POMODORO = {
   minutosTrabajo: { es: 'Trabajo', en: 'Work' },
   minutosCorto: { es: 'Descanso', en: 'Break' },
   minutosLargo: { es: 'Descanso largo', en: 'Long break' },
-  cada: { es: 'Descanso largo cada', en: 'Long break every' },
+  /**
+   * «El largo, cada» y no «Descanso largo cada»: la etiqueta va a la
+   * izquierda del campo y la de arriba ya dice «Descanso largo», así que
+   * repetirlo entero solo gastaba ancho.
+   */
+  cada: { es: 'El largo, cada', en: 'Long one, every' },
   pomodoros: { es: 'pomodoros', en: 'pomodoros' },
   minutos: { es: 'min', en: 'min' },
+  segundos: { es: 's', en: 's' },
+  /** Se admiten medios minutos: «2,5 min» son dos minutos y medio. */
+  admiteMedios: {
+    es: 'Puedes poner medios minutos: 2,5 son dos y medio.',
+    en: 'You can use half minutes: 2.5 is two and a half.',
+  },
   /**
    * Se avisa de que cambiar las duraciones con algo en marcha no corta la
    * cuenta: se aplica a la fase siguiente. Cortarla sería castigar a
@@ -46,9 +57,20 @@ export const POMODORO = {
     en: 'What you change applies to the next phase; the one running carries on unchanged.',
   },
 
+  // ---------- El margen ----------
+  margen: { es: 'Margen entre fases', en: 'Gap between phases' },
+  margenAyuda: {
+    es: 'El tiempo que pasa desde que suena el aviso hasta que arranca la fase siguiente. A cero, se encadenan sin pausa.',
+    en: 'How long from the alert sounding until the next phase starts. At zero, they run straight into each other.',
+  },
+  /** Lo que se lee en el reloj mientras corre el margen. */
+  empiezaEn: { es: 'Empieza en', en: 'Starts in' },
+  empezarYa: { es: 'Empezar ya', en: 'Start now' },
+
   // ---------- El aviso ----------
   aviso: { es: 'Aviso', en: 'Alert' },
   sonido: { es: 'Sonido al acabar', en: 'Sound when time is up' },
+  probarSonido: { es: 'Probar', en: 'Play it' },
   notificacion: { es: 'Notificación del sistema', en: 'System notification' },
   notificacionPedir: { es: 'Permitir notificaciones', en: 'Allow notifications' },
   notificacionDenegada: {

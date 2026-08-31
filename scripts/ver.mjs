@@ -111,6 +111,28 @@ const VISTAS = [
     query: 'w=180&b=60&l=120&c=12',
   },
   { nombre: 'pomodoro-estrecho', ruta: 'es/pomodoro', ancho: 485, alto: 900 },
+  // En marcha, con el anillo a medio llenar y varios tramos hechos.
+  {
+    nombre: 'pomodoro-andando',
+    ruta: 'es/pomodoro',
+    ancho: 1440,
+    alto: 1000,
+    siembra: {
+      estado: 'andando',
+      fase: 'trabajo',
+      hechos: 2,
+      terminaEn: Date.now() + 9 * 60_000,
+    },
+  },
+  // El margen entre fases, que no se alcanza de ninguna otra forma: hay
+  // que esperar a que una fase acabe.
+  {
+    nombre: 'pomodoro-margen',
+    ruta: 'es/pomodoro',
+    ancho: 1440,
+    alto: 1000,
+    siembra: { estado: 'margen', fase: 'corto', hechos: 3, empiezaEn: Date.now() + 300_000 },
+  },
   { nombre: 'husos-ventana-baja', ruta: 'es/horarios', ancho: 1280, alto: 420 },
   { nombre: 'escala-estrecho', ruta: 'es/escala', ancho: 485, alto: 760 },
   { nombre: 'contraste-estrecho', ruta: 'es/contraste', ancho: 485, alto: 760 },
@@ -154,17 +176,27 @@ window.addEventListener('load', () => {
 });
 <\/script>`;
 
+/** Siembra `sessionStorage` antes de que hidrate la isla. */
+const sembrar = (cuenta) => `<script>
+  try { sessionStorage.setItem('dgo-pomodoro', '${JSON.stringify(cuenta)}'); } catch (e) {}
+</script>`;
+
 /**
  * Una copia de la página, retocada para poder mirar lo que no se ve solo:
  * el tema claro —que no hay bandera de Chrome para pedirlo— y el paso a
  * paso, que solo aparece si alguien pulsa el botón.
  */
-function preparar(ruta, { tema, tour }) {
-  const marca = [tema ?? '', tour === undefined ? '' : `t${tour}`].filter(Boolean).join('_');
+function preparar(ruta, { tema, tour, siembra }) {
+  const marca = [tema ?? '', tour === undefined ? '' : `t${tour}`, siembra ? 's' : '']
+    .filter(Boolean)
+    .join('_');
   const copia = join(dist, `_ver_${marca}_${ruta.replace(/\//g, '_')}.html`);
 
   let html = readFileSync(join(dist, `${ruta}.html`), 'utf8');
   if (tema) html = html.replace('<html ', `<html data-theme="${tema}" `);
+  // La siembra va en el <head>: tiene que estar puesta antes de que la
+  // isla lea `sessionStorage` al montarse.
+  if (siembra) html = html.replace('</head>', sembrar(siembra) + '</head>');
   if (tour !== undefined) html = html.replace('</body>', abrirTour(tour) + '</body>');
 
   writeFileSync(copia, html);
@@ -185,8 +217,12 @@ await new Promise((r) => setTimeout(r, 700));
 try {
   for (const vista of VISTAS) {
     let ruta = vista.ruta;
-    if (vista.tema || vista.tour !== undefined) {
-      const copia = preparar(vista.ruta, { tema: vista.tema, tour: vista.tour });
+    if (vista.tema || vista.tour !== undefined || vista.siembra) {
+      const copia = preparar(vista.ruta, {
+        tema: vista.tema,
+        tour: vista.tour,
+        siembra: vista.siembra,
+      });
       temporales.push(copia);
       ruta = copia.slice(dist.length + 1).replace(/\\/g, '/').replace(/\.html$/, '');
     }

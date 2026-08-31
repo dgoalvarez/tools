@@ -1761,19 +1761,119 @@
    ============================================================ */
 
 @layer components {
-  .reloj-pomodoro {
+  /*
+    El panel: el reloj a la izquierda, el ciclo a la derecha.
+
+    Antes eran dos tarjetas apiladas y el ciclo caía tan abajo que había
+    que bajar la vista para ver cuántos tramos faltaban para el descanso
+    largo — que es el único dato que este método pide llevar encima. En
+    fila se ven los dos a la vez, y de paso el panel deja de ser una
+    columna altísima con la mitad derecha vacía.
+
+    `auto` y no `1fr` en la segunda columna: el ciclo ocupa lo que
+    necesita y el reloj se queda con el resto, que es lo que tiene que
+    mandar. Por debajo de 56rem se apilan.
+  */
+  .panel-pomodoro {
     display: grid;
-    justify-items: center;
+    grid-template-columns: minmax(0, 1fr);
     gap: clamp(1.25rem, 2.5vw, 2rem);
-    padding: clamp(1.5rem, 3vw, 2.5rem) 1.25rem;
+    /* `stretch` y no `center`: así la línea que separa el ciclo del reloj
+       llega de arriba abajo de la tarjeta. Centrada, la línea medía lo
+       que medía el texto del ciclo y parecía un subrayado suelto. Cada
+       lado se centra por dentro con `align-content`. */
+    align-items: stretch;
+    padding: clamp(1.5rem, 3vw, 2.5rem) clamp(1.25rem, 2.5vw, 2rem);
     border: 1px solid var(--line);
     border-radius: var(--radius-xl);
     background: var(--surface);
   }
 
+  /* A 48rem el panel ya mide 41rem de ancho —va a toda página— y a
+     partir de 64rem la herramienta pasa a dos columnas y la derecha ronda
+     las 37rem. En los dos casos caben el reloj y el ciclo en fila; por
+     debajo, se apilan. */
+  @media (width >= 48rem) {
+    .panel-pomodoro {
+      /* 15rem de mínimo para la columna del reloj: es lo que necesita la
+         fila de mandos —«Pausar» y los dos botones de icono— para no
+         partirse. Con `minmax(0, …)` la columna podía encogerse por
+         debajo de los botones y estos se salían. */
+      grid-template-columns: minmax(15rem, 1fr) auto;
+    }
+  }
+
+  /*
+    Apilado, el reloj va PRIMERO.
+
+    En las otras herramientas los controles abren la página porque sin
+    rellenarlos no hay resultado que enseñar. Aquí no: el pomodoro
+    funciona con lo que trae puesto, así que dejar el reloj debajo de
+    cuatro campos obliga a bajar para llegar a lo único que hace falta
+    tocar. En dos columnas no hace falta, porque se ven los dos a la vez.
+  */
+  @media (width < 64rem) {
+    .panel-pomodoro {
+      order: -1;
+    }
+  }
+
+  .reloj-pomodoro {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: clamp(1.25rem, 2.5vw, 2rem);
+    min-width: 0;
+  }
+
+  /* ---------- El ciclo, al lado del reloj ---------- */
+  .ciclo-pomodoro {
+    display: grid;
+    justify-items: start;
+    align-content: center;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  @media (width >= 48rem) {
+    .ciclo-pomodoro {
+      /* Ni tan estrecho que los puntos partan en dos filas por nada, ni
+         tan ancho que le quite sitio al reloj. */
+      max-width: 15rem;
+
+      /* Una línea entre los dos, para que se lean como dos zonas de una
+         tarjeta y no como dos cosas sueltas flotando en la misma caja. */
+      padding-inline-start: clamp(1.25rem, 2.5vw, 2rem);
+      border-inline-start: 1px solid var(--line);
+    }
+  }
+
+  .ciclo-pomodoro .dato {
+    margin: 0;
+    font-size: var(--fs-small);
+    color: var(--ink-soft);
+  }
+
+  .ciclo-pomodoro .dato strong {
+    color: var(--ink);
+  }
+
+  .ciclo-pomodoro .titulo {
+    margin: 0;
+  }
+
   .reloj-pomodoro .anillo {
     position: relative;
-    width: clamp(13rem, 24vw, 19rem);
+    /*
+      El ancho sale de SU COLUMNA, no de la ventana.
+
+      Antes era `clamp(13rem, 26vw, 22rem)`, que funcionaba cuando el
+      reloj tenía la mitad derecha entera para él. Al sentarse el ciclo a
+      su lado, `vw` siguió midiendo la ventana —que no había cambiado— y
+      el anillo se salía 37 px de su columna. Un `vw` no sabe nada de la
+      caja en la que vive.
+    */
+    width: min(100%, 22rem);
     aspect-ratio: 1;
   }
 
@@ -1832,6 +1932,16 @@
     color: var(--ink);
   }
 
+  /* La cuenta del margen: pequeña y en el acento, para que se lea como
+     un aviso de lo que va a pasar y no como otro reloj. */
+  .reloj-pomodoro .margen {
+    margin: 0.5rem 0 0;
+    font-size: var(--fs-small);
+    font-weight: 500;
+    color: var(--acento);
+    font-variant-numeric: tabular-nums;
+  }
+
   .reloj-pomodoro .mandos {
     display: flex;
     flex-wrap: wrap;
@@ -1847,6 +1957,70 @@
     de shadcn pisaba cualquier regla escrita en este bloque. Salía teal
     —el color de la marca— en una herramienta cuyo acento es ámbar.
   */
+
+  /*
+    ---------- Las filas de ajuste ----------
+
+    Etiqueta a la izquierda, campo, unidad. Antes iban en dos columnas con
+    la etiqueta encima del campo, y ahí una etiqueta como «Descanso largo
+    cada» tenía que caber en media tarjeta: partía en dos líneas y
+    descuadraba la rejilla entera.
+
+    En fila, la etiqueta se queda con el ancho que le sobra al campo —que
+    es fijo y estrecho, porque son dos o tres cifras— y las cuatro filas
+    quedan alineadas por su número, que es lo que se compara. Ocupa además
+    la mitad de alto.
+  */
+  .filas-ajuste {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .fila-ajuste {
+    display: grid;
+    /* La columna de la unidad es FIJA y no `auto`. Con `auto` la fila de
+       «pomodoros» —una palabra mucho más larga que «min»— empujaba su
+       campo a la izquierda y esa fila se salía de la columna que forman
+       las otras tres. Alineados, los cuatro números se leen como una
+       tabla. */
+    grid-template-columns: minmax(0, 1fr) 4.5rem 4.5rem;
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  .fila-ajuste label {
+    min-width: 0;
+    font-size: var(--fs-small);
+    color: var(--ink-muted);
+  }
+
+  .fila-ajuste input {
+    /* Las cifras a la derecha: así el 5 y el 25 acaban en la misma
+       columna y la lista se lee como una tabla. */
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* La flecha de subir y bajar de los campos numéricos ocupa un ancho que
+     aquí no sobra, y el paso de medio minuto se escribe antes de lo que
+     se pulsa treinta veces. */
+  .fila-ajuste input::-webkit-outer-spin-button,
+  .fila-ajuste input::-webkit-inner-spin-button {
+    margin: 0;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .fila-ajuste input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  .fila-ajuste .unidad {
+    font-size: var(--fs-small);
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
 
   /* ---------- Los puntos del ciclo ---------- */
   .ciclo-puntos {

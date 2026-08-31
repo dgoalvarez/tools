@@ -17,6 +17,8 @@ import {
   avance,
   comoReloj,
   descansoTras,
+  duracionMs,
+  margenRestanteMs,
   limitar,
   minutosDe,
   restanteMs,
@@ -136,7 +138,10 @@ console.log('\n5. Los ajustes se quedan dentro de sus límites');
   afirmar(limitar(25, 'trabajo') === 25, 'un valor normal pasa tal cual');
   afirmar(limitar(9999, 'trabajo') === LIMITES.trabajo.max, 'lo que se pasa se recorta al máximo');
   afirmar(limitar(0, 'trabajo') === LIMITES.trabajo.min, 'y lo que se queda corto, al mínimo');
-  afirmar(limitar(25.7, 'trabajo') === 26, 'los decimales se redondean');
+  // Se redondea al medio minuto más cercano, no al entero: 25,7 cae en
+  // 25,5. Los medios existen desde que se admiten descansos de minuto y
+  // medio; ver el apartado 7.
+  afirmar(limitar(25.7, 'trabajo') === 25.5, 'los decimales caen al medio más cercano');
 
   // Una dirección manipulada no debe poder dejar la cuenta en NaN.
   afirmar(limitar(NaN, 'trabajo') === AJUSTES_INICIALES.trabajo, 'un NaN vuelve al valor de fábrica');
@@ -153,11 +158,82 @@ console.log('\n6. Cada fase dura lo que dice su ajuste');
   afirmar(minutosDe('corto', base) === base.corto, 'descanso corto');
   afirmar(minutosDe('largo', base) === base.largo, 'descanso largo');
 
-  const otro: Ajustes = { trabajo: 50, corto: 10, largo: 30, cada: 2 };
+  const otro: Ajustes = { trabajo: 50, corto: 10, largo: 30, cada: 2, margen: 5 };
   afirmar(minutosDe('trabajo', otro) === 50, 'y con otras duraciones, las otras');
   afirmar(
     restanteMs({ estado: 'parado', fase: 'largo', hechos: 0 }, otro, 0) === 30 * 60_000,
     'la cuenta parada las respeta'
+  );
+}
+
+console.log('\n7. Medios minutos');
+{
+  // Un descanso de minuto y medio es un patrón real, y con enteros no se
+  // podía escribir. El paso es de medio minuto: ni decimales infinitos ni
+  // un campo de segundos aparte.
+  afirmar(limitar(2.5, 'corto') === 2.5, 'dos minutos y medio se aceptan tal cual');
+  afirmar(limitar(2.4, 'corto') === 2.5, '2,4 se redondea al medio más cercano');
+  afirmar(limitar(2.2, 'corto') === 2, 'y 2,2 baja a 2');
+  afirmar(limitar(0.5, 'corto') === 0.5, 'medio minuto es el mínimo, y vale');
+  afirmar(limitar(0.1, 'corto') === 0.5, 'menos de medio sube al mínimo');
+
+  // Pero «cada» y «margen» siguen siendo enteros: «4,5 pomodoros» no
+  // significa nada, y medio segundo de margen tampoco.
+  afirmar(limitar(4.5, 'cada') === 5, 'los pomodoros del ciclo se redondean a entero');
+  afirmar(limitar(5.4, 'margen') === 5, 'y los segundos de margen también');
+
+  const medios: Ajustes = { ...base, corto: 2.5 };
+  afirmar(duracionMs('corto', medios) === 150_000, 'dos minutos y medio son 150 000 ms');
+  afirmar(comoReloj(duracionMs('corto', medios)) === '2:30', 'y se leen «2:30»');
+}
+
+console.log('\n8. El reloj pasa de la hora');
+{
+  // Con el trabajo al máximo (180 min) el reloj enseñaba «180:00», que se
+  // lee mal y se sale del anillo. Por encima de la hora se escribe con
+  // horas delante.
+  afirmar(comoReloj(180 * 60_000) === '3:00:00', 'tres horas');
+  afirmar(comoReloj(60 * 60_000) === '1:00:00', 'una hora justa');
+  afirmar(comoReloj(59 * 60_000 + 59_000) === '59:59', 'y justo por debajo, sin horas');
+  afirmar(comoReloj(3661_000) === '1:01:01', 'los minutos sí se rellenan si hay horas delante');
+}
+
+console.log('\n9. El margen entre fases');
+{
+  const t0 = 1_800_000_000_000;
+  const m: Cuenta = { estado: 'margen', fase: 'corto', hechos: 1, empiezaEn: t0 + 5000 };
+
+  afirmar(margenRestanteMs(m, t0) === 5000, 'al empezar el margen quedan cinco segundos');
+  afirmar(margenRestanteMs(m, t0 + 3000) === 2000, 'a los tres, quedan dos');
+  afirmar(margenRestanteMs(m, t0 + 9000) === 0, 'y no baja de cero');
+  afirmar(
+    margenRestanteMs({ estado: 'parado', fase: 'corto', hechos: 0 }, t0) === 0,
+    'fuera del margen, no hay margen que contar'
+  );
+
+  // Mientras corre el margen, el reloj enseña la fase ENTERA: es la que
+  // va a empezar, no una a medias.
+  afirmar(restanteMs(m, base, t0) === 5 * 60_000, 'el reloj enseña el descanso entero');
+  afirmar(avance(m, base, t0) === 0, 'y el anillo está vacío, que aún no ha empezado');
+}
+
+console.log('\n10. Cambiar una duración se ve al momento');
+{
+  // El fallo que se arregló: se cambiaba «trabajo» a 50 y el reloj seguía
+  // diciendo 25:00. Parada, la cuenta tiene que salir de los ajustes de
+  // ahora y no de los de cuando se montó.
+  const parada: Cuenta = { estado: 'parado', fase: 'trabajo', hechos: 0 };
+  afirmar(comoReloj(restanteMs(parada, base, 0)) === '25:00', 'con 25 min, marca 25:00');
+  afirmar(
+    comoReloj(restanteMs(parada, { ...base, trabajo: 50 }, 0)) === '50:00',
+    'y al ponerlo en 50, marca 50:00'
+  );
+
+  // En pausa NO, y es a propósito: la fase que está a medias se respeta.
+  const pausada: Cuenta = { estado: 'pausa', fase: 'trabajo', hechos: 0, restanteMs: 600_000 };
+  afirmar(
+    restanteMs(pausada, { ...base, trabajo: 50 }, 0) === 600_000,
+    'lo que está en pausa a mitad no se recalcula'
   );
 }
 

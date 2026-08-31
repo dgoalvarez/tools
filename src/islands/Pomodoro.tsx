@@ -37,10 +37,11 @@ import {
   LIMITES,
   avance,
   comoReloj,
+  duracionMs,
   guardarCuenta,
   leerCuenta,
   limitar,
-  minutosDe,
+  margenRestanteMs,
   restanteMs,
   siguiente,
   type Ajustes,
@@ -55,6 +56,7 @@ const CLAVES: Record<keyof Ajustes, string> = {
   corto: 'b',
   largo: 'l',
   cada: 'c',
+  margen: 'g',
 };
 
 interface Props {
@@ -114,7 +116,9 @@ export default function Pomodoro({ lang }: Props) {
   // ---------- el latido ----------
 
   useEffect(() => {
-    if (cuenta.estado !== 'andando') return;
+    // También durante el margen: ahí la cuenta atrás va de cinco a cero y
+    // si no se repintara se quedaría clavada en el cinco.
+    if (cuenta.estado !== 'andando' && cuenta.estado !== 'margen') return;
 
     // Cuatro veces por segundo: el número solo cambia una, pero así nunca
     // se ve un segundo congelado al volver de otra pestaña.
@@ -140,9 +144,20 @@ export default function Pomodoro({ lang }: Props) {
     if (ctx.state === 'suspended') void ctx.resume();
 
     const t0 = ctx.currentTime;
-    // Dos notas: sube al acabar el trabajo, baja al acabar el descanso.
-    // Se distingue qué ha pasado sin mirar la pantalla.
-    const notas = agudo ? [660, 880] : [880, 660];
+
+    /*
+     * Dos notas: sube al acabar el trabajo, baja al acabar el descanso.
+     * Se distingue qué ha pasado sin mirar la pantalla.
+     *
+     * Y el motivo se repite tres veces, con un silencio en medio. Con una
+     * sola pasada duraba medio segundo, que es menos de lo que tarda
+     * alguien concentrado en registrar que ha sonado algo: si justo
+     * estabas tecleando, se lo llevaba el ruido del teclado. Kilo y medio
+     * de segundo con un hueco a la mitad es lo que hace que un sonido
+     * pase de «creo que oí algo» a «ha acabado».
+     */
+    const motivo = agudo ? [660, 880] : [880, 660];
+    const notas = [...motivo, ...motivo, ...motivo];
 
     notas.forEach((hz, i) => {
       const osc = ctx.createOscillator();
@@ -152,7 +167,10 @@ export default function Pomodoro({ lang }: Props) {
       osc.connect(vol);
       vol.connect(ctx.destination);
 
-      const inicio = t0 + i * 0.18;
+      // El silencio entre repeticiones va DENTRO del hueco de la
+      // primera nota de cada par, que es donde se oye como una pausa y no
+      // como un tropiezo.
+      const inicio = t0 + i * 0.19 + Math.floor(i / 2) * 0.22;
       vol.gain.setValueAtTime(0.0001, inicio);
       vol.gain.exponentialRampToValueAtTime(0.18, inicio + 0.02);
       vol.gain.exponentialRampToValueAtTime(0.0001, inicio + 0.28);
@@ -186,18 +204,47 @@ export default function Pomodoro({ lang }: Props) {
       acababaTrabajo ? tr('finTrabajoCuerpo') : tr('finDescansoCuerpo')
     );
 
-    // La siguiente fase arranca sola: parar aquí obligaría a estar
-    // delante de la pantalla para que el pomodoro siguiera, que es justo
-    // lo que un temporizador viene a evitar.
-    setCuenta({
-      estado: 'andando',
-      fase: paso.fase,
-      hechos: paso.hechos,
-      terminaEn: Date.now() + minutosDe(paso.fase, ajustes) * 60_000,
-    });
+    /*
+     * La siguiente fase arranca sola —parar aquí obligaría a estar
+     * delante de la pantalla, que es lo que un temporizador viene a
+     * evitar— pero no al instante: primero corre el margen.
+     *
+     * Encadenar sin hueco es malo por el otro lado. El descanso empieza a
+     * contar mientras todavía estás cerrando lo que hacías, así que los
+     * primeros segundos de descanso te los quitas tú.
+     */
+    setCuenta(
+      ajustes.margen > 0
+        ? {
+            estado: 'margen',
+            fase: paso.fase,
+            hechos: paso.hechos,
+            empiezaEn: Date.now() + ajustes.margen * 1000,
+          }
+        : {
+            estado: 'andando',
+            fase: paso.fase,
+            hechos: paso.hechos,
+            terminaEn: Date.now() + duracionMs(paso.fase, ajustes),
+          }
+    );
     // `tr` y las funciones de aviso son estables dentro de un render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ahora, cuenta, ajustes, conSonido]);
+
+  // ---------- del margen a la fase ----------
+
+  useEffect(() => {
+    if (cuenta.estado !== 'margen') return;
+    if (margenRestanteMs(cuenta, ahora) > 0) return;
+
+    setCuenta({
+      estado: 'andando',
+      fase: cuenta.fase,
+      hechos: cuenta.hechos,
+      terminaEn: Date.now() + duracionMs(cuenta.fase, ajustes),
+    });
+  }, [ahora, cuenta, ajustes]);
 
   // ---------- el título de la pestaña ----------
 
@@ -235,7 +282,8 @@ export default function Pomodoro({ lang }: Props) {
   function empezar() {
     arrancarAudio();
     setCuenta((c) => {
-      const restante = c.estado === 'pausa' ? c.restanteMs : minutosDe(c.fase, ajustes) * 60_000;
+      // Desde el margen, «Empezar ya» se salta lo que quede de espera.
+      const restante = c.estado === 'pausa' ? c.restanteMs : duracionMs(c.fase, ajustes);
       return {
         estado: 'andando',
         fase: c.fase,
@@ -247,16 +295,27 @@ export default function Pomodoro({ lang }: Props) {
   }
 
   function pausar() {
-    setCuenta((c) =>
-      c.estado === 'andando'
+    setCuenta((c) => {
+      // Pausar durante el margen lo detiene ahí: la fase se queda a punto
+      // de empezar, entera, esperando a que se pulse.
+      if (c.estado === 'margen') return { estado: 'parado', fase: c.fase, hechos: c.hechos };
+
+      return c.estado === 'andando'
         ? {
             estado: 'pausa',
             fase: c.fase,
             hechos: c.hechos,
             restanteMs: Math.max(0, c.terminaEn - Date.now()),
           }
-        : c
-    );
+        : c;
+    });
+  }
+
+  /** Suena el aviso a demanda, para poder oírlo antes de necesitarlo. */
+  function probarSonido() {
+    arrancarAudio();
+    // Un tic para que el contexto de audio esté listo tras el gesto.
+    setTimeout(() => sonar(true), 0);
   }
 
   function reiniciarFase() {
@@ -282,11 +341,12 @@ export default function Pomodoro({ lang }: Props) {
       // Algunos navegadores solo lo permiten desde un gesto; este lo es.
     }
   }
-
   // ---------- pintado ----------
 
   const proporcion = avance(cuenta, ajustes, ahora);
   const paso = siguiente(cuenta.fase, cuenta.hechos, ajustes);
+  const enMargen = cuenta.estado === 'margen';
+  const margenQueda = Math.ceil(margenRestanteMs(cuenta, ahora) / 1000);
 
   /** Cuántos pomodoros van dentro del ciclo actual, de 0 a `cada`. */
   const enCiclo = cuenta.hechos % ajustes.cada;
@@ -301,13 +361,26 @@ export default function Pomodoro({ lang }: Props) {
             {tr('ajustes')}
           </p>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/*
+            Una fila por ajuste, con la etiqueta a la IZQUIERDA del campo.
+
+            Antes iban en dos columnas con la etiqueta encima, y ahí
+            «Descanso largo cada» tenía que caber en media tarjeta: partía
+            en dos líneas y descuadraba la rejilla. En fila, la etiqueta
+            dispone del ancho que le sobra al campo, que es mucho, y las
+            cuatro quedan alineadas por su número.
+
+            De paso ocupa menos alto: cuatro filas en vez de dos filas de
+            etiqueta más campo.
+          */}
+          <div className="filas-ajuste">
             <Minutos
               id="min-trabajo"
               etiqueta={tr('minutosTrabajo')}
               unidad={tr('minutos')}
               valor={ajustes.trabajo}
               limites={LIMITES.trabajo}
+              paso={0.5}
               onCambio={(v) => setAjustes((a) => ({ ...a, trabajo: v }))}
             />
             <Minutos
@@ -316,6 +389,7 @@ export default function Pomodoro({ lang }: Props) {
               unidad={tr('minutos')}
               valor={ajustes.corto}
               limites={LIMITES.corto}
+              paso={0.5}
               onCambio={(v) => setAjustes((a) => ({ ...a, corto: v }))}
             />
             <Minutos
@@ -324,6 +398,7 @@ export default function Pomodoro({ lang }: Props) {
               unidad={tr('minutos')}
               valor={ajustes.largo}
               limites={LIMITES.largo}
+              paso={0.5}
               onCambio={(v) => setAjustes((a) => ({ ...a, largo: v }))}
             />
             <Minutos
@@ -332,9 +407,12 @@ export default function Pomodoro({ lang }: Props) {
               unidad={tr('pomodoros')}
               valor={ajustes.cada}
               limites={LIMITES.cada}
+              paso={1}
               onCambio={(v) => setAjustes((a) => ({ ...a, cada: v }))}
             />
           </div>
+
+          <p className="text-[length:var(--fs-small)] text-ink-soft">{tr('admiteMedios')}</p>
 
           {cuenta.estado === 'andando' && (
             <p className="text-[length:var(--fs-small)] text-ink-soft">{tr('cambioEnMarcha')}</p>
@@ -347,15 +425,41 @@ export default function Pomodoro({ lang }: Props) {
             {tr('aviso')}
           </p>
 
-          <label className="interruptor">
-            <input
-              type="checkbox"
-              role="switch"
-              checked={conSonido}
-              onChange={(e) => setConSonido(e.target.checked)}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <label className="interruptor">
+              <input
+                type="checkbox"
+                role="switch"
+                checked={conSonido}
+                onChange={(e) => setConSonido(e.target.checked)}
+              />
+              <span className="texto">{tr('sonido')}</span>
+            </label>
+
+            {/* Poder oírlo antes de necesitarlo: si no, la primera vez que
+                suena es a los veinticinco minutos y con el volumen que
+                hubiera puesto. */}
+            {conSonido && (
+              <Button variant="outline" size="sm" onClick={probarSonido}>
+                {tr('probarSonido')}
+              </Button>
+            )}
+          </div>
+
+          {/* El margen vive aquí y no con las duraciones: no es cuánto
+              dura una fase, es cuánto tardas tú en reaccionar al aviso. */}
+          <div className="filas-ajuste">
+            <Minutos
+              id="margen"
+              etiqueta={tr('margen')}
+              unidad={tr('segundos')}
+              valor={ajustes.margen}
+              limites={LIMITES.margen}
+              paso={1}
+              onCambio={(v) => setAjustes((a) => ({ ...a, margen: v }))}
             />
-            <span className="texto">{tr('sonido')}</span>
-          </label>
+          </div>
+          <p className="text-[length:var(--fs-small)] text-ink-soft">{tr('margenAyuda')}</p>
 
           {permiso === 'granted' && (
             <p className="text-[length:var(--fs-small)] text-ink-soft">{tr('notificacion')} ✓</p>
@@ -381,9 +485,17 @@ export default function Pomodoro({ lang }: Props) {
         </fieldset>
       </div>
 
-      {/* ---------------- La cuenta ---------------- */}
-      <div className="columna-herramienta gap-5">
-        <div className="reloj-pomodoro" data-tour="cuenta">
+      {/*
+        ---------------- La cuenta y el ciclo, en una sola tarjeta ----------
+
+        Estaban en dos tarjetas apiladas, y el ciclo quedaba tan abajo que
+        había que bajar la vista para saber cuántos tramos faltaban para el
+        descanso largo — que es justo el dato que este método pide llevar
+        encima. Ahora comparten tarjeta: el reloj a la izquierda, el ciclo
+        a la derecha, los dos a la vista de una.
+      */}
+      <section className="panel-pomodoro" data-tour="cuenta">
+        <div className="reloj-pomodoro">
           <div className="anillo">
             <svg viewBox="0 0 100 100" aria-hidden="true">
               <circle className="pista" cx="50" cy="50" r="45" />
@@ -399,6 +511,14 @@ export default function Pomodoro({ lang }: Props) {
             <div className="centro">
               <p className="fase">{nombreDeFase(cuenta.fase)}</p>
               <p className="tiempo">{comoReloj(queda)}</p>
+              {/* Durante el margen la cuenta atrás pequeña dice cuánto
+                  falta para que arranque, sin tapar el tiempo de la fase
+                  que viene: se ve a la vez lo que va a empezar y cuándo. */}
+              {enMargen && (
+                <p className="margen">
+                  {tr('empiezaEn')} {margenQueda} {tr('segundos')}
+                </p>
+              )}
             </div>
           </div>
 
@@ -409,14 +529,24 @@ export default function Pomodoro({ lang }: Props) {
 
           <div className="mandos">
             {cuenta.estado === 'andando' ? (
-              <Button onClick={pausar} className="h-11 px-5 text-[0.9375rem] border border-[var(--solido)] bg-[var(--solido)] font-semibold text-[var(--solido-ink)] hover:bg-[color-mix(in_srgb,var(--solido)_86%,#000)]">
+              <Button
+                onClick={pausar}
+                className="h-11 border border-[var(--solido)] bg-[var(--solido)] px-5 text-[0.9375rem] font-semibold text-[var(--solido-ink)] hover:bg-[color-mix(in_srgb,var(--solido)_86%,#000)]"
+              >
                 <PauseIcon aria-hidden="true" weight="fill" />
                 {tr('pausar')}
               </Button>
             ) : (
-              <Button onClick={empezar} className="h-11 px-5 text-[0.9375rem] border border-[var(--solido)] bg-[var(--solido)] font-semibold text-[var(--solido-ink)] hover:bg-[color-mix(in_srgb,var(--solido)_86%,#000)]">
+              <Button
+                onClick={empezar}
+                className="h-11 border border-[var(--solido)] bg-[var(--solido)] px-5 text-[0.9375rem] font-semibold text-[var(--solido-ink)] hover:bg-[color-mix(in_srgb,var(--solido)_86%,#000)]"
+              >
                 <PlayIcon aria-hidden="true" weight="fill" />
-                {cuenta.estado === 'pausa' ? tr('seguir') : tr('empezar')}
+                {enMargen
+                  ? tr('empezarYa')
+                  : cuenta.estado === 'pausa'
+                    ? tr('seguir')
+                    : tr('empezar')}
               </Button>
             )}
 
@@ -442,16 +572,8 @@ export default function Pomodoro({ lang }: Props) {
           </div>
         </div>
 
-        {/* ---------------- El ciclo ---------------- */}
-        <section className="tarjeta-control" data-tour="ciclo">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="titulo">{tr('ciclo')}</p>
-            {cuenta.hechos > 0 && (
-              <Button variant="ghost" size="sm" onClick={desdeCero}>
-                {tr('desdeCero')}
-              </Button>
-            )}
-          </div>
+        <div className="ciclo-pomodoro" data-tour="ciclo">
+          <p className="titulo">{tr('ciclo')}</p>
 
           {/*
             Un punto por pomodoro del ciclo. Se ve de un vistazo cuántos
@@ -467,13 +589,25 @@ export default function Pomodoro({ lang }: Props) {
             ))}
           </div>
 
-          <p className="text-[length:var(--fs-small)] text-ink-soft">
-            {tr('hechos')}: <strong className="text-ink">{cuenta.hechos}</strong>
-            {' · '}
-            {tr('siguienteEs')} {nombreDeFase(paso.fase)}
+          {/* Dos líneas y no una con un punto en medio: en una columna
+              estrecha, «Pomodoros hechos: 0 · Después: Descanso» partía
+              justo después de «Después:» y dejaba la palabra suelta. */}
+          <p className="dato">
+            {tr('hechos')}: <strong>{cuenta.hechos}</strong>
           </p>
-        </section>
-      </div>
+          <p className="dato">
+            {tr('siguienteEs')} <strong>{nombreDeFase(paso.fase)}</strong>
+          </p>
+
+          {/* Era un botón fantasma y no se veía que fuera pulsable. Con
+              borde, y solo cuando hay algo que poner a cero. */}
+          {cuenta.hechos > 0 && (
+            <Button variant="outline" size="sm" onClick={desdeCero} className="justify-self-start">
+              {tr('desdeCero')}
+            </Button>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
@@ -481,11 +615,20 @@ export default function Pomodoro({ lang }: Props) {
 // ------------------------------------------------------------- auxiliares
 
 /**
- * Un campo de minutos.
+ * Un campo de un ajuste, con su etiqueta a la izquierda y su unidad a la
+ * derecha.
  *
- * El valor se limita al salir del campo y no al teclear: limitando en cada
- * pulsación, borrar el «5» de «25» para escribir «30» convertiría el «2»
- * en el mínimo antes de llegar al segundo dígito.
+ * Sobre cuándo se aplica lo que se escribe, que es donde estaba el fallo:
+ *
+ *   · **Al teclear**, si el número ya vale. Antes solo se aplicaba al
+ *     salir del campo, así que escribías «50» en trabajo, mirabas el
+ *     reloj y seguía diciendo «25:00». Parecía que la herramienta
+ *     ignoraba el ajuste, y lo que pasaba es que todavía no se lo había
+ *     contado a nadie.
+ *   · **Al salir**, se limita. Limitar en cada pulsación sería peor:
+ *     borrar el «5» de «25» para escribir «30» convertiría el «2» en el
+ *     mínimo antes de llegar al segundo dígito. Por eso lo que está
+ *     fuera de rango —o a medio escribir— se deja estar hasta el blur.
  */
 function Minutos({
   id,
@@ -493,6 +636,7 @@ function Minutos({
   unidad,
   valor,
   limites,
+  paso,
   onCambio,
 }: {
   id: string;
@@ -500,6 +644,7 @@ function Minutos({
   unidad: string;
   valor: number;
   limites: { min: number; max: number };
+  paso: number;
   onCambio: (valor: number) => void;
 }) {
   const [bruto, setBruto] = useState(String(valor));
@@ -509,24 +654,39 @@ function Minutos({
   }, [valor]);
 
   return (
-    <div className="grid gap-1.5">
+    <div className="fila-ajuste">
       <Label htmlFor={id}>{etiqueta}</Label>
-      <div className="flex items-center gap-2">
-        <Input
-          id={id}
-          type="number"
-          inputMode="numeric"
-          min={limites.min}
-          max={limites.max}
-          value={bruto}
-          onChange={(e) => setBruto(e.target.value)}
-          onBlur={() => {
-            const n = Math.min(limites.max, Math.max(limites.min, Math.round(Number(bruto))));
-            onCambio(Number.isFinite(n) ? n : valor);
-          }}
-        />
-        <span className="shrink-0 text-[length:var(--fs-small)] text-ink-soft">{unidad}</span>
-      </div>
+      <Input
+        id={id}
+        type="number"
+        inputMode="decimal"
+        min={limites.min}
+        max={limites.max}
+        step={paso}
+        value={bruto}
+        onChange={(e) => {
+          const texto = e.target.value;
+          setBruto(texto);
+
+          // Solo se aplica lo que ya es un número válido dentro de su
+          // rango. Un campo vacío o un «0» de camino a «30» se quedan
+          // esperando al blur.
+          const n = Number(texto.replace(',', '.'));
+          if (texto.trim() !== '' && Number.isFinite(n) && n >= limites.min && n <= limites.max) {
+            onCambio(Math.round(n * (1 / paso)) / (1 / paso));
+          }
+        }}
+        onBlur={() => {
+          const n = Number(bruto.replace(',', '.'));
+          if (!Number.isFinite(n)) {
+            setBruto(String(valor));
+            return;
+          }
+          const dentro = Math.min(limites.max, Math.max(limites.min, n));
+          onCambio(Math.round(dentro * (1 / paso)) / (1 / paso));
+        }}
+      />
+      <span className="unidad">{unidad}</span>
     </div>
   );
 }

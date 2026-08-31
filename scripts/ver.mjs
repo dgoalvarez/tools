@@ -109,14 +109,6 @@ const VISTAS = [
   },
   // En inglés, para ver que los nombres de las variables van en inglés.
   { nombre: 'paleta-en', ruta: 'en/palette', ancho: 1440, alto: 1000 },
-  // El detalle abierto, que es donde se leen los veredictos.
-  {
-    nombre: 'paleta-detalle',
-    ruta: 'es/paleta',
-    ancho: 1440,
-    alto: 1200,
-    clics: ['[data-tour="cuadricula"] .casilla-paleta:nth-of-type(18)'],
-  },
   { nombre: 'contraste', ruta: 'es/contraste', ancho: 1440, alto: 1000 },
   { nombre: 'escala', ruta: 'es/escala', ancho: 1440, alto: 1000 },
   { nombre: 'contraste-claro', ruta: 'es/contraste', ancho: 1440, alto: 1000, tema: 'light' },

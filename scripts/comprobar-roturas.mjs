@@ -228,18 +228,6 @@ const RELOJ_CUMPLIDO = `
 })()
 `;
 
-/** El detalle abierto sobre el último paso de la última fila. */
-const PALETA_DETALLE = `
-(async () => {
-  const casillas = await __esperar(() => {
-    const c = document.querySelectorAll('[data-tour="cuadricula"] .casilla-paleta');
-    return c.length ? c : null;
-  });
-  casillas[casillas.length - 1].click();
-  await new Promise((r) => setTimeout(r, 500));
-})()
-`;
-
 /**
  * Qué se somete a qué.
  *
@@ -296,7 +284,7 @@ const CASOS = [
   },
   { nombre: 'paleta · quince pasos', ruta: 'es/paleta', query: 'n=15' },
   { nombre: 'paleta · semilla casi blanca', ruta: 'es/paleta', query: 't=casi:fbfbfa' },
-  { nombre: 'paleta · detalle abierto', ruta: 'es/paleta', hacer: PALETA_DETALLE },
+  { nombre: 'paleta · con las tintas', ruta: 'es/paleta' },
   { nombre: 'portada', ruta: 'es' },
   { nombre: 'portada en inglés', ruta: 'en' },
 ];

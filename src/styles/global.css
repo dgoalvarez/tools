@@ -2758,17 +2758,32 @@
     color: var(--ink-muted);
   }
 
+  /*
+    La casilla lleva DOS botones: el grande copia y el pequeño ajusta.
+
+    Copiar es lo que se hace todo el rato y ajustar un paso a mano es
+    raro, así que el que copia ocupa la casilla entera y el lápiz se
+    esconde en una esquina hasta que el puntero pasa por encima.
+
+    Es una caja con dos botones y no un botón con otro dentro, que sería
+    HTML inválido y dejaría de funcionar con teclado.
+  */
   .casilla-paleta {
     position: relative;
-    display: grid;
-    place-items: center;
-    /* Cuadradas mientras quepan, y nunca por debajo de lo que se puede
-       pulsar con un dedo. */
     min-width: 1.75rem;
     aspect-ratio: 1;
-    padding: 0;
-    border: 1px solid transparent;
     border-radius: var(--radius-sm);
+  }
+
+  .casilla-paleta .copiar {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: inherit;
+    background: none;
     cursor: pointer;
   }
 
@@ -2779,14 +2794,46 @@
     outline-offset: 1px;
   }
 
-  .casilla-paleta.abierta {
-    outline: 2px solid var(--acento);
-    outline-offset: 1px;
-  }
-
-  .casilla-paleta:focus-visible {
+  .casilla-paleta .copiar:focus-visible,
+  .casilla-paleta .editar:focus-visible {
     outline: 2px solid var(--brand);
     outline-offset: 2px;
+  }
+
+  .casilla-paleta .editar {
+    position: absolute;
+    inset-block-start: 1px;
+    inset-inline-end: 1px;
+    display: grid;
+    place-items: center;
+    width: 1rem;
+    height: 1rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .casilla-paleta .editar svg {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+
+  .casilla-paleta:hover .editar,
+  .casilla-paleta .editar:focus-visible,
+  .casilla-paleta .editar[data-state='open'] {
+    opacity: 0.85;
+  }
+
+  /* En una pantalla táctil no hay «pasar por encima», así que el lápiz se
+     queda siempre a la vista. Sin esto, ajustar un paso sería imposible
+     en un móvil. */
+  @media (pointer: coarse) {
+    .casilla-paleta .editar {
+      opacity: 0.7;
+    }
   }
 
   /*
@@ -2821,6 +2868,106 @@
     width: 0.5rem;
     height: 0.1875rem;
     border-radius: 1px;
+  }
+
+  .cabecera-paleta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.625rem;
+  }
+
+  /* ---------- La cuadrícula de tintas ---------- */
+  .casilla-tinta {
+    display: grid;
+    place-items: center;
+    min-width: 1.75rem;
+    aspect-ratio: 1;
+    border-radius: var(--radius-sm);
+    font-size: 0.62rem;
+    font-weight: 600;
+  }
+
+  /* Donde cambia la polaridad: de aquí para abajo se escribe en blanco.
+     La línea va en el acento porque es la única cosa de esta cuadrícula
+     que no se puede deducir mirando una casilla sola. */
+  .casilla-tinta.frontera {
+    box-shadow: inset 2px 0 0 var(--acento);
+  }
+
+  /* Los pasos que no aguantan ninguna tinta se marcan además con una
+     trama: distinguirlos solo por la rayita sería pedirle al ojo que
+     compare un guion con dos letras sobre treinta y tres colores. */
+  .casilla-tinta.sin-tinta {
+    color: var(--ink-soft);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+
+  .leyenda-tintas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--fs-small);
+    color: var(--ink-soft);
+  }
+
+  .leyenda-tintas li {
+    display: flex;
+    align-items: center;
+    gap: 0.4375rem;
+  }
+
+  .leyenda-tintas .chip {
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.62rem;
+    font-weight: 600;
+  }
+
+  .leyenda-tintas .chip.vacio {
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+  }
+
+  .leyenda-tintas .chip.frontera {
+    width: 0.5rem;
+    background: var(--acento);
+  }
+
+  /* El acordeón fino, para la ayuda de los mandos: sin borde propio, que
+     ya vive dentro de una tarjeta. */
+  .acordeon-fino {
+    border: 0;
+    background: none;
+  }
+
+  .acordeon-fino > summary {
+    padding: 0;
+    font-size: var(--fs-small);
+    font-weight: 500;
+    color: var(--ink-muted);
+  }
+
+  .acordeon-fino .cuerpo {
+    padding: 0.625rem 0 0;
+    border: 0;
+  }
+
+  .acordeon-fino .cuerpo .intro + .intro {
+    margin-block-start: 0.5rem;
+  }
+
+  /* El anclaje, dentro del popover del color. */
+  .fila-ajuste.anclaje {
+    padding-block-start: 0.75rem;
+    border-block-start: 1px solid var(--line);
   }
 
   /* ---------- El detalle ---------- */

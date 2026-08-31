@@ -10,8 +10,8 @@
  * La aritmética vive en `src/lib/rampa.ts`. Aquí solo están el estado, la
  * cuadrícula y el panel de detalle.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { PlusIcon, TrashIcon, WarningIcon } from '@phosphor-icons/react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CheckIcon, PencilSimpleIcon, PlusIcon, TrashIcon, WarningIcon } from '@phosphor-icons/react';
 
 import BotonCopiar from '@/components/BotonCopiar';
 import SelectorColor from '@/islands/SelectorColor';
@@ -31,11 +31,13 @@ import {
   buscarNombresRepetidos,
   construirPaleta,
   limpiarNombre,
+  limiteDePolaridad,
   medirPaso,
+  nombresPaso,
   retoquesDormidos,
   soltarRetoque,
   type Ajustes,
-  type Paso,
+  type Rampa,
   type Tonalidad,
 } from '@/lib/rampa';
 import { escribirParams, leerParams } from '@/lib/url-state';
@@ -103,9 +105,9 @@ export default function Paleta({ lang }: Props) {
   const [prefijo, setPrefijo] = useState('');
   const [enlaceLeido, setEnlaceLeido] = useState(false);
 
-  /** Qué casilla está abierta: «idDeTonalidad/nombreDePaso». */
-  const [abierta, setAbierta] = useState<string | null>(null);
-  const [formato, setFormato] = useState<'oklch' | 'hex'>('oklch');
+  /** Qué casilla acaba de copiarse: «idDeTonalidad/nombreDePaso». */
+  const [copiado, setCopiado] = useState<string | null>(null);
+  const [formato, setFormato] = useState<'oklch' | 'hex'>('hex');
 
   // ---------- al llegar ----------
 
@@ -225,18 +227,37 @@ export default function Paleta({ lang }: Props) {
 
   function quitar(id: string) {
     setTonalidades((previas) => previas.filter((t) => t.id !== id));
-    setAbierta(null);
   }
 
-  // ---------- el detalle ----------
+  /** Copia un color y deja la palomita puesta un par de segundos. */
+  const reloj = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (reloj.current) clearTimeout(reloj.current);
+    },
+    []
+  );
 
-  const detalle = useMemo(() => {
-    if (!abierta) return null;
-    const [id, nombre] = abierta.split('/');
-    const rampa = paleta.rampas.find((r) => r.tonalidad.id === id);
-    const paso = rampa?.pasos.find((p) => p.nombre === nombre);
-    return rampa && paso ? { rampa, paso } : null;
-  }, [abierta, paleta]);
+  async function copiarColor(clave: string, texto: string) {
+    try {
+      await navigator.clipboard.writeText(texto);
+      setCopiado(clave);
+      if (reloj.current) clearTimeout(reloj.current);
+      reloj.current = setTimeout(() => setCopiado(null), 1800);
+    } catch {
+      // Sin portapapeles el color sigue en el bloque de CSS de abajo.
+    }
+  }
+
+  /**
+   * ¿Los mandos están como salieron de fábrica?
+   *
+   * Cuatro mandos se desajustan enseguida, y volver a mano a 97, 18, 100
+   * y 8 es imposible sin saberse los números de memoria.
+   */
+  const deFabrica = (Object.keys(AJUSTES_INICIALES) as (keyof Ajustes)[]).every(
+    (k) => ajustes[k] === AJUSTES_INICIALES[k]
+  );
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,var(--col-controles))_minmax(0,1fr)] lg:items-start">
@@ -255,9 +276,11 @@ export default function Paleta({ lang }: Props) {
                 key={tono.id}
                 tono={tono}
                 lang={lang}
+                nombresDePaso={nombresPaso(ajustes.pasos)}
                 sePuedeQuitar={tonalidades.length > 1}
                 onSemilla={(valor) => editar(tono.id, { semilla: valor })}
                 onNombre={(valor) => editar(tono.id, { nombre: limpiarNombre(valor) })}
+                onAncla={(valor) => editar(tono.id, { anclaForzada: valor })}
                 onQuitar={() => quitar(tono.id)}
               />
             ))}
@@ -279,9 +302,18 @@ export default function Paleta({ lang }: Props) {
         {/* ---------- La rampa ---------- */}
         <fieldset className="tarjeta-control" data-tour="rampa">
           <legend className="sr-only">{tr('laRampa')}</legend>
-          <p className="titulo" aria-hidden="true">
-            {tr('laRampa')}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="titulo" aria-hidden="true">
+              {tr('laRampa')}
+            </p>
+            {/* Cuatro mandos se desajustan enseguida, y volver a mano a
+                97/18/100/8 es imposible sin saberse los números. */}
+            {!deFabrica && (
+              <Button variant="ghost" size="sm" onClick={() => setAjustes(AJUSTES_INICIALES)}>
+                {tr('deFabrica')}
+              </Button>
+            )}
+          </div>
 
           <div className="filas-ajuste">
             <div className="fila-ajuste">
@@ -347,7 +379,13 @@ export default function Paleta({ lang }: Props) {
             />
           </div>
 
-          <p className="ayuda-paleta">{tr('derivaAyuda')}</p>
+          <details className="acordeon acordeon-fino">
+            <summary>{tr('queHaceCada')}</summary>
+            <div className="cuerpo">
+              <p className="intro">{tr('cromaAyuda')}</p>
+              <p className="intro">{tr('derivaAyuda')}</p>
+            </div>
+          </details>
         </fieldset>
 
         {/* ---------- Los nombres ---------- */}
@@ -377,12 +415,34 @@ export default function Paleta({ lang }: Props) {
       {/* ================= La paleta ================= */}
       <div className="columna-herramienta gap-5">
         <section className="tarjeta-control" data-tour="cuadricula">
-          <p className="titulo" aria-hidden="true">
-            {tr('laPaleta')}
-          </p>
+          <div className="cabecera-paleta">
+            <p className="titulo" aria-hidden="true">
+              {tr('laPaleta')}
+            </p>
+
+            {/*
+              El formato va aquí arriba y no en el bloque de CSS: es lo que
+              decide qué se lleva uno al pulsar un color, así que tiene que
+              estar a la vista de la cuadrícula, no dentro de un acordeón.
+            */}
+            <div className="segmento segmento-formato" role="group" aria-label={tr('formatoTitulo')}>
+              {(['hex', 'oklch'] as const).map((f) => (
+                <label key={f}>
+                  <input
+                    type="radio"
+                    name="formato"
+                    checked={formato === f}
+                    onChange={() => setFormato(f)}
+                  />
+                  <span>{f === 'oklch' ? tr('formatoOklch') : tr('formatoHex')}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <p className="ayuda-paleta">{tr('pulsaParaCopiar')}</p>
 
           <div className="rejilla-paleta" style={{ '--pasos': ajustes.pasos } as React.CSSProperties}>
-            {/* La cabecera con los nombres de los pasos. */}
             <span className="esquina" aria-hidden="true" />
             {paleta.rampas[0]?.pasos.map((p) => (
               <span key={p.nombre} className="cabeza-paso" aria-hidden="true">
@@ -391,36 +451,69 @@ export default function Paleta({ lang }: Props) {
             ))}
 
             {paleta.rampas.map((rampa) => (
-              <Fila
+              <FilaPaleta
                 key={rampa.tonalidad.id}
-                nombre={rampa.tonalidad.nombre}
-                pasos={rampa.pasos}
-                abierta={abierta}
-                idTonalidad={rampa.tonalidad.id}
-                etiquetaVer={tr('verDetalle')}
-                onAbrir={setAbierta}
+                rampa={rampa}
+                lang={lang}
+                formato={formato}
+                copiado={copiado}
+                onCopiar={copiarColor}
+                onRetocar={(nombre, hex) =>
+                  conTonalidad(rampa.tonalidad.id, (t) => aplicarRetoque(t, nombre, hex))
+                }
+                onDevolver={(nombre) =>
+                  conTonalidad(rampa.tonalidad.id, (t) => soltarRetoque(t, nombre))
+                }
               />
             ))}
           </div>
         </section>
 
-        {detalle && (
-          <Detalle
-            paso={detalle.paso}
-            esDeformada={detalle.rampa.escaleraDeformada}
-            lang={lang}
-            onCerrar={() => setAbierta(null)}
-            onRetocar={(hex) => conTonalidad(detalle.rampa.tonalidad.id, (t) => aplicarRetoque(t, detalle.paso.nombre, hex))}
-            onDevolver={() => conTonalidad(detalle.rampa.tonalidad.id, (t) => soltarRetoque(t, detalle.paso.nombre))}
-            onAnclar={() =>
-              editar(detalle.rampa.tonalidad.id, { anclaForzada: detalle.paso.indice })
-            }
-            onSoltarAncla={() => editar(detalle.rampa.tonalidad.id, { anclaForzada: null })}
-            forzada={
-              tonalidades.find((t) => t.id === detalle.rampa.tonalidad.id)?.anclaForzada !== null
-            }
-          />
-        )}
+        {/* ================= Las tintas ================= */}
+        <section className="tarjeta-control" data-tour="tintas">
+          <p className="titulo" aria-hidden="true">
+            {tr('tintas')}
+          </p>
+          <p className="ayuda-paleta">{tr('tintasIntro')}</p>
+
+          <div className="rejilla-paleta" style={{ '--pasos': ajustes.pasos } as React.CSSProperties}>
+            <span className="esquina" aria-hidden="true" />
+            {paleta.rampas[0]?.pasos.map((p) => (
+              <span key={p.nombre} className="cabeza-paso" aria-hidden="true">
+                {p.nombre}
+              </span>
+            ))}
+
+            {paleta.rampas.map((rampa) => (
+              <FilaTintas key={rampa.tonalidad.id} rampa={rampa} lang={lang} />
+            ))}
+          </div>
+
+          <ul className="leyenda-tintas">
+            <li>
+              <span className="chip" style={{ background: '#3b82f6', color: '#ffffff' }}>
+                Aa
+              </span>
+              {tr('leyendaBlanco')}
+            </li>
+            <li>
+              <span className="chip" style={{ background: '#bfd9fe', color: '#000000' }}>
+                Aa
+              </span>
+              {tr('leyendaNegro')}
+            </li>
+            <li>
+              <span className="chip vacio" aria-hidden="true">
+                —
+              </span>
+              {tr('leyendaNinguno')}
+            </li>
+            <li>
+              <span className="chip frontera" aria-hidden="true" />
+              {tr('leyendaFrontera')}
+            </li>
+          </ul>
+        </section>
 
         {/* ---------- Lo que conviene saber ---------- */}
         <section className="tarjeta-control" data-tour="avisos">
@@ -447,29 +540,6 @@ export default function Paleta({ lang }: Props) {
         <details className="acordeon" data-tour="css">
           <summary>
             <span className="flex-1">{tr('cssTitulo')}</span>
-
-            {/* El formato va JUNTO al botón de copiar y no dentro del
-                acordeón: se elige en el momento de llevárselo, que es
-                cuando se sabe cuál hace falta. */}
-            <div
-              className="segmento segmento-formato"
-              role="group"
-              aria-label={tr('formatoTitulo')}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {(['oklch', 'hex'] as const).map((f) => (
-                <label key={f}>
-                  <input
-                    type="radio"
-                    name="formato-css"
-                    checked={formato === f}
-                    onChange={() => setFormato(f)}
-                  />
-                  <span>{f === 'oklch' ? tr('formatoOklch') : tr('formatoHex')}</span>
-                </label>
-              ))}
-            </div>
-
             <BotonCopiar
               texto={() => css}
               etiqueta={tr('copiarCss')}
@@ -482,7 +552,6 @@ export default function Paleta({ lang }: Props) {
           </summary>
           <div className="cuerpo">
             <p className="intro">{tr('cssIntro')}</p>
-
             <pre className="overflow-x-auto rounded-lg border border-line bg-surface-2 p-4 font-mono text-[0.78rem] leading-relaxed text-ink">
               <code>{css}</code>
             </pre>
@@ -509,29 +578,39 @@ export default function Paleta({ lang }: Props) {
 function FilaTonalidad({
   tono,
   lang,
+  nombresDePaso,
   sePuedeQuitar,
   onSemilla,
   onNombre,
+  onAncla,
   onQuitar,
 }: {
   tono: Tonalidad;
   lang: Lang;
+  nombresDePaso: string[];
   sePuedeQuitar: boolean;
   onSemilla: (valor: string) => void;
   onNombre: (valor: string) => void;
+  onAncla: (valor: number | null) => void;
   onQuitar: () => void;
 }) {
   const tr = (clave: keyof typeof P) => t(P[clave], lang);
 
   /*
-   * El campo guarda lo tecleado tal cual y el color solo se mueve cuando
-   * lo escrito ya es un color. Si no, borrar un carácter de un
-   * hexadecimal dejaría la rampa entera en negro mientras se escribe el
-   * siguiente.
+   * El campo guarda lo tecleado tal cual, y NO se vuelve a rellenar desde
+   * el color.
+   *
+   * Antes había un efecto que hacía `setBruto(tono.semilla)` cada vez que
+   * el color cambiaba, y eso hacía imposible escribir un hexadecimal: al
+   * teclear «#ff8» —que es un hex válido de tres dígitos— el color pasaba
+   * a #ffff88 y el efecto reescribía el campo con esos seis caracteres.
+   * Lo que se seguía tecleando se pegaba detrás y salía cualquier cosa.
+   *
+   * Todos los caminos que cambian el color —el cuadro, las barras, el
+   * cuentagotas— pasan por `cambiar`, así que el campo nunca se queda
+   * desincronizado sin que este componente se entere.
    */
   const [bruto, setBruto] = useState(tono.semilla);
-  useEffect(() => setBruto(tono.semilla), [tono.semilla]);
-
   const color = leerColor(bruto);
 
   function cambiar(valor: string) {
@@ -583,6 +662,28 @@ function FilaTonalidad({
             onCuentagotas={soportaCuentagotas ? usarCuentagotas : undefined}
             sinTarjeta
           />
+
+          {/*
+            El anclaje vive aquí, con el color, porque es una propiedad de
+            ESTA tonalidad y no de la rampa entera. Sin este control, un
+            amarillo se quedaba para siempre llamándose «200».
+          */}
+          <div className="fila-ajuste anclaje">
+            <Label htmlFor={`ancla-${tono.id}`}>{tr('anclarEn')}</Label>
+            <select
+              id={`ancla-${tono.id}`}
+              className="select-paleta"
+              value={tono.anclaForzada ?? ''}
+              onChange={(e) => onAncla(e.target.value === '' ? null : Number(e.target.value))}
+            >
+              <option value="">{tr('anclaAuto')}</option>
+              {nombresDePaso.map((nombre, i) => (
+                <option key={nombre} value={i}>
+                  {nombre}
+                </option>
+              ))}
+            </select>
+          </div>
         </PopoverContent>
       </Popover>
 
@@ -607,153 +708,167 @@ function FilaTonalidad({
   );
 }
 
-/** Una fila de la cuadrícula: el nombre de la tonalidad y sus casillas. */
-function Fila({
-  nombre,
-  pasos,
-  abierta,
-  idTonalidad,
-  etiquetaVer,
-  onAbrir,
+/** Una fila de la cuadrícula: el nombre y sus casillas, que copian. */
+function FilaPaleta({
+  rampa,
+  lang,
+  formato,
+  copiado,
+  onCopiar,
+  onRetocar,
+  onDevolver,
 }: {
-  nombre: string;
-  pasos: Paso[];
-  abierta: string | null;
-  idTonalidad: string;
-  etiquetaVer: string;
-  onAbrir: (clave: string | null) => void;
+  rampa: Rampa;
+  lang: Lang;
+  formato: 'oklch' | 'hex';
+  copiado: string | null;
+  onCopiar: (clave: string, texto: string) => void;
+  onRetocar: (nombre: string, hex: string) => void;
+  onDevolver: (nombre: string) => void;
 }) {
+  const tr = (clave: keyof typeof P) => t(P[clave], lang);
+  const nombre = rampa.tonalidad.nombre;
+
   return (
     <>
       <span className="nombre-fila">{nombre}</span>
-      {pasos.map((paso) => {
-        const clave = `${idTonalidad}/${paso.nombre}`;
-        const m = medirPaso(paso.hex, TEXTO);
-        const sinTinta = !m.conBlanco.wcag.pasaAA && !m.conNegro.wcag.pasaAA;
+      {rampa.pasos.map((paso) => {
+        const clave = `${rampa.tonalidad.id}/${paso.nombre}`;
+        const valor = formato === 'hex' ? paso.hex : aOklchCss(paso);
 
         return (
-          <button
-            key={paso.nombre}
-            type="button"
-            className={`casilla-paleta${abierta === clave ? ' abierta' : ''}`}
-            style={{ background: paso.hex }}
-            aria-pressed={abierta === clave}
-            aria-label={`${etiquetaVer} ${nombre} ${paso.nombre}, ${paso.hex}`}
-            onClick={() => onAbrir(abierta === clave ? null : clave)}
-          >
-            {/* Las marcas van en el color que sí se lee sobre la casilla,
-                que es justo el dato que la casilla está enseñando. */}
-            <span
-              className="marcas"
-              style={{ color: m.conBlanco.wcag.pasaAA ? '#ffffff' : '#000000' }}
+          <div key={paso.nombre} className="casilla-paleta" style={{ background: paso.hex }}>
+            <button
+              type="button"
+              className="copiar"
+              aria-label={`${tr('copiarColor')} ${nombre} ${paso.nombre}, ${valor}`}
+              onClick={() => onCopiar(clave, valor)}
             >
-              {paso.ancla && <span className="punto-ancla" />}
-              {paso.tocado && <span className="punto-tocado" />}
-              {sinTinta && <span className="punto-sin-tinta" />}
-            </span>
-          </button>
+              {copiado === clave ? (
+                <CheckIcon
+                  aria-hidden="true"
+                  style={{ color: paso.l < 0.55 ? '#ffffff' : '#000000' }}
+                />
+              ) : (
+                <span
+                  className="marcas"
+                  aria-hidden="true"
+                  style={{ color: paso.l < 0.55 ? '#ffffff' : '#000000' }}
+                >
+                  {paso.ancla && <span className="punto-ancla" />}
+                  {paso.tocado && <span className="punto-tocado" />}
+                </span>
+              )}
+            </button>
+
+            {/* Ajustar un paso a mano es raro y copiarlo es lo normal, así
+                que el lápiz se esconde hasta que el puntero pasa por
+                encima. En pantallas táctiles, donde no hay «encima», se
+                queda siempre. */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="editar"
+                  aria-label={`${tr('ajustar')} ${nombre} ${paso.nombre}`}
+                  style={{ color: paso.l < 0.55 ? '#ffffff' : '#000000' }}
+                >
+                  <PencilSimpleIcon aria-hidden="true" />
+                </button>
+              </PopoverTrigger>
+
+              <PopoverContent side="bottom" align="end" className="w-[min(18rem,calc(100vw-2rem))]">
+                <div className="grid gap-3">
+                  <div>
+                    <p className="variable">{paso.variable}</p>
+                    <p className="valores">
+                      {paso.hex} · {aOklchCss(paso)}
+                    </p>
+                  </div>
+
+                  {paso.ancla && <p className="ayuda-paleta">{tr('anclaExplicado')}</p>}
+                  {paso.recortado && <p className="ayuda-paleta">{tr('recortadoExplicado')}</p>}
+
+                  <div className="acciones-detalle">
+                    <span className="etiqueta-retoque">{tr('retocar')}</span>
+                    <span className="relative size-8 shrink-0">
+                      <input
+                        type="color"
+                        className="muestra-color"
+                        value={paso.hex}
+                        aria-label={`${tr('retocar')} ${paso.nombre}`}
+                        onChange={(e) => onRetocar(paso.nombre, e.target.value)}
+                      />
+                    </span>
+                    {paso.tocado && (
+                      <Button variant="outline" size="sm" onClick={() => onDevolver(paso.nombre)}>
+                        {tr('devolver')}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
         );
       })}
     </>
   );
 }
 
-/** El panel de detalle de un paso. */
-function Detalle({
-  paso,
-  esDeformada,
-  lang,
-  onCerrar,
-  onRetocar,
-  onDevolver,
-  onAnclar,
-  onSoltarAncla,
-  forzada,
-}: {
-  paso: Paso;
-  esDeformada: boolean;
-  lang: Lang;
-  onCerrar: () => void;
-  onRetocar: (hex: string) => void;
-  onDevolver: () => void;
-  onAnclar: () => void;
-  onSoltarAncla: () => void;
-  forzada: boolean;
-}) {
+/**
+ * Una fila de la cuadrícula de tintas.
+ *
+ * La misma geometría que la paleta, pero cada casilla enseña con qué
+ * color de texto se puede escribir encima. Es la pregunta que se le hace
+ * de verdad a una muestra —«¿qué etiqueta le pongo?»— y estaba escondida
+ * detrás de pulsar cada uno de los treinta y tres colores.
+ */
+function FilaTintas({ rampa, lang }: { rampa: Rampa; lang: Lang }) {
   const tr = (clave: keyof typeof P) => t(P[clave], lang);
-  const m = medirPaso(paso.hex, TEXTO);
 
-  const veredicto = (r: { razon: number; pasaAA: boolean; pasaAAA: boolean }, lc: number) =>
-    `${r.razon.toFixed(2)}:1 · AA ${r.pasaAA ? '✓' : '✗'} · AAA ${r.pasaAAA ? '✓' : '✗'} · Lc ${Math.round(lc)}`;
+  /*
+   * Dónde cambia la polaridad: el primer paso sobre el que ya se escribe
+   * en blanco.
+   *
+   * Es el dato más útil de esta cuadrícula —«de aquí para abajo, texto
+   * blanco»— y sin marcarlo hay que deducirlo comparando once casillas.
+   * Se pinta como una línea del acento entre la última negra y la primera
+   * blanca.
+   */
+  const frontera = limiteDePolaridad(rampa.pasos, TEXTO);
 
   return (
-    <section className="detalle-paso" data-tour="detalle">
-      <header>
-        <span className="muestra-detalle" style={{ background: paso.hex }} aria-hidden="true" />
-        <div className="min-w-0">
-          <p className="variable">{paso.variable}</p>
-          <p className="valores">
-            {paso.hex} · {aOklchCss(paso)}
-          </p>
-        </div>
-        <Button variant="ghost" size="sm" onClick={onCerrar} className="ml-auto">
-          {tr('cerrar')}
-        </Button>
-      </header>
+    <>
+      <span className="nombre-fila">{rampa.tonalidad.nombre}</span>
+      {rampa.pasos.map((paso) => {
+        const m = medirPaso(paso.hex, TEXTO);
+        const blanco = m.conBlanco.wcag.pasaAA;
+        const negro = m.conNegro.wcag.pasaAA;
 
-      <dl className="veredictos">
-        <dt>{tr('conBlanco')}</dt>
-        <dd>{veredicto(m.conBlanco.wcag, m.conBlanco.apca.lc)}</dd>
-        <dt>{tr('conNegro')}</dt>
-        <dd>{veredicto(m.conNegro.wcag, m.conNegro.apca.lc)}</dd>
-      </dl>
+        const titulo = blanco
+          ? `${paso.nombre} · ${tr('leyendaBlanco')} (${m.conBlanco.wcag.razon.toFixed(2)}:1)`
+          : negro
+            ? `${paso.nombre} · ${tr('leyendaNegro')} (${m.conNegro.wcag.razon.toFixed(2)}:1)`
+            : `${paso.nombre} · ${tr('leyendaNinguno')}`;
 
-      {paso.ancla && <p className="ayuda-paleta">{tr('anclaExplicado')}</p>}
-      {paso.recortado && <p className="ayuda-paleta">{tr('recortadoExplicado')}</p>}
-      {!m.conBlanco.wcag.pasaAA && !m.conNegro.wcag.pasaAA && (
-        <p className="ayuda-paleta">{tr('sinTintaExplicado')}</p>
-      )}
-      {esDeformada && (
-        <p className="aviso-paleta">
-          <WarningIcon aria-hidden="true" />
-          {tr('escaleraDeformada')}
-        </p>
-      )}
-
-      <div className="acciones-detalle">
-        {/* Un cuadrado de color suelto no dice qué hace. La etiqueta va
-            al lado y el `aria-label` sigue en el campo. */}
-        <span className="etiqueta-retoque">{tr('retocar')}</span>
-        <span className="relative size-8 shrink-0">
-          <input
-            type="color"
-            className="muestra-color"
-            value={paso.hex}
-            aria-label={tr('retocar')}
-            onChange={(e) => onRetocar(e.target.value)}
-          />
-        </span>
-
-        {paso.tocado && (
-          <Button variant="outline" size="sm" onClick={onDevolver}>
-            {tr('devolver')}
-          </Button>
-        )}
-
-        {!paso.ancla && (
-          <Button variant="outline" size="sm" onClick={onAnclar}>
-            {tr('anclarAqui')}
-          </Button>
-        )}
-        {paso.ancla && forzada && (
-          <Button variant="outline" size="sm" onClick={onSoltarAncla}>
-            {tr('soltarAncla')}
-          </Button>
-        )}
-
-        <BotonCopiar texto={paso.hex} etiqueta={tr('copiarHex')} etiquetaCopiado={tr('copiado')} />
-      </div>
-    </section>
+        return (
+          <span
+            key={paso.nombre}
+            className={
+              'casilla-tinta' +
+              (blanco || negro ? '' : ' sin-tinta') +
+              (paso.indice === frontera ? ' frontera' : '')
+            }
+            style={{ background: paso.hex, color: blanco ? '#ffffff' : '#000000' }}
+            title={titulo}
+          >
+            <span className="sr-only">{titulo}</span>
+            <span aria-hidden="true">{blanco || negro ? 'Aa' : '—'}</span>
+          </span>
+        );
+      })}
+    </>
   );
 }
 

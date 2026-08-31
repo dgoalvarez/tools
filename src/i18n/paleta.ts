@@ -43,6 +43,13 @@ export const PALETA = {
 
   // ---------- La cuadrícula ----------
   laPaleta: { es: 'La paleta', en: 'The palette' },
+  /** Lo que hace pulsar una casilla, dicho una vez encima de la rejilla. */
+  pulsaParaCopiar: {
+    es: 'Pulsa un color para copiarlo.',
+    en: 'Click a colour to copy it.',
+  },
+  copiarColor: { es: 'Copiar', en: 'Copy' },
+  ajustar: { es: 'Ajustar este paso', en: 'Tune this step' },
   /** Lo que se lee al pulsar una casilla, para el lector de pantalla. */
   verDetalle: { es: 'Ver el detalle de', en: 'See the detail of' },
   ancla: { es: 'tu color', en: 'your colour' },
@@ -77,6 +84,29 @@ export const PALETA = {
     en: 'Moves your colour to this step. Useful for yellows and cyans, which by their lightness land on a light step even when they are a brand’s main colour.',
   },
   soltarAncla: { es: 'Dejar que caiga solo', en: 'Let it fall where it lands' },
+  anclarEn: { es: 'Anclar mi color en', en: 'Anchor my colour at' },
+  anclaAuto: { es: 'Donde caiga', en: 'Where it lands' },
+
+  // ---------- Las tintas ----------
+  tintas: { es: 'Qué tinta aguanta cada paso', en: 'What ink each step can carry' },
+  tintasIntro: {
+    es: 'Con qué color de texto se puede escribir encima de cada paso, a 4,5:1 —el AA de WCAG 2.2 para texto de cuerpo—. Los pasos del centro casi nunca aguantan ninguno de los dos: sirven de fondo, de borde y de icono grande, no de texto.',
+    en: 'Which text colour you can write on each step at 4.5:1 — WCAG 2.2 AA for body text. The middle steps almost never take either: they work as background, border and large icon, not as text.',
+  },
+  leyendaBlanco: { es: 'aguanta blanco', en: 'takes white' },
+  leyendaNegro: { es: 'aguanta negro', en: 'takes black' },
+  leyendaNinguno: { es: 'ninguno de los dos', en: 'neither one' },
+  leyendaFrontera: {
+    es: 'de aquí en adelante, blanco',
+    en: 'from here on, white',
+  },
+
+  // ---------- Volver a lo de fábrica ----------
+  deFabrica: { es: 'Volver a lo de fábrica', en: 'Back to defaults' },
+  cromaAyuda: {
+    es: 'Al 0 % el croma es el mismo en toda la rampa; al 100 % sube en el centro como en una paleta al uso; al 200 % se exagera. Lo que la pantalla no pueda pintar se recorta y se avisa.',
+    en: 'At 0 % the chroma is the same across the ramp; at 100 % it rises in the middle like a usual palette; at 200 % it is exaggerated. Whatever the screen cannot paint is clipped and flagged.',
+  },
 
   // ---------- Avisos ----------
   avisos: { es: 'Lo que conviene saber', en: 'Worth knowing' },
@@ -104,6 +134,7 @@ export const PALETA = {
     en: 'It comes out as oklch() and not hex on purpose: hex is eight bits and rounding it moves the lightness enough to break the ladder. Hex values are below if you need them.',
   },
   formatoTitulo: { es: 'Formato', en: 'Format' },
+  queHaceCada: { es: '¿Qué hace cada mando?', en: 'What does each control do?' },
   formatoOklch: { es: 'oklch()', en: 'oklch()' },
   formatoHex: { es: 'Hexadecimal', en: 'Hex' },
   copiarCss: { es: 'Copiar', en: 'Copy' },

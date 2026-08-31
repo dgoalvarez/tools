@@ -103,27 +103,19 @@ const VISTAS = [
   { nombre: 'reloj-claro', ruta: 'es/reloj', ancho: 1440, alto: 1100, tema: 'light' },
   { nombre: 'reloj-esfera', ruta: 'es/reloj', ancho: 1440, alto: 1100, query: 'c=analogica' },
   { nombre: 'reloj-estrecho', ruta: 'es/reloj', ancho: 485, alto: 900 },
-  // Las dos pestañas que no se ven sin pulsar. El cronómetro se arranca y
-  // se le sacan tres vueltas, que es lo único que enseña la tabla.
+  // El cronómetro con vueltas: se arranca y se le sacan tres, que es lo
+  // único que hace aparecer la tabla.
   {
-    nombre: 'reloj-cronometro',
+    nombre: 'reloj-vueltas',
     ruta: 'es/reloj',
     ancho: 1440,
-    alto: 1200,
+    alto: 1300,
     clics: [
-      '#tab-cronometro',
-      '#panel-cronometro .mandos-modo button',
-      '#panel-cronometro .mandos-modo button:nth-of-type(2)',
-      '#panel-cronometro .mandos-modo button:nth-of-type(2)',
-      '#panel-cronometro .mandos-modo button:nth-of-type(2)',
+      '[data-tour="cronometro"] .mandos-modo button',
+      '[data-tour="cronometro"] .mandos-modo button:nth-of-type(2)',
+      '[data-tour="cronometro"] .mandos-modo button:nth-of-type(2)',
+      '[data-tour="cronometro"] .mandos-modo button:nth-of-type(2)',
     ],
-  },
-  {
-    nombre: 'reloj-temporizador',
-    ruta: 'es/reloj',
-    ancho: 1440,
-    alto: 1200,
-    clics: ['#tab-temporizador'],
   },
   { nombre: 'pomodoro', ruta: 'es/pomodoro', ancho: 1440, alto: 1000 },
   { nombre: 'pomodoro-claro', ruta: 'es/pomodoro', ancho: 1440, alto: 1000, tema: 'light' },

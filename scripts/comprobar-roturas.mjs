@@ -196,7 +196,9 @@ const POMODORO_ANDANDO = `
 /** La alarma puesta: aparece la cuenta atrás y el día en que caerá. */
 const RELOJ_ALARMA = `
 (async () => {
-  const boton = await __esperar(() => document.querySelector('.fila-alarma button'));
+  // Hijo directo de la tarjeta: el botón salió de «.fila-alarma» cuando
+  // el campo de la hora pasó a ir solo en su fila.
+  const boton = await __esperar(() => document.querySelector('[data-tour="alarma"] > button'));
   boton.click();
   await new Promise((r) => setTimeout(r, 400));
 })()
@@ -205,22 +207,11 @@ const RELOJ_ALARMA = `
 /** El cronómetro con vueltas, que es cuando aparece la tabla. */
 const RELOJ_VUELTAS = `
 (async () => {
-  const tab = await __esperar(() => document.querySelector('#tab-cronometro'));
-  tab.click();
-  const mandos = await __esperar(() => document.querySelector('#panel-cronometro .mandos-modo'));
+  const mandos = await __esperar(() => document.querySelector('[data-tour="cronometro"] .mandos-modo'));
   mandos.querySelectorAll('button')[0].click();
-  const vuelta = () => document.querySelectorAll('#panel-cronometro .mandos-modo button')[1];
+  const vuelta = () => document.querySelectorAll('[data-tour="cronometro"] .mandos-modo button')[1];
   for (let i = 0; i < 4; i++) { vuelta().click(); await new Promise((r) => setTimeout(r, 90)); }
   await new Promise((r) => setTimeout(r, 400));
-})()
-`;
-
-/** El temporizador, con sus campos y sus atajos. */
-const RELOJ_TEMPORIZADOR = `
-(async () => {
-  const tab = await __esperar(() => document.querySelector('#tab-temporizador'));
-  tab.click();
-  await new Promise((r) => setTimeout(r, 500));
 })()
 `;
 
@@ -269,7 +260,6 @@ const CASOS = [
   { nombre: 'reloj · esfera', ruta: 'es/reloj', query: 'c=analogica' },
   { nombre: 'reloj · alarma puesta', ruta: 'es/reloj', hacer: RELOJ_ALARMA },
   { nombre: 'reloj · cronómetro con vueltas', ruta: 'es/reloj', hacer: RELOJ_VUELTAS },
-  { nombre: 'reloj · temporizador', ruta: 'es/reloj', hacer: RELOJ_TEMPORIZADOR },
   { nombre: 'reloj · en inglés', ruta: 'en/clock', query: 'h=12' },
   { nombre: 'portada', ruta: 'es' },
   { nombre: 'portada en inglés', ruta: 'en' },

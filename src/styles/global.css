@@ -2112,19 +2112,86 @@
 @layer components {
   .cara-reloj {
     display: grid;
-    justify-items: center;
-    gap: 0.75rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(1.25rem, 2.5vw, 2rem);
+    /* `stretch` para que la línea que separa los ajustes llegue de arriba
+       abajo; cada lado se centra por dentro con `align-content`. */
+    align-items: stretch;
     padding: clamp(1.5rem, 3.5vw, 3rem) clamp(1.25rem, 2.5vw, 2rem);
     border: 1px solid var(--line);
     border-radius: var(--radius-xl);
     background: var(--surface);
   }
 
+  @media (width >= 60rem) {
+    .cara-reloj {
+      grid-template-columns: minmax(0, 1fr) 15rem;
+    }
+  }
+
+  .cara-reloj .pantalla {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  /*
+    La columna de ajustes.
+
+    Estaban debajo del reloj y ahí hacían dos daños: empujaban al resto de
+    la herramienta hacia abajo, y partían la lectura en dos —la hora, una
+    fila de controles, y otra vez contenido—. A un lado, la hora se queda
+    sola con todo el alto.
+  */
+  .ajustes-reloj {
+    display: grid;
+    align-content: center;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  @media (width >= 60rem) {
+    .ajustes-reloj {
+      padding-inline-start: clamp(1.25rem, 2.5vw, 2rem);
+      border-inline-start: 1px solid var(--line);
+    }
+  }
+
+  .ajustes-reloj .titulo {
+    margin: 0;
+  }
+
+  .ajustes-reloj .corte {
+    width: 100%;
+    height: 0;
+    margin: 0.25rem 0;
+    border: 0;
+    border-block-start: 1px solid var(--line);
+  }
+
+  .ajustes-reloj .nota {
+    margin: 0;
+    font-size: var(--fs-small);
+    color: var(--ink-soft);
+  }
+
+  .fila-aviso {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.625rem;
+  }
+
   /* Cifras de ancho fijo: sin ellas el número entero se mueve cada vez
      que un 1 sustituye a un 8, y un reloj que baila cansa. */
   .cara-reloj .hora {
     margin: 0;
-    font-size: clamp(3rem, 11vw, 7rem);
+    /* Con la columna entera para él, el número puede crecer: es lo que
+       se mira desde el otro lado de la mesa. */
+    font-size: clamp(3rem, 9vw, 8.5rem);
     font-weight: 600;
     line-height: 1;
     letter-spacing: -0.035em;
@@ -2143,25 +2210,9 @@
     }
   }
 
-  /* `.segmento` va a todo el ancho por defecto —lo necesita en la
-     herramienta de contraste— pero aquí son dos grupos pequeños en una
-     fila y tienen que ocupar lo suyo. */
-  .ajustes-cara .segmento {
-    width: auto;
-  }
-
-  .ajustes-cara {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem 1.25rem;
-    margin-block-start: 0.5rem;
-  }
-
   /* ---------- La esfera ---------- */
   .esfera {
-    width: min(100%, 16rem);
+    width: min(100%, 20rem);
     aspect-ratio: 1;
   }
 
@@ -2178,13 +2229,18 @@
 
   .esfera .marca {
     stroke: var(--ink-soft);
-    stroke-width: 1.5;
+    stroke-width: 1.25;
     stroke-linecap: round;
   }
 
-  .esfera .marca.fuerte {
-    stroke: var(--ink-muted);
-    stroke-width: 2.5;
+  /* Los doce números. Sin ellos hay que contar marcas desde arriba para
+     saber si la aguja está en el 4 o en el 5, y una esfera que hay que
+     descifrar no sirve para lo único que sirve una esfera. */
+  .esfera .numero {
+    font-size: 9px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    fill: var(--ink-muted);
   }
 
   .esfera .aguja {
@@ -2211,63 +2267,57 @@
     fill: var(--acento);
   }
 
-  /* ---------- Las pestañas ---------- */
-  .pestanas-reloj {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-    border-block-end: 1px solid var(--line);
+  /*
+    ---------- Los tres modos, a la vez ----------
+
+    Eran pestañas. El motivo del cambio es que la herramienta promete que
+    los tres corren a la vez, y con pestañas eso había que creérselo:
+    solo se veía uno. Hacía falta además un punto de color sobre la
+    pestaña para avisar de que algo corría donde no se estaba mirando, que
+    es un parche para un problema que con tarjetas no existe.
+
+    `auto-fit` con un mínimo de 19rem: tres en fila en pantalla ancha, dos
+    y una cuando no caben, y una debajo de otra en el móvil. Sin puntos de
+    corte escritos a mano, que envejecen mal.
+  */
+  .modos-reloj {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+    gap: 1rem;
+    /* A la misma altura las tres. Con `start` cada una medía lo que medía
+       su contenido y la fila quedaba dentada; tres cajas de altos
+       distintos se leen como tres cosas sueltas y no como un juego. */
+    align-items: stretch;
   }
 
-  .pestanas-reloj button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4375rem;
-    padding: 0.625rem 0.875rem;
-    border: 0;
-    border-block-end: 2px solid transparent;
-    background: none;
-    font: inherit;
-    font-size: var(--fs-small);
-    color: var(--ink-muted);
-    cursor: pointer;
-    /* Que la pestaña no cambie de ancho al pasar a negrita: si no, las
-       tres se mueven cada vez que se cambia de una a otra. */
-    margin-block-end: -1px;
-  }
-
-  .pestanas-reloj button:hover {
-    color: var(--ink);
-  }
-
-  .pestanas-reloj button[aria-selected='true'] {
-    border-block-end-color: var(--acento);
-    color: var(--ink);
-    font-weight: 600;
-  }
-
-  /* El punto que dice que ahí hay algo corriendo aunque no se esté
-     mirando. Sin él, cambiar de pestaña parecería pararlo. */
-  .pestanas-reloj .punto {
-    width: 0.4375rem;
-    height: 0.4375rem;
-    border-radius: 999px;
-    background: var(--acento);
-  }
-
-  /* ---------- El panel de cada modo ---------- */
-  .panel-modo {
+  .tarjeta-modo {
     display: grid;
     justify-items: center;
-    gap: 1.25rem;
-    padding: clamp(1.5rem, 3vw, 2.25rem) clamp(1.25rem, 2.5vw, 2rem);
+    /* El contenido, arriba. Estirar la tarjeta no debe repartir su
+       contenido por todo el alto. */
+    align-content: start;
+    gap: 1rem;
+    padding: clamp(1.25rem, 2.5vw, 1.75rem) clamp(1rem, 2vw, 1.5rem);
     border: 1px solid var(--line);
-    border-block-start: 0;
-    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    border-radius: var(--radius-xl);
     background: var(--surface);
+    min-width: 0;
   }
 
-  .panel-modo .numero-grande {
+  .tarjeta-modo > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* El título de cada tarjeta, a la izquierda del todo: es la etiqueta de
+     la caja, no parte de su contenido centrado. */
+  .tarjeta-modo .titulo {
+    justify-self: start;
+    margin: 0;
+  }
+
+  .tarjeta-modo .numero-grande {
+
     margin: 0;
     font-size: clamp(2.5rem, 7vw, 4.5rem);
     font-weight: 600;
@@ -2294,9 +2344,14 @@
     gap: 0.625rem;
   }
 
-  .fila-alarma label {
-    font-size: var(--fs-small);
-    color: var(--ink-muted);
+  /* El campo de la hora, grande: es el único dato que se escribe en esta
+     tarjeta y es el que se mira. */
+  .fila-alarma .hora-alarma {
+    width: auto;
+    height: 3rem;
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
   }
 
   .cuenta-alarma {
@@ -2344,7 +2399,7 @@
 
   /* ---------- Las vueltas ---------- */
   .tabla-vueltas {
-    width: min(100%, 26rem);
+    width: 100%;
     border-collapse: collapse;
     font-size: var(--fs-small);
     font-variant-numeric: tabular-nums;
@@ -2395,7 +2450,7 @@
     position: relative;
     display: grid;
     place-items: center;
-    width: min(100%, 17rem);
+    width: min(100%, 13rem);
     aspect-ratio: 1;
   }
 
@@ -2443,16 +2498,23 @@
     color: var(--ink-soft);
   }
 
+  /* La unidad va en una línea aparte y no al final de la fila: pegada a
+     los botones, «min» se quedaba solo en una segunda línea cada vez que
+     los números no cabían justos. */
   .atajos {
+    display: grid;
+    justify-items: center;
+    gap: 0.375rem;
+  }
+
+  .atajos .numeros {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
     justify-content: center;
     gap: 0.375rem;
   }
 
-  .atajos .titulo-atajos {
-    margin-inline-end: 0.25rem;
+  .atajos .unidad-atajos {
     font-size: var(--fs-small);
     color: var(--ink-soft);
   }

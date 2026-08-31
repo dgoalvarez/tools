@@ -77,12 +77,14 @@ import {
 } from '@/lib/reloj';
 import { escribirParams, leerParams } from '@/lib/url-state';
 
-/** Las tres pestañas de debajo del reloj. */
-type Pestana = 'alarma' | 'cronometro' | 'temporizador';
-const PESTANAS: Pestana[] = ['alarma', 'cronometro', 'temporizador'];
-
-/** Atajos del temporizador, en minutos. Los ratos que se ponen de verdad. */
-const ATAJOS = [1, 3, 5, 10, 15, 25, 45, 60];
+/**
+ * Atajos del temporizador, en minutos. Los ratos que se ponen de verdad.
+ *
+ * Siete y no ocho: con ocho, el último se quedaba solo en una segunda
+ * fila dentro de la tarjeta. El que se fue es el de tres minutos, que es
+ * el que menos se pone de los cortos.
+ */
+const ATAJOS = [1, 5, 10, 15, 25, 45, 60];
 
 const LOCALES: Record<Lang, string> = { es: 'es-ES', en: 'en-US' };
 
@@ -108,7 +110,6 @@ export default function Reloj({ lang }: Props) {
   const locale = LOCALES[lang];
 
   const [cara, setCara] = useState<Cara>(CARA_INICIAL);
-  const [pestana, setPestana] = useState<Pestana>('alarma');
   const [listo, setListo] = useState(false);
 
   const [alarma, setAlarma] = useState<Alarma>(ALARMA_INICIAL);
@@ -338,32 +339,31 @@ export default function Reloj({ lang }: Props) {
   const lista = vueltasDe(crono, mono);
   const marcas = extremos(lista);
   const proxima = alarma.activa ? proximaVez(alarma.hora, fechaAhora) : null;
-
-  /** Qué pestaña tiene algo andando, para el punto del acento. */
-  const activa: Record<Pestana, boolean> = {
-    alarma: alarma.activa || alarmaSuena,
-    cronometro: crono.estado === 'andando',
-    temporizador: temporizador.estado === 'andando' || temporizador.estado === 'sonando',
-  };
-
-  const nombrePestana = (p: Pestana) =>
-    p === 'alarma' ? tr('alarma') : p === 'cronometro' ? tr('cronometro') : tr('temporizador');
-
   return (
     <div className="grid gap-6">
-      {/* ================= El reloj, siempre arriba ================= */}
-      <section className="cara-reloj" data-tour="hora">
-        {cara.tipo === 'analogica' ? (
-          <Esfera fecha={fechaAhora} conSegundos={cara.segundos} />
-        ) : (
-          <p className="hora">{horaEscrita(fechaAhora, cara, locale)}</p>
-        )}
+      {/*
+        ================= El reloj, con sus ajustes al lado =================
 
-        {cara.fecha && <p className="fecha">{fechaEscrita(fechaAhora, locale)}</p>}
+        Los ajustes van a la DERECHA y no debajo. Debajo empujaban al
+        resto de la herramienta hacia abajo y además partían la lectura en
+        dos: la hora, una fila de controles, y otra vez contenido. A un
+        lado, la hora se queda sola con todo el alto y los ajustes leen
+        como lo que son: una columna de preferencias que se tocan una vez.
+      */}
+      <section className="cara-reloj">
+        <div className="pantalla" data-tour="hora">
+          {cara.tipo === 'analogica' ? (
+            <Esfera fecha={fechaAhora} conSegundos={cara.segundos} locale={locale} />
+          ) : (
+            <p className="hora">{horaEscrita(fechaAhora, cara, locale)}</p>
+          )}
 
-        {/* Los ajustes de la cara, discretos y debajo: se tocan una vez y
-            no se vuelven a mirar, así que no pueden competir con la hora. */}
-        <div className="ajustes-cara" data-tour="cara">
+          {cara.fecha && <p className="fecha">{fechaEscrita(fechaAhora, locale)}</p>}
+        </div>
+
+        <div className="ajustes-reloj" data-tour="cara">
+          <p className="titulo">{tr('cara')}</p>
+
           <div className="segmento" role="group" aria-label={tr('cara')}>
             {(['digital', 'analogica'] as const).map((tipo) => (
               <label key={tipo}>
@@ -378,25 +378,31 @@ export default function Reloj({ lang }: Props) {
             ))}
           </div>
 
-          <div className="segmento" role="group" aria-label={tr('formato')}>
-            {(['auto', '12', '24'] as const).map((formato) => (
-              <label key={formato}>
-                <input
-                  type="radio"
-                  name="cara-formato"
-                  checked={cara.formato === formato}
-                  onChange={() => setCara((c) => ({ ...c, formato }))}
-                />
-                <span>
-                  {formato === 'auto'
-                    ? tr('formatoAuto')
-                    : formato === '12'
-                      ? tr('formato12')
-                      : tr('formato24')}
-                </span>
-              </label>
-            ))}
-          </div>
+          {/* El formato de 12 o 24 horas solo existe si hay cifras que
+              escribir. En una esfera no significa nada —las agujas no
+              llevan «PM»— así que enseñarlo sería ofrecer un ajuste que no
+              cambia lo que se está mirando. */}
+          {cara.tipo === 'digital' && (
+            <div className="segmento" role="group" aria-label={tr('formato')}>
+              {(['auto', '12', '24'] as const).map((formato) => (
+                <label key={formato}>
+                  <input
+                    type="radio"
+                    name="cara-formato"
+                    checked={cara.formato === formato}
+                    onChange={() => setCara((c) => ({ ...c, formato }))}
+                  />
+                  <span>
+                    {formato === 'auto'
+                      ? tr('formatoAuto')
+                      : formato === '12'
+                        ? tr('formato12')
+                        : tr('formato24')}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
 
           <label className="interruptor">
             <input
@@ -417,253 +423,275 @@ export default function Reloj({ lang }: Props) {
             />
             <span className="texto">{tr('verSegundos')}</span>
           </label>
+
+          {/*
+            El aviso vive aquí, con la cara, y no en una tarjeta propia.
+
+            Tenía una tarjeta entera para un interruptor y un botón, que es
+            mucho sitio para lo que dice. Y sobre todo: es un ajuste de la
+            HERRAMIENTA, igual que el formato de la hora —vale para la
+            alarma, para el temporizador y para lo que venga—, no un cuarto
+            modo. Al lado de la cara se lee como lo que es.
+          */}
+          <hr className="corte" />
+
+          <p className="titulo">{tr('aviso')}</p>
+
+          <div className="fila-aviso">
+            <label className="interruptor">
+              <input
+                type="checkbox"
+                role="switch"
+                checked={conSonido}
+                onChange={(e) => setConSonido(e.target.checked)}
+              />
+              <span className="texto">{tr('sonido')}</span>
+            </label>
+
+            {conSonido && (
+              <Button variant="outline" size="sm" onClick={probarSonido}>
+                {tr('probarSonido')}
+              </Button>
+            )}
+          </div>
+
+          <div data-tour="aviso">
+            {permiso === 'granted' && <p className="nota">{tr('notificacion')} ✓</p>}
+            {permiso === 'default' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={pedirPermiso}
+                className="justify-self-start"
+              >
+                {tr('notificacionPedir')}
+              </Button>
+            )}
+            {permiso === 'denied' && <p className="nota">{tr('notificacionDenegada')}</p>}
+            {permiso === 'no-hay' && <p className="nota">{tr('notificacionNoHay')}</p>}
+          </div>
         </div>
       </section>
 
-      {/* ================= Las tres pestañas ================= */}
-      <div>
-        <div className="pestanas-reloj" role="tablist" aria-label={tr('cara')} data-tour="modos">
-          {PESTANAS.map((p) => (
-            <button
-              key={p}
-              role="tab"
-              type="button"
-              aria-selected={pestana === p}
-              aria-controls={`panel-${p}`}
-              id={`tab-${p}`}
-              onClick={() => setPestana(p)}
-            >
-              {nombrePestana(p)}
-              {/* El punto dice qué está corriendo aunque no se esté
-                  mirando. Sin él, cambiar de pestaña daría la impresión
-                  de que lo otro se ha parado. */}
-              {activa[p] && (
-                <span className="punto" aria-label={tr('enMarcha')} title={tr('enMarcha')} />
-              )}
-            </button>
-          ))}
-        </div>
+      {/*
+        ================= Los tres, a la vez =================
 
+        Eran pestañas y ahora son tarjetas, y el motivo es que la
+        herramienta promete que los tres corren a la vez: con pestañas eso
+        había que creérselo, porque solo se veía uno. Hacía falta además un
+        punto de color sobre la pestaña para avisar de que había algo
+        andando donde no se estaba mirando — un parche para un problema que
+        con tarjetas no existe.
+
+        Cocinar mirando el temporizador mientras el cronómetro cuenta otra
+        cosa es el caso normal de una herramienta así, y era justo el que
+        las pestañas hacían incómodo.
+      */}
+      <div className="modos-reloj">
         {/* ---------------- Alarma ---------------- */}
-        {pestana === 'alarma' && (
-          <section
-            className="panel-modo"
-            role="tabpanel"
-            id="panel-alarma"
-            aria-labelledby="tab-alarma"
-            data-tour="alarma"
-          >
-            {alarmaSuena ? (
-              <div className="sonando">
-                <p className="titular">{tr('alarmaSonando')}</p>
-                <p className="cuando">{horaEscrita(fechaAhora, cara, locale)}</p>
-                <Button onClick={() => setAlarmaSuena(false)} className={BOTON}>
-                  <BellSlashIcon aria-hidden="true" weight="fill" />
-                  {tr('callar')}
-                </Button>
-              </div>
-            ) : (
-              <>
-                <div className="fila-alarma">
-                  <Label htmlFor="alarma-hora">{tr('aQueHora')}</Label>
-                  <Input
-                    id="alarma-hora"
-                    type="time"
-                    value={alarma.hora}
-                    onChange={(e) => setAlarma((a) => ({ ...a, hora: e.target.value }))}
-                    className="w-[9rem]"
-                  />
-                  <Button
-                    onClick={() =>
-                      conGesto(() => setAlarma((a) => ({ ...a, activa: !a.activa })))
-                    }
-                    variant={alarma.activa ? 'outline' : 'default'}
-                    className={alarma.activa ? undefined : BOTON}
-                    disabled={!horaValida(alarma.hora)}
-                  >
-                    {alarma.activa ? (
-                      <>
-                        <BellSlashIcon aria-hidden="true" />
-                        {tr('quitarAlarma')}
-                      </>
-                    ) : (
-                      <>
-                        <BellIcon aria-hidden="true" weight="fill" />
-                        {tr('ponerAlarma')}
-                      </>
-                    )}
-                  </Button>
-                </div>
+        <section className="tarjeta-modo" data-tour="alarma">
+          <p className="titulo">{tr('alarma')}</p>
 
-                {proxima && faltaAlarma !== null && (
-                  <p className="cuenta-alarma" aria-live="polite">
-                    {tr('suenaEn')} <strong>{comoCuenta(faltaAlarma)}</strong>
-                    {' · '}
-                    {tr('sueneA')}{' '}
-                    <strong>
-                      {new Intl.DateTimeFormat(locale, {
-                        weekday: 'long',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        ...(cara.formato !== 'auto' ? { hour12: cara.formato === '12' } : {}),
-                      }).format(proxima)}
-                    </strong>
-                  </p>
-                )}
-
-                <p className="nota-limite">{tr('alarmaAviso')}</p>
-              </>
-            )}
-          </section>
-        )}
-
-        {/* ---------------- Cronómetro ---------------- */}
-        {pestana === 'cronometro' && (
-          <section
-            className="panel-modo"
-            role="tabpanel"
-            id="panel-cronometro"
-            aria-labelledby="tab-cronometro"
-            data-tour="cronometro"
-          >
-            <p className="numero-grande">{comoCronometro(cronoMs)}</p>
-
-            <div className="mandos-modo">
-              {cronoVa ? (
-                <Button onClick={cronoParar} className={BOTON}>
-                  <StopIcon aria-hidden="true" weight="fill" />
-                  {tr('parar')}
-                </Button>
-              ) : (
-                <Button onClick={cronoArrancar} className={BOTON}>
-                  <PlayIcon aria-hidden="true" weight="fill" />
-                  {cronoMs > 0 ? tr('seguir') : tr('arrancar')}
-                </Button>
-              )}
-
-              <Button variant="outline" onClick={cronoVuelta} disabled={!cronoVa}>
-                <FlagIcon aria-hidden="true" />
-                {tr('vuelta')}
-              </Button>
-
-              <Button variant="outline" onClick={cronoCero} disabled={cronoMs === 0}>
-                <ArrowCounterClockwiseIcon aria-hidden="true" />
-                {tr('aCero')}
+          {alarmaSuena ? (
+            <div className="sonando">
+              <p className="titular">{tr('alarmaSonando')}</p>
+              <p className="cuando">{horaEscrita(fechaAhora, cara, locale)}</p>
+              <Button onClick={() => setAlarmaSuena(false)} className={BOTON}>
+                <BellSlashIcon aria-hidden="true" weight="fill" />
+                {tr('callar')}
               </Button>
             </div>
+          ) : (
+            <>
+              <div className="fila-alarma">
+                <Label htmlFor="alarma-hora" className="sr-only">
+                  {tr('aQueHora')}
+                </Label>
+                <Input
+                  id="alarma-hora"
+                  type="time"
+                  value={alarma.hora}
+                  onChange={(e) => setAlarma((a) => ({ ...a, hora: e.target.value }))}
+                  className="hora-alarma"
+                />
+              </div>
 
-            {lista.length > 0 && (
-              <table className="tabla-vueltas">
-                <caption className="sr-only">{tr('vueltas')}</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">{tr('vueltaNum')}</th>
-                    <th scope="col">{tr('duracion')}</th>
-                    <th scope="col">{tr('total')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lista.map((v) => (
-                    <tr
-                      key={v.numero}
-                      className={
-                        v.numero === marcas.rapida
-                          ? 'rapida'
-                          : v.numero === marcas.lenta
-                            ? 'lenta'
-                            : undefined
-                      }
-                    >
-                      <th scope="row">
-                        {v.numero}
-                        {v.numero === marcas.rapida && (
-                          <span className="marca">{tr('masRapida')}</span>
-                        )}
-                        {v.numero === marcas.lenta && (
-                          <span className="marca">{tr('masLenta')}</span>
-                        )}
-                      </th>
-                      <td>{comoCronometro(v.duracion)}</td>
-                      <td>{comoCronometro(v.total)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Button
+                onClick={() => conGesto(() => setAlarma((a) => ({ ...a, activa: !a.activa })))}
+                variant={alarma.activa ? 'outline' : 'default'}
+                className={alarma.activa ? undefined : BOTON}
+                disabled={!horaValida(alarma.hora)}
+              >
+                {alarma.activa ? (
+                  <>
+                    <BellSlashIcon aria-hidden="true" />
+                    {tr('quitarAlarma')}
+                  </>
+                ) : (
+                  <>
+                    <BellIcon aria-hidden="true" weight="fill" />
+                    {tr('ponerAlarma')}
+                  </>
+                )}
+              </Button>
+
+              {proxima && faltaAlarma !== null ? (
+                <p className="cuenta-alarma" aria-live="polite">
+                  {tr('suenaEn')} <strong>{comoCuenta(faltaAlarma)}</strong>
+                  <br />
+                  {tr('sueneA')}{' '}
+                  <strong>
+                    {new Intl.DateTimeFormat(locale, {
+                      weekday: 'long',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      ...(cara.formato !== 'auto' ? { hour12: cara.formato === '12' } : {}),
+                    }).format(proxima)}
+                  </strong>
+                </p>
+              ) : (
+                <p className="nota-limite">{tr('alarmaAviso')}</p>
+              )}
+            </>
+          )}
+        </section>
+
+        {/* ---------------- Cronómetro ---------------- */}
+        <section className="tarjeta-modo" data-tour="cronometro">
+          <p className="titulo">{tr('cronometro')}</p>
+
+          <p className="numero-grande">{comoCronometro(cronoMs)}</p>
+
+          <div className="mandos-modo">
+            {cronoVa ? (
+              <Button onClick={cronoParar} className={BOTON}>
+                <StopIcon aria-hidden="true" weight="fill" />
+                {tr('parar')}
+              </Button>
+            ) : (
+              <Button onClick={cronoArrancar} className={BOTON}>
+                <PlayIcon aria-hidden="true" weight="fill" />
+                {cronoMs > 0 ? tr('seguir') : tr('arrancar')}
+              </Button>
             )}
-          </section>
-        )}
+
+            <Button variant="outline" onClick={cronoVuelta} disabled={!cronoVa}>
+              <FlagIcon aria-hidden="true" />
+              {tr('vuelta')}
+            </Button>
+
+            <Button variant="outline" onClick={cronoCero} disabled={cronoMs === 0}>
+              <ArrowCounterClockwiseIcon aria-hidden="true" />
+              {tr('aCero')}
+            </Button>
+          </div>
+
+          {lista.length > 0 && (
+            <table className="tabla-vueltas">
+              <caption className="sr-only">{tr('vueltas')}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">{tr('vueltaNum')}</th>
+                  <th scope="col">{tr('duracion')}</th>
+                  <th scope="col">{tr('total')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lista.map((v) => (
+                  <tr
+                    key={v.numero}
+                    className={
+                      v.numero === marcas.rapida
+                        ? 'rapida'
+                        : v.numero === marcas.lenta
+                          ? 'lenta'
+                          : undefined
+                    }
+                  >
+                    <th scope="row">
+                      {v.numero}
+                      {v.numero === marcas.rapida && (
+                        <span className="marca">{tr('masRapida')}</span>
+                      )}
+                      {v.numero === marcas.lenta && <span className="marca">{tr('masLenta')}</span>}
+                    </th>
+                    <td>{comoCronometro(v.duracion)}</td>
+                    <td>{comoCronometro(v.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
 
         {/* ---------------- Temporizador ---------------- */}
-        {pestana === 'temporizador' && (
-          <section
-            className="panel-modo"
-            role="tabpanel"
-            id="panel-temporizador"
-            aria-labelledby="tab-temporizador"
-            data-tour="temporizador"
-          >
-            {temporizador.estado === 'sonando' ? (
-              <div className="sonando">
-                <p className="titular">{tr('temporizadorSonando')}</p>
-                <Button onClick={tempReiniciar} className={BOTON}>
-                  <ArrowCounterClockwiseIcon aria-hidden="true" />
-                  {tr('reiniciar')}
-                </Button>
+        <section className="tarjeta-modo" data-tour="temporizador">
+          <p className="titulo">{tr('temporizador')}</p>
+
+          {temporizador.estado === 'sonando' ? (
+            <div className="sonando">
+              <p className="titular">{tr('temporizadorSonando')}</p>
+              <Button onClick={tempReiniciar} className={BOTON}>
+                <ArrowCounterClockwiseIcon aria-hidden="true" />
+                {tr('reiniciar')}
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="anillo-temporizador">
+                <svg viewBox="0 0 100 100" aria-hidden="true">
+                  <circle className="pista" cx="50" cy="50" r="45" />
+                  <circle
+                    className="hecho"
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    style={{
+                      strokeDashoffset: 283 - 283 * avanceTemporizador(temporizador, puesta, ahora),
+                    }}
+                  />
+                </svg>
+                <p className="numero-grande">{comoCuenta(quedaTemporizador)}</p>
               </div>
-            ) : (
-              <>
-                <div className="anillo-temporizador">
-                  <svg viewBox="0 0 100 100" aria-hidden="true">
-                    <circle className="pista" cx="50" cy="50" r="45" />
-                    <circle
-                      className="hecho"
-                      cx="50"
-                      cy="50"
-                      r="45"
-                      style={{
-                        strokeDashoffset:
-                          283 - 283 * avanceTemporizador(temporizador, puesta, ahora),
-                      }}
-                    />
-                  </svg>
-                  <p className="numero-grande">{comoCuenta(quedaTemporizador)}</p>
-                </div>
 
-                {temporizador.estado === 'parado' && (
-                  <>
-                    <div className="campos-puesta">
-                      {(['horas', 'minutos', 'segundos'] as const).map((clave) => (
-                        <div key={clave} className="campo-puesta">
-                          <Input
-                            id={`puesta-${clave}`}
-                            type="number"
-                            inputMode="numeric"
-                            min={LIMITES_PUESTA[clave].min}
-                            max={LIMITES_PUESTA[clave].max}
-                            value={puesta[clave]}
-                            onChange={(e) =>
-                              setPuesta((p) => ({
-                                ...p,
-                                [clave]: limitarPuesta(Number(e.target.value), clave),
-                              }))
-                            }
-                            className="w-[4.5rem] text-center"
-                          />
-                          <Label htmlFor={`puesta-${clave}`}>
-                            {clave === 'horas'
-                              ? tr('horas')
-                              : clave === 'minutos'
-                                ? tr('minutos')
-                                : tr('segundos')}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
+              {temporizador.estado === 'parado' && (
+                <>
+                  <div className="campos-puesta">
+                    {(['horas', 'minutos', 'segundos'] as const).map((clave) => (
+                      <div key={clave} className="campo-puesta">
+                        <Input
+                          id={`puesta-${clave}`}
+                          type="number"
+                          inputMode="numeric"
+                          min={LIMITES_PUESTA[clave].min}
+                          max={LIMITES_PUESTA[clave].max}
+                          value={puesta[clave]}
+                          onChange={(e) =>
+                            setPuesta((p) => ({
+                              ...p,
+                              [clave]: limitarPuesta(Number(e.target.value), clave),
+                            }))
+                          }
+                          className="w-[3.75rem] text-center"
+                        />
+                        <Label htmlFor={`puesta-${clave}`}>
+                          {clave === 'horas'
+                            ? tr('horas')
+                            : clave === 'minutos'
+                              ? tr('minutos')
+                              : tr('segundos')}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
 
-                    {/* Los ratos que se ponen de verdad, a un toque. Poner
-                        cinco minutos no debería costar tres campos. */}
-                    <div className="atajos">
-                      <span className="titulo-atajos">{tr('atajos')}</span>
+                  {/* Los ratos que se ponen de verdad, a un toque. Poner
+                      cinco minutos no debería costar tres campos. */}
+                  <div className="atajos">
+                    <span className="unidad-atajos">
+                      {tr('atajos')} · {tr('minutos')}
+                    </span>
+                    <div className="numeros">
                       {ATAJOS.map((min) => (
                         <Button
                           key={min}
@@ -671,83 +699,44 @@ export default function Reloj({ lang }: Props) {
                           size="sm"
                           onClick={() => setPuesta({ horas: 0, minutos: min, segundos: 0 })}
                         >
-                          {min} {tr('minutos')}
+                          {min}
                         </Button>
                       ))}
                     </div>
-                  </>
+                  </div>
+                </>
+              )}
+
+              <div className="mandos-modo">
+                {temporizador.estado === 'andando' ? (
+                  <Button onClick={tempPausar} className={BOTON}>
+                    <PauseIcon aria-hidden="true" weight="fill" />
+                    {tr('pausar')}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={tempEmpezar}
+                    className={BOTON}
+                    disabled={puestaMs(puesta) <= 0 && temporizador.estado === 'parado'}
+                  >
+                    <PlayIcon aria-hidden="true" weight="fill" />
+                    {temporizador.estado === 'pausa' ? tr('seguir') : tr('empezar')}
+                  </Button>
                 )}
 
-                <div className="mandos-modo">
-                  {temporizador.estado === 'andando' ? (
-                    <Button onClick={tempPausar} className={BOTON}>
-                      <PauseIcon aria-hidden="true" weight="fill" />
-                      {tr('pausar')}
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={tempEmpezar}
-                      className={BOTON}
-                      disabled={puestaMs(puesta) <= 0 && temporizador.estado === 'parado'}
-                    >
-                      <PlayIcon aria-hidden="true" weight="fill" />
-                      {temporizador.estado === 'pausa' ? tr('seguir') : tr('empezar')}
-                    </Button>
-                  )}
-
-                  <Button
-                    variant="outline"
-                    onClick={tempReiniciar}
-                    disabled={temporizador.estado === 'parado'}
-                  >
-                    <ArrowCounterClockwiseIcon aria-hidden="true" />
-                    {tr('reiniciar')}
-                  </Button>
-                </div>
-              </>
-            )}
-          </section>
-        )}
-      </div>
-
-      {/* ================= El aviso, común a los tres ================= */}
-      <fieldset className="tarjeta-control" data-tour="aviso">
-        <legend className="sr-only">{tr('aviso')}</legend>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <label className="interruptor">
-            <input
-              type="checkbox"
-              role="switch"
-              checked={conSonido}
-              onChange={(e) => setConSonido(e.target.checked)}
-            />
-            <span className="texto">{tr('sonido')}</span>
-          </label>
-
-          {conSonido && (
-            <Button variant="outline" size="sm" onClick={probarSonido}>
-              {tr('probarSonido')}
-            </Button>
+                <Button
+                  variant="outline"
+                  onClick={tempReiniciar}
+                  disabled={temporizador.estado === 'parado'}
+                >
+                  <ArrowCounterClockwiseIcon aria-hidden="true" />
+                  {tr('reiniciar')}
+                </Button>
+              </div>
+            </>
           )}
-        </div>
-
-        {permiso === 'granted' && (
-          <p className="text-[length:var(--fs-small)] text-ink-soft">{tr('notificacion')} ✓</p>
-        )}
-        {permiso === 'default' && (
-          <Button variant="outline" size="sm" onClick={pedirPermiso} className="justify-self-start">
-            {tr('notificacionPedir')}
-          </Button>
-        )}
-        {permiso === 'denied' && (
-          <p className="text-[length:var(--fs-small)] text-ink-soft">
-            {tr('notificacionDenegada')}
-          </p>
-        )}
-        {permiso === 'no-hay' && (
-          <p className="text-[length:var(--fs-small)] text-ink-soft">{tr('notificacionNoHay')}</p>
-        )}
-      </fieldset>
+        </section>
+      </div>
     </div>
   );
 }
@@ -757,38 +746,82 @@ export default function Reloj({ lang }: Props) {
 /**
  * La esfera.
  *
- * Se dibuja en SVG con las marcas de las doce horas. Las agujas se mueven
- * de forma continua —el porqué está en la librería— y el segundero solo
- * aparece si se han pedido los segundos, porque si no repintaría cuatro
- * veces por segundo para nada.
+ * Lleva los doce números, que es lo que la hace legible de un vistazo:
+ * sin ellos hay que contar marcas desde arriba para saber si la aguja
+ * está en el 4 o en el 5, y una esfera que hay que descifrar no sirve
+ * para lo único que sirve una esfera, que es leer la hora de reojo.
+ *
+ * Los números se colocan por trigonometría pero NO se rotan: van rectos,
+ * como en un reloj de pared. Rotarlos con su ángulo dejaría el 6 boca
+ * abajo.
+ *
+ * Las agujas se mueven de forma continua —el porqué está en la
+ * librería— y el segundero solo aparece si se han pedido los segundos,
+ * porque si no repintaría cuatro veces por segundo para nada.
  */
-function Esfera({ fecha, conSegundos }: { fecha: Date; conSegundos: boolean }) {
+function Esfera({
+  fecha,
+  conSegundos,
+  locale,
+}: {
+  fecha: Date;
+  conSegundos: boolean;
+  locale: string;
+}) {
   const a = agujas(fecha);
 
   return (
-    <div className="esfera" role="img" aria-label={fecha.toLocaleTimeString()}>
+    <div className="esfera" role="img" aria-label={fecha.toLocaleTimeString(locale)}>
       <svg viewBox="0 0 100 100" aria-hidden="true">
         <circle className="borde" cx="50" cy="50" r="48" />
 
+        {Array.from({ length: 12 }, (_, i) => {
+          const hora = i === 0 ? 12 : i;
+          // El cero de un reloj está ARRIBA y no a la derecha, así que el
+          // ángulo se mide desde las doce: seno para la x, menos coseno
+          // para la y.
+          const angulo = (i * 30 * Math.PI) / 180;
+          return (
+            <text
+              key={hora}
+              className="numero"
+              x={50 + 35 * Math.sin(angulo)}
+              y={50 - 35 * Math.cos(angulo)}
+              textAnchor="middle"
+              dominantBaseline="central"
+            >
+              {hora}
+            </text>
+          );
+        })}
+
+        {/* Las marcas de los minutos, entre número y número. */}
         {Array.from({ length: 12 }, (_, i) => (
           <line
             key={i}
-            className={i % 3 === 0 ? 'marca fuerte' : 'marca'}
+            className="marca"
             x1="50"
-            y1={i % 3 === 0 ? 8 : 10}
+            y1="6"
             x2="50"
-            y2="14"
-            transform={`rotate(${i * 30} 50 50)`}
+            y2="10"
+            transform={`rotate(${i * 30 + 15} 50 50)`}
           />
         ))}
 
-        <line className="aguja horas" x1="50" y1="50" x2="50" y2="28" transform={`rotate(${a.horas} 50 50)`} />
+        <line
+          className="aguja horas"
+          x1="50"
+          y1="50"
+          x2="50"
+          y2="30"
+          transform={`rotate(${a.horas} 50 50)`}
+        />
         <line
           className="aguja minutos"
           x1="50"
           y1="50"
           x2="50"
-          y2="18"
+          y2="20"
           transform={`rotate(${a.minutos} 50 50)`}
         />
         {conSegundos && (
@@ -797,7 +830,7 @@ function Esfera({ fecha, conSegundos }: { fecha: Date; conSegundos: boolean }) {
             x1="50"
             y1="56"
             x2="50"
-            y2="14"
+            y2="16"
             transform={`rotate(${a.segundos} 50 50)`}
           />
         )}

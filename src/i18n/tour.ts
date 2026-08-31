@@ -35,19 +35,6 @@ export interface PasoTour {
   cuerpo: T;
   /** Solo aparece en algunos estados: no se exige que exista. */
   opcional?: boolean;
-  /**
-   * Un selector que hay que PULSAR antes de enseñar este paso.
-   *
-   * Existe por el reloj: el cronómetro y el temporizador viven en
-   * pestañas, así que sus controles no están en el HTML hasta que alguien
-   * abre la suya. Sin esto habría dos malas salidas —marcarlos
-   * `opcional` y que el paso a paso nunca los enseñara, o señalar la
-   * pestaña en vez del control que se está explicando—.
-   *
-   * Un paso con `abre` tampoco se exige en el HTML publicado: por
-   * definición no está hasta que se pulsa.
-   */
-  abre?: string;
 }
 
 export const TOUR: Record<ToolKey, PasoTour[]> = {
@@ -132,16 +119,7 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
       },
     },
     {
-      ancla: 'modos',
-      titulo: { es: 'Los tres corren a la vez', en: 'All three run at once' },
-      cuerpo: {
-        es: 'Cambiar de pestaña no para nada: el punto del acento sobre una pestaña dice que ahí hay algo andando. Sería absurdo que mirar la alarma matase el cronómetro. La cuenta más urgente va además en el título de la pestaña del navegador, para verla desde otra.',
-        en: 'Switching tabs stops nothing: the accent dot on a tab means something is running there. It would be absurd for checking the alarm to kill the stopwatch. The most urgent count also goes in the browser tab title, so you can see it from another tab.',
-      },
-    },
-    {
       ancla: 'alarma',
-      abre: '#tab-alarma',
       titulo: { es: 'La alarma, y su límite', en: 'The alarm, and its limit' },
       cuerpo: {
         es: 'Pon una hora y te dice cuánto falta y qué día será, para no tener que hacer la cuenta. Lo que hay que saber antes de fiarse: solo suena con esta pestaña abierta. No hay servidor detrás, y el navegador no sabe despertar una página cerrada.',
@@ -150,7 +128,6 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
     },
     {
       ancla: 'cronometro',
-      abre: '#tab-cronometro',
       titulo: { es: 'Vueltas, con la más rápida marcada', en: 'Laps, with the fastest marked' },
       cuerpo: {
         es: 'Cada vuelta guarda su duración y el total, y se marcan la más rápida y la más lenta — solo entre las terminadas, porque la que está corriendo todavía va a crecer. Este cuenta con un reloj monótono, así que un ajuste de hora del sistema no le da un salto.',
@@ -159,7 +136,6 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
     },
     {
       ancla: 'temporizador',
-      abre: '#tab-temporizador',
       titulo: { es: 'De un toque', en: 'One tap' },
       cuerpo: {
         es: 'Horas, minutos y segundos, o los botones de abajo para los ratos que se ponen de verdad. Cuenta contra el reloj del sistema, así que no se atrasa aunque cambies de pestaña o el ordenador se suspenda.',
@@ -170,8 +146,8 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
       ancla: 'aviso',
       titulo: { es: 'Cómo te avisa', en: 'How it tells you' },
       cuerpo: {
-        es: 'Un tono generado en el momento —sin archivo que descargar— y, si le das permiso, una notificación del sistema. El botón «Probar» te deja oírlo antes de necesitarlo, que es mejor que descubrir el volumen cuando ya suena.',
-        en: 'A tone generated on the spot — no file to download — and, if you allow it, a system notification. The «Play it» button lets you hear it before you need it, which beats discovering the volume when it is already ringing.',
+        es: 'Un tono generado en el momento —sin archivo que descargar— y, si le das permiso, una notificación del sistema. El botón «Probar» te deja oírlo antes de necesitarlo, que es mejor que descubrir el volumen cuando ya suena. La cuenta más urgente va además en el título de la pestaña del navegador, para verla desde otra.',
+        en: 'A tone generated on the spot — no file to download — and, if you allow it, a system notification. The «Play it» button lets you hear it before you need it, which beats discovering the volume when it is already ringing. The most urgent count also goes in the browser tab title, so you can see it from another tab.',
       },
     },
   ],

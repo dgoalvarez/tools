@@ -1,0 +1,31 @@
+---
+/**
+ * La página de paletas.
+ *
+ * `client:load` como las demás: el HTML sale ya pintado del servidor, así
+ * que la cuadrícula se ve en su sitio desde el primer momento en vez de
+ * aparecer de golpe cuando carga el JavaScript.
+ */
+import Tool from '../layouts/Tool.astro';
+import Paleta from '../islands/Paleta';
+import { UI } from '../i18n/ui';
+import { t, type Lang } from '../i18n/config';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<Tool lang={lang} tool="palette">
+  <Paleta client:load lang={lang} />
+
+  <noscript>
+    <p
+      class="mt-6 max-w-[var(--measure)] rounded-lg border border-line bg-surface-2 p-4 text-[length:var(--fs-small)] text-ink-muted"
+    >
+      {t(UI.sinJs, lang)}
+    </p>
+  </noscript>
+</Tool>

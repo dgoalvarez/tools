@@ -95,6 +95,17 @@ const VISTAS = [
     alto: 900,
     query: 'z=America/New_York,Asia/Tokyo,Asia/Kolkata',
   },
+  { nombre: 'paleta', ruta: 'es/paleta', ancho: 1440, alto: 1200 },
+  { nombre: 'paleta-claro', ruta: 'es/paleta', ancho: 1440, alto: 1200, tema: 'light' },
+  { nombre: 'paleta-estrecho', ruta: 'es/paleta', ancho: 485, alto: 900 },
+  // El detalle abierto, que es donde se leen los veredictos.
+  {
+    nombre: 'paleta-detalle',
+    ruta: 'es/paleta',
+    ancho: 1440,
+    alto: 1200,
+    clics: ['[data-tour="cuadricula"] .casilla-paleta:nth-of-type(18)'],
+  },
   { nombre: 'contraste', ruta: 'es/contraste', ancho: 1440, alto: 1000 },
   { nombre: 'escala', ruta: 'es/escala', ancho: 1440, alto: 1000 },
   { nombre: 'contraste-claro', ruta: 'es/contraste', ancho: 1440, alto: 1000, tema: 'light' },

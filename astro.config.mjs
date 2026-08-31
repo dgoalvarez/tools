@@ -84,5 +84,6 @@ const PAIRS = [
   { en: '/en/clock', es: '/es/reloj' },
   { en: '/en/pomodoro', es: '/es/pomodoro' },
   { en: '/en/contrast', es: '/es/contraste' },
+  { en: '/en/palette', es: '/es/paleta' },
   { en: '/en/type-scale', es: '/es/escala' },
 ].map((p) => ({ en: SITE_URL + p.en, es: SITE_URL + p.es }));

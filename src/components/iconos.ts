@@ -20,6 +20,7 @@ import contraste from '@phosphor-icons/core/regular/circle-half.svg?raw';
 import cronometro from '@phosphor-icons/core/regular/timer.svg?raw';
 import despertador from '@phosphor-icons/core/regular/alarm.svg?raw';
 import tipografia from '@phosphor-icons/core/regular/text-aa.svg?raw';
+import paleta from '@phosphor-icons/core/regular/swatches.svg?raw';
 import rejilla from '@phosphor-icons/core/regular/squares-four.svg?raw';
 import lupa from '@phosphor-icons/core/regular/magnifying-glass.svg?raw';
 import cerrar from '@phosphor-icons/core/regular/x.svg?raw';
@@ -42,6 +43,7 @@ export const ICONOS = {
   cronometro: interior(cronometro),
   despertador: interior(despertador),
   contraste: interior(contraste),
+  paleta: interior(paleta),
   tipografia: interior(tipografia),
 
   // --- de la propia interfaz ---

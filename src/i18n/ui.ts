@@ -19,7 +19,12 @@ export const UI = {
   taglineInicio: { es: 'Una cosa,', en: 'One thing,' },
   taglineAcento: { es: 'y hecha bien.', en: 'done well.' },
   /** La línea pequeña que acompaña al titular. */
-  sello: { es: 'Tres herramientas · sin cuentas', en: 'Three tools · no accounts' },
+  /*
+   * Sin número. Decía «Tres herramientas» con seis publicadas, y un
+   * número aquí es una mentira con fecha de caducidad: caduca cada vez
+   * que se añade una y nadie se acuerda de venir a cambiarlo.
+   */
+  sello: { es: 'Gratis y sin cuentas', en: 'Free, and no accounts' },
   /** El <title> de la portada. El de cada herramienta es su nombre + la marca. */
   homeTitle: { es: 'Herramientas · DGO', en: 'Tools · DGO' },
   siteDescription: {

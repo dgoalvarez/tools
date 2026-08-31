@@ -11,7 +11,14 @@
  */
 import type { Lang } from './config';
 
-export type PageKey = 'home' | 'timezones' | 'clock' | 'pomodoro' | 'contrast' | 'scale';
+export type PageKey =
+  | 'home'
+  | 'timezones'
+  | 'clock'
+  | 'pomodoro'
+  | 'contrast'
+  | 'palette'
+  | 'scale';
 
 export const ROUTES: Record<PageKey, Record<Lang, string>> = {
   home: { en: '/en', es: '/es' },
@@ -22,6 +29,7 @@ export const ROUTES: Record<PageKey, Record<Lang, string>> = {
   clock: { en: '/en/clock', es: '/es/reloj' },
   pomodoro: { en: '/en/pomodoro', es: '/es/pomodoro' },
   contrast: { en: '/en/contrast', es: '/es/contraste' },
+  palette: { en: '/en/palette', es: '/es/paleta' },
   scale: { en: '/en/type-scale', es: '/es/escala' },
 };
 
@@ -34,6 +42,7 @@ export const TOOL_KEYS = [
   'clock',
   'pomodoro',
   'contrast',
+  'palette',
   'scale',
 ] as const satisfies readonly PageKey[];
 

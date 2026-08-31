@@ -109,6 +109,23 @@ export const TOOLS: Record<ToolKey, Tool> = {
     etiquetas: { ambito: ['diseno'], materia: 'color', tarea: 'comprobar' },
     icono: 'contraste',
   },
+  palette: {
+    name: { es: 'Paleta', en: 'Palette' },
+    // Lo que la distingue de las cien que hay: cada paso dice si aguanta
+    // texto encima y con qué tinta. Una paleta que no contesta a eso
+    // obliga a llevarse cada shade a otra herramienta.
+    summary: {
+      es: 'Rampas de color desde el tuyo, y cuáles de sus pasos aguantan texto.',
+      en: 'Colour ramps from yours, and which of their steps can carry text.',
+    },
+    description: {
+      es: 'Genera la rampa de cada color que le des —claros, medios y oscuros— con una escalera de luminosidad común a todos, así que el 500 de un azul pesa lo mismo que el de un rojo. El color que pegas vuelve intacto en su paso, cada shade dice si el blanco o el negro pasan AA encima, y sale en variables CSS listas para copiar.',
+      en: 'Builds the ramp of every colour you give it — lights, mids and darks — on a lightness ladder shared by all of them, so a blue’s 500 weighs the same as a red’s. The colour you paste comes back untouched at its step, every shade tells you whether white or black passes AA on top, and it comes out as CSS variables ready to copy.',
+    },
+    listo: true,
+    etiquetas: { ambito: ['diseno'], materia: 'color', tarea: 'generar' },
+    icono: 'paleta',
+  },
   scale: {
     name: { es: 'Escala tipográfica', en: 'Type scale' },
     // Describe lo que se ve al entrar. La escala fluida es lo que

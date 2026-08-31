@@ -269,6 +269,59 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
     },
   ],
 
+  // ----------------------------------------------------------- paleta
+  palette: [
+    {
+      ancla: 'tonalidades',
+      titulo: { es: 'Los colores de partida', en: 'The colours you start from' },
+      cuerpo: {
+        es: 'Cada tonalidad es un color tuyo y su rampa. El nombre es el de la variable: «azul» produce --azul-50 hasta --azul-950. Se pegan en hexadecimal, en rgb() o en oklch(), y se pueden añadir las que hagan falta.',
+        en: 'Each hue is a colour of yours plus its ramp. The name is the variable’s: “blue” gives you --blue-50 through --blue-950. Paste them as hex, rgb() or oklch(), and add as many as you need.',
+      },
+    },
+    {
+      ancla: 'cuadricula',
+      titulo: { es: 'Tu color sigue ahí', en: 'Your colour is still there' },
+      cuerpo: {
+        es: 'El paso con el punto es el color que pegaste, intacto: la rampa se construye alrededor de él, no lo sustituye. Los demás salen de una escalera de luminosidad que comparten TODAS las tonalidades, y eso es lo que hace que el 500 de un azul pese lo mismo que el de un rojo.',
+        en: 'The step with the dot is the colour you pasted, untouched: the ramp is built around it, it does not replace it. The rest come from a lightness ladder shared by ALL the hues, and that is what makes a blue’s 500 weigh the same as a red’s.',
+      },
+    },
+    {
+      ancla: 'detalle',
+      titulo: { es: 'Qué tinta aguanta cada paso', en: 'What ink each step can carry' },
+      cuerpo: {
+        es: 'Pulsa una casilla y te dice si el blanco o el negro pasan AA encima, con WCAG 2.2 y con APCA. Los pasos del centro casi nunca aguantan ninguno de los dos —es la trampa clásica: sirven de fondo y de borde, no de texto— y esos van marcados en la cuadrícula.',
+        en: 'Click a swatch and it tells you whether white or black passes AA on top, with WCAG 2.2 and APCA. The middle steps almost never take either — the classic trap: they work as background and border, not as text — and those are flagged in the grid.',
+      },
+      opcional: true,
+    },
+    {
+      ancla: 'rampa',
+      titulo: { es: 'La forma de la rampa', en: 'The shape of the ramp' },
+      cuerpo: {
+        es: 'Hasta dónde llega de clara y de oscura, cuánto sube el croma en el centro, y cuántos grados gira el tono entre los extremos. La deriva de tono es la que menos se reconoce y la que más se nota: hace que los oscuros tiren a un lado y los claros al otro, que es como lo ve el ojo.',
+        en: 'How light and how dark it goes, how much the chroma rises in the middle, and how many degrees the hue turns between the ends. Hue drift is the least familiar and the most noticeable: it makes the darks lean one way and the lights the other, which is how the eye sees it.',
+      },
+    },
+    {
+      ancla: 'avisos',
+      titulo: { es: 'Lo que no se arregla solo', en: 'What is not quietly fixed' },
+      cuerpo: {
+        es: 'Cuando un paso pide más croma del que una pantalla puede pintar, se recorta y se dice — no se apaga la paleta entera para que case. Y todo se calcula en sRGB: las paletas de Tailwind o Radix apuntan a P3, así que sus pasos intermedios se ven algo más vivos que estos.',
+        en: 'When a step asks for more chroma than a screen can paint, it gets clipped and says so — the whole palette is not dimmed to make it match. And everything is computed in sRGB: Tailwind’s and Radix’s palettes target P3, so their middle steps look a little more vivid than these.',
+      },
+    },
+    {
+      ancla: 'css',
+      titulo: { es: 'Listo para pegar', en: 'Ready to paste' },
+      cuerpo: {
+        es: 'Sale en oklch() a propósito y no en hexadecimal: el hexadecimal es de ocho bits y redondearlo mueve la luminosidad lo bastante como para romper la escalera. Los hexadecimales están ahí también, para cuando hagan falta.',
+        en: 'It comes out as oklch() on purpose and not hex: hex is eight bits and rounding it moves the lightness enough to break the ladder. The hex values are there too, for when you need them.',
+      },
+    },
+  ],
+
   // ---------------------------------------------------------- escala
   scale: [
     {

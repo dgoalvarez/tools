@@ -336,8 +336,19 @@ export interface Canal extends EspecCanal {
 /** Cuántos colores se muestrean para pintar la barra de cada canal. */
 const MUESTRAS = 12;
 
-/** Lleva un color a hexadecimal, recortando el croma si se sale de pantalla. */
-function aHex(color: Record<string, unknown>): string {
+/**
+ * Lleva un color a hexadecimal, recortando el croma si se sale de pantalla.
+ *
+ * Se exporta porque la herramienta de paletas necesita exactamente esto y
+ * copiarla sería peor: no es un cálculo, es una POLÍTICA —«qué hacemos
+ * cuando un color no cabe en sRGB»— y dos copias de una política se
+ * separan en silencio. El mismo `oklch()` daría dos hexadecimales
+ * distintos en dos herramientas del mismo sitio.
+ *
+ * El nombre lleva el «en gama» porque fuera de este archivo «a hex» a
+ * secas no dice lo único que importa de esta función.
+ */
+export function aHexEnGama(color: Record<string, unknown>): string {
   const dentro = enGamaSrgb(color as never);
   return formatHex((dentro ? color : clampChroma(color as never, 'oklch')) as never) ?? '#000000';
 }
@@ -356,7 +367,7 @@ export function canalesDe(hex: string, espacio: Espacio): Canal[] {
     const degradado = Array.from({ length: MUESTRAS }, (_, i) => {
       const t = i / (MUESTRAS - 1);
       const valor = espec.min + t * (espec.max - espec.min);
-      return aHex({ ...base, mode: espacio, [espec.clave]: valor * espec.escala });
+      return aHexEnGama({ ...base, mode: espacio, [espec.clave]: valor * espec.escala });
     });
 
     return {
@@ -375,7 +386,7 @@ export function conCanal(hex: string, espacio: Espacio, clave: string, valor: nu
   const espec = ESPECS[espacio].find((e) => e.clave === clave);
   if (!espec) return hex;
 
-  return aHex({ ...base, mode: espacio, [clave]: valor * espec.escala });
+  return aHexEnGama({ ...base, mode: espacio, [clave]: valor * espec.escala });
 }
 
 // ------------------------------------------------------- el cuadro visual
@@ -414,5 +425,5 @@ export function visualDe(hex: string): Visual {
 }
 
 export function desdeVisual({ tono, saturacion, brillo }: Visual): string {
-  return aHex({ mode: 'hsv', h: tono, s: saturacion, v: brillo });
+  return aHexEnGama({ mode: 'hsv', h: tono, s: saturacion, v: brillo });
 }

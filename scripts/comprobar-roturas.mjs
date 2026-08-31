@@ -228,6 +228,18 @@ const RELOJ_CUMPLIDO = `
 })()
 `;
 
+/** El detalle abierto sobre el último paso de la última fila. */
+const PALETA_DETALLE = `
+(async () => {
+  const casillas = await __esperar(() => {
+    const c = document.querySelectorAll('[data-tour="cuadricula"] .casilla-paleta');
+    return c.length ? c : null;
+  });
+  casillas[casillas.length - 1].click();
+  await new Promise((r) => setTimeout(r, 500));
+})()
+`;
+
 /**
  * Qué se somete a qué.
  *
@@ -275,6 +287,16 @@ const CASOS = [
   { nombre: 'reloj · cronómetro con vueltas', ruta: 'es/reloj', hacer: RELOJ_VUELTAS },
   { nombre: 'reloj · temporizador cumplido', ruta: 'es/reloj', hacer: RELOJ_CUMPLIDO },
   { nombre: 'reloj · en inglés', ruta: 'en/clock', query: 'h=12' },
+  { nombre: 'paleta · de fábrica', ruta: 'es/paleta' },
+  {
+    nombre: 'paleta · seis tonos y nombres largos',
+    ruta: 'es/paleta',
+    query:
+      't=nombreLarguisimoDeVerdad:3b82f6,otroNombreMuyMuyLargo:16a34a,tercerNombreExagerado:dc2626,cuarto:f59e0b,quinto:8b5cf6,sexto:06b6d4&p=prefijoLarguisimo',
+  },
+  { nombre: 'paleta · quince pasos', ruta: 'es/paleta', query: 'n=15' },
+  { nombre: 'paleta · semilla casi blanca', ruta: 'es/paleta', query: 't=casi:fbfbfa' },
+  { nombre: 'paleta · detalle abierto', ruta: 'es/paleta', hacer: PALETA_DETALLE },
   { nombre: 'portada', ruta: 'es' },
   { nombre: 'portada en inglés', ruta: 'en' },
 ];

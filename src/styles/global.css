@@ -2592,3 +2592,266 @@
     color: var(--ink-soft);
   }
 }
+
+/* ============================================================
+   La paleta
+
+   Una cuadrícula de tonalidades por pasos. Se compara de un vistazo, que
+   es para lo que sirve una paleta: si el 500 de un azul y el de un rojo
+   pesan lo mismo se ve mirando la columna, no leyendo once números.
+   ============================================================ */
+
+@layer components {
+  /* ---------- La lista de tonalidades ---------- */
+  .lista-tonalidades {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .fila-tonalidad {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* ---------- Los deslizadores ---------- */
+  .fila-deslizador {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+  }
+
+  .fila-deslizador label {
+    font-size: var(--fs-small);
+    color: var(--ink-muted);
+  }
+
+  .fila-deslizador .valor {
+    font-size: var(--fs-small);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+
+  .fila-deslizador input[type='range'] {
+    grid-column: 1 / -1;
+    width: 100%;
+    accent-color: var(--acento);
+  }
+
+  .select-paleta {
+    width: 100%;
+    height: 2rem;
+    padding-inline: 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    font: inherit;
+    font-size: 0.875rem;
+    color: var(--ink);
+  }
+
+  .ayuda-paleta {
+    margin: 0;
+    font-size: var(--fs-small);
+    line-height: 1.45;
+    color: var(--ink-soft);
+  }
+
+  .aviso-paleta {
+    display: flex;
+    align-items: start;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: var(--fs-small);
+    line-height: 1.45;
+    color: var(--ink-muted);
+  }
+
+  .aviso-paleta svg {
+    flex: none;
+    margin-block-start: 0.1em;
+    color: var(--acento);
+  }
+
+  /* ---------- La cuadrícula ---------- */
+  .rejilla-paleta {
+    display: grid;
+    /*
+      El nombre de la tonalidad a la izquierda y una columna por paso.
+
+      `minmax(0, 1fr)` y no `1fr` a secas: con once columnas y nombres
+      largos, el `min-width: auto` que traen los elementos de rejilla
+      impide que se encojan y la tabla se sale de la tarjeta. Es el mismo
+      fallo que rompió la columna de husos, y la misma cura.
+    */
+    grid-template-columns: minmax(0, auto) repeat(var(--pasos, 11), minmax(0, 1fr));
+    gap: 0.1875rem;
+    align-items: center;
+    /* Con once pasos en un móvil las casillas quedan por debajo de lo que
+       se puede pulsar. Antes que encogerlas más, se desplaza. */
+    overflow-x: auto;
+  }
+
+  .rejilla-paleta .esquina {
+    min-width: 0;
+  }
+
+  .rejilla-paleta .cabeza-paso {
+    min-width: 0;
+    padding-block-end: 0.25rem;
+    font-size: 0.62rem;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    color: var(--ink-soft);
+  }
+
+  .rejilla-paleta .nombre-fila {
+    min-width: 0;
+    padding-inline-end: 0.625rem;
+    overflow: hidden;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink-muted);
+  }
+
+  .casilla-paleta {
+    position: relative;
+    display: grid;
+    place-items: center;
+    /* Cuadradas mientras quepan, y nunca por debajo de lo que se puede
+       pulsar con un dedo. */
+    min-width: 1.75rem;
+    aspect-ratio: 1;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+
+  .casilla-paleta:hover {
+    /* El halo va FUERA, con `outline`, para no mover nada al pasar por
+       encima: un borde que aparece empujaría la fila entera. */
+    outline: 2px solid var(--ink);
+    outline-offset: 1px;
+  }
+
+  .casilla-paleta.abierta {
+    outline: 2px solid var(--acento);
+    outline-offset: 1px;
+  }
+
+  .casilla-paleta:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  /*
+    Las marcas de la casilla.
+
+    Van en el color que SÍ se lee sobre ella —blanco o negro según su
+    propio veredicto— que es exactamente el dato que la casilla está
+    enseñando. Una marca fija en gris habría sido invisible justo en los
+    pasos donde importa.
+  */
+  .casilla-paleta .marcas {
+    display: flex;
+    gap: 0.125rem;
+  }
+
+  .casilla-paleta .marcas span {
+    width: 0.3125rem;
+    height: 0.3125rem;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  /* El ancla es un punto lleno; el retoque, un anillo; el «sin tinta»,
+     una barra. Se distinguen por FORMA y no solo por posición: sobre un
+     color cualquiera, tres puntos iguales no dicen nada. */
+  .casilla-paleta .punto-tocado {
+    background: none;
+    box-shadow: inset 0 0 0 1.5px currentColor;
+  }
+
+  .casilla-paleta .punto-sin-tinta {
+    width: 0.5rem;
+    height: 0.1875rem;
+    border-radius: 1px;
+  }
+
+  /* ---------- El detalle ---------- */
+  .detalle-paso {
+    display: grid;
+    gap: 0.875rem;
+    padding: 1.0625rem;
+    border: 1px solid var(--acento);
+    border-radius: var(--radius-xl);
+    background: var(--surface);
+  }
+
+  .detalle-paso header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .detalle-paso .muestra-detalle {
+    flex: none;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+  }
+
+  .detalle-paso .variable {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .detalle-paso .valores {
+    margin: 0;
+    overflow: hidden;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink-soft);
+  }
+
+  .detalle-paso .veredictos {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.25rem 0.875rem;
+    margin: 0;
+    font-size: var(--fs-small);
+  }
+
+  .detalle-paso .veredictos dt {
+    color: var(--ink-muted);
+  }
+
+  .detalle-paso .veredictos dd {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+
+  .acciones-detalle .etiqueta-retoque {
+    font-size: var(--fs-small);
+    color: var(--ink-muted);
+  }
+
+  .acciones-detalle {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}

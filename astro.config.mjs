@@ -81,6 +81,7 @@ const SITE_URL = 'https://tools.dgoalvarez.com';
 const PAIRS = [
   { en: '/en', es: '/es' },
   { en: '/en/timezones', es: '/es/horarios' },
+  { en: '/en/clock', es: '/es/reloj' },
   { en: '/en/pomodoro', es: '/es/pomodoro' },
   { en: '/en/contrast', es: '/es/contraste' },
   { en: '/en/type-scale', es: '/es/escala' },

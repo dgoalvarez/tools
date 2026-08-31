@@ -45,19 +45,40 @@ export default function Tour({ lang, tool }: Props) {
         import('driver.js/dist/driver.css'),
       ]);
 
-      const pasos = TOUR[tool]
-        .filter((paso) => !paso.opcional || document.querySelector(`[data-tour="${paso.ancla}"]`))
-        .map((paso) => ({
-          element: `[data-tour="${paso.ancla}"]`,
-          popover: {
-            title: t(paso.titulo, lang),
-            description: t(paso.cuerpo, lang),
-          },
-        }));
+      const crudos = TOUR[tool].filter(
+        (paso) => !paso.opcional || document.querySelector(`[data-tour="${paso.ancla}"]`)
+      );
+
+      const pasos = crudos.map((paso) => ({
+        element: `[data-tour="${paso.ancla}"]`,
+        popover: {
+          title: t(paso.titulo, lang),
+          description: t(paso.cuerpo, lang),
+        },
+      }));
 
       const saltar = t(UI.tourSaltar, lang);
 
-      driver({
+      /*
+       * Un paso puede vivir detrás de una pestaña —el cronómetro y el
+       * temporizador del reloj— y entonces su control no existe todavía.
+       *
+       * Se pulsa la pestaña ANTES de avanzar y se le dan dos cuadros a
+       * React para que pinte el panel. Hacerlo en el gancho del propio
+       * paso llegaría tarde: driver.js resuelve el elemento antes de
+       * llamarlo, así que señalaría al vacío.
+       */
+      const irA = (indice: number, mover: () => void) => {
+        const selector = crudos[indice]?.abre;
+        if (!selector) {
+          mover();
+          return;
+        }
+        document.querySelector<HTMLElement>(selector)?.click();
+        requestAnimationFrame(() => requestAnimationFrame(mover));
+      };
+
+      const guia = driver({
         steps: pasos,
         showProgress: true,
         allowClose: true,
@@ -103,7 +124,16 @@ export default function Tour({ lang, tool }: Props) {
           // lo que se ve sin tocar el orden de tabulación.
           popover.footer.append(popover.closeButton);
         },
-      }).drive();
+
+        onNextClick: (_el, _paso, opts) => {
+          irA(opts.state.activeIndex! + 1, () => guia.moveNext());
+        },
+        onPrevClick: (_el, _paso, opts) => {
+          irA(opts.state.activeIndex! - 1, () => guia.movePrevious());
+        },
+      });
+
+      guia.drive();
     } finally {
       setCargando(false);
     }

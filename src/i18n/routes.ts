@@ -11,7 +11,7 @@
  */
 import type { Lang } from './config';
 
-export type PageKey = 'home' | 'timezones' | 'pomodoro' | 'contrast' | 'scale';
+export type PageKey = 'home' | 'timezones' | 'clock' | 'pomodoro' | 'contrast' | 'scale';
 
 export const ROUTES: Record<PageKey, Record<Lang, string>> = {
   home: { en: '/en', es: '/es' },
@@ -19,6 +19,7 @@ export const ROUTES: Record<PageKey, Record<Lang, string>> = {
   // «Pomodoro» se dice igual en los dos idiomas, así que la dirección es
   // la misma. Traducirla a «/es/tomate» sería inventar un nombre que
   // nadie busca.
+  clock: { en: '/en/clock', es: '/es/reloj' },
   pomodoro: { en: '/en/pomodoro', es: '/es/pomodoro' },
   contrast: { en: '/en/contrast', es: '/es/contraste' },
   scale: { en: '/en/type-scale', es: '/es/escala' },
@@ -30,6 +31,7 @@ export const route = (page: PageKey, lang: Lang): string => ROUTES[page][lang];
 /** Las herramientas, en el orden en que se muestran. */
 export const TOOL_KEYS = [
   'timezones',
+  'clock',
   'pomodoro',
   'contrast',
   'scale',

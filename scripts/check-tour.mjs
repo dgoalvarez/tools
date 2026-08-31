@@ -57,9 +57,14 @@ function pasosPorHerramienta() {
     for (let j = 0; j < anclas.length; j++) {
       const inicio = anclas[j].index;
       const fin = j + 1 < anclas.length ? anclas[j + 1].index : trozo.length;
+      const cuerpo = trozo.slice(inicio, fin);
       pasos.push({
         ancla: anclas[j][1],
-        opcional: /opcional:\s*true/.test(trozo.slice(inicio, fin)),
+        // `abre` marca un paso que vive detrás de una pestaña: no está en
+        // el HTML publicado hasta que alguien la pulsa, así que exigirlo
+        // aquí sería exigir algo imposible. El paso a paso sí lo enseña,
+        // pulsando la pestaña antes de señalar.
+        opcional: /opcional:\s*true/.test(cuerpo) || /abre:\s*'/.test(cuerpo),
       });
     }
 

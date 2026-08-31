@@ -19,7 +19,7 @@
  *     Un navegador que pregunta nada más abrir una página es un navegador
  *     al que se le dice que no.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   PauseIcon,
   PlayIcon,
@@ -48,6 +48,14 @@ import {
   type Cuenta,
   type Fase,
 } from '@/lib/pomodoro';
+import {
+  arrancarAudio,
+  notificar,
+  pedirPermiso as pedirPermisoAviso,
+  permisoActual,
+  sonar,
+  type Permiso,
+} from '@/lib/aviso';
 import { escribirParams, leerParams } from '@/lib/url-state';
 
 /** Las claves de la dirección, cortas para que el enlace no sea un muro. */
@@ -72,7 +80,7 @@ export default function Pomodoro({ lang }: Props) {
   const [listo, setListo] = useState(false);
 
   const [conSonido, setConSonido] = useState(true);
-  const [permiso, setPermiso] = useState<NotificationPermission | 'no-hay'>('default');
+  const [permiso, setPermiso] = useState<Permiso>('default');
 
   const nombreDeFase = (fase: Fase) =>
     fase === 'trabajo' ? tr('faseTrabajo') : fase === 'corto' ? tr('faseCorto') : tr('faseLargo');
@@ -93,7 +101,7 @@ export default function Pomodoro({ lang }: Props) {
     const guardada = leerCuenta();
     if (guardada) setCuenta(guardada);
 
-    setPermiso(typeof Notification === 'undefined' ? 'no-hay' : Notification.permission);
+    setPermiso(permisoActual());
     setListo(true);
   }, []);
 
@@ -126,69 +134,6 @@ export default function Pomodoro({ lang }: Props) {
     return () => clearInterval(t);
   }, [cuenta.estado]);
 
-  // ---------- el aviso ----------
-
-  /**
-   * Un tono corto, generado en el momento.
-   *
-   * Sin archivo de audio: son dos osciladores y medio segundo, así que no
-   * hay nada que descargar ni nada que la política de seguridad tenga que
-   * autorizar. El contexto se crea al pulsar «Empezar», que es el gesto
-   * que los navegadores exigen para dejar sonar algo.
-   */
-  const audio = useRef<AudioContext | null>(null);
-
-  const sonar = useCallback((agudo: boolean) => {
-    const ctx = audio.current;
-    if (!ctx) return;
-    if (ctx.state === 'suspended') void ctx.resume();
-
-    const t0 = ctx.currentTime;
-
-    /*
-     * Dos notas: sube al acabar el trabajo, baja al acabar el descanso.
-     * Se distingue qué ha pasado sin mirar la pantalla.
-     *
-     * Y el motivo se repite tres veces, con un silencio en medio. Con una
-     * sola pasada duraba medio segundo, que es menos de lo que tarda
-     * alguien concentrado en registrar que ha sonado algo: si justo
-     * estabas tecleando, se lo llevaba el ruido del teclado. Kilo y medio
-     * de segundo con un hueco a la mitad es lo que hace que un sonido
-     * pase de «creo que oí algo» a «ha acabado».
-     */
-    const motivo = agudo ? [660, 880] : [880, 660];
-    const notas = [...motivo, ...motivo, ...motivo];
-
-    notas.forEach((hz, i) => {
-      const osc = ctx.createOscillator();
-      const vol = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = hz;
-      osc.connect(vol);
-      vol.connect(ctx.destination);
-
-      // El silencio entre repeticiones va DENTRO del hueco de la
-      // primera nota de cada par, que es donde se oye como una pausa y no
-      // como un tropiezo.
-      const inicio = t0 + i * 0.19 + Math.floor(i / 2) * 0.22;
-      vol.gain.setValueAtTime(0.0001, inicio);
-      vol.gain.exponentialRampToValueAtTime(0.18, inicio + 0.02);
-      vol.gain.exponentialRampToValueAtTime(0.0001, inicio + 0.28);
-      osc.start(inicio);
-      osc.stop(inicio + 0.3);
-    });
-  }, []);
-
-  const notificar = useCallback((titulo: string, cuerpo: string) => {
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-    try {
-      new Notification(titulo, { body: cuerpo, tag: 'dgo-pomodoro' });
-    } catch {
-      // Algunos navegadores solo dejan notificar desde un service worker.
-      // No poder avisar no es motivo para romper la cuenta.
-    }
-  }, []);
-
   // ---------- el cambio de fase ----------
 
   useEffect(() => {
@@ -201,7 +146,8 @@ export default function Pomodoro({ lang }: Props) {
     if (conSonido) sonar(acababaTrabajo);
     notificar(
       acababaTrabajo ? tr('finTrabajoTitulo') : tr('finDescansoTitulo'),
-      acababaTrabajo ? tr('finTrabajoCuerpo') : tr('finDescansoCuerpo')
+      acababaTrabajo ? tr('finTrabajoCuerpo') : tr('finDescansoCuerpo'),
+      'dgo-pomodoro'
     );
 
     /*
@@ -267,18 +213,6 @@ export default function Pomodoro({ lang }: Props) {
 
   // ---------- los mandos ----------
 
-  function arrancarAudio() {
-    if (audio.current) return;
-    try {
-      const Ctx =
-        window.AudioContext ??
-        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (Ctx) audio.current = new Ctx();
-    } catch {
-      // Sin audio, el aviso se queda en la notificación y el título.
-    }
-  }
-
   function empezar() {
     arrancarAudio();
     setCuenta((c) => {
@@ -334,12 +268,7 @@ export default function Pomodoro({ lang }: Props) {
   }
 
   async function pedirPermiso() {
-    if (typeof Notification === 'undefined') return;
-    try {
-      setPermiso(await Notification.requestPermission());
-    } catch {
-      // Algunos navegadores solo lo permiten desde un gesto; este lo es.
-    }
+    setPermiso(await pedirPermisoAviso());
   }
   // ---------- pintado ----------
 

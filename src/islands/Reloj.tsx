@@ -1,0 +1,809 @@
+/**
+ * El reloj: la hora, una alarma, un cronómetro y un temporizador.
+ *
+ * La aritmética vive en src/lib/reloj.ts y los avisos en src/lib/aviso.ts;
+ * aquí están el estado, las pestañas y la pantalla.
+ *
+ * Cuatro decisiones que no son de estilo:
+ *
+ *   · **Los tres corren a la vez.** Cambiar de pestaña no para nada. Sería
+ *     absurdo que mirar la alarma matase el cronómetro, así que la pestaña
+ *     solo decide qué se enseña; lo que corre, corre.
+ *
+ *   · **El reloj se queda arriba, fijo.** Es lo que se mira sin pensar, y
+ *     es lo que da sentido a las otras tres: la alarma se pone mirando la
+ *     hora que es.
+ *
+ *   · **Dos relojes distintos.** El cronómetro va contra
+ *     `performance.now()` —monótono, no le afecta un ajuste del reloj del
+ *     sistema— y la hora, la alarma y el temporizador contra `Date.now()`.
+ *     El porqué largo está en la librería.
+ *
+ *   · **El repintado se paga solo si hace falta.** Si no hay nada
+ *     corriendo y los segundos están apagados, el reloj repinta cada
+ *     medio minuto en vez de cuatro veces por segundo.
+ */
+import { useEffect, useRef, useState } from 'react';
+import {
+  ArrowCounterClockwiseIcon,
+  BellIcon,
+  BellSlashIcon,
+  FlagIcon,
+  PauseIcon,
+  PlayIcon,
+  StopIcon,
+} from '@phosphor-icons/react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { t, type Lang } from '@/i18n/config';
+import { RELOJ as R } from '@/i18n/reloj';
+import {
+  arrancarAudio,
+  notificar,
+  pedirPermiso as pedirPermisoAviso,
+  permisoActual,
+  sonar,
+  type Permiso,
+} from '@/lib/aviso';
+import {
+  ALARMA_INICIAL,
+  CARA_INICIAL,
+  CRONOMETRO_INICIAL,
+  LIMITES_PUESTA,
+  PUESTA_INICIAL,
+  TEMPORIZADOR_INICIAL,
+  agujas,
+  avanceTemporizador,
+  comoCronometro,
+  comoCuenta,
+  extremos,
+  faltaParaAlarma,
+  fechaEscrita,
+  horaEscrita,
+  horaValida,
+  limitarPuesta,
+  proximaVez,
+  puestaMs,
+  restanteTemporizador,
+  transcurrido,
+  vueltasDe,
+  type Alarma,
+  type Cara,
+  type Cronometro,
+  type Puesta,
+  type Temporizador,
+} from '@/lib/reloj';
+import { escribirParams, leerParams } from '@/lib/url-state';
+
+/** Las tres pestañas de debajo del reloj. */
+type Pestana = 'alarma' | 'cronometro' | 'temporizador';
+const PESTANAS: Pestana[] = ['alarma', 'cronometro', 'temporizador'];
+
+/** Atajos del temporizador, en minutos. Los ratos que se ponen de verdad. */
+const ATAJOS = [1, 3, 5, 10, 15, 25, 45, 60];
+
+const LOCALES: Record<Lang, string> = { es: 'es-ES', en: 'en-US' };
+
+/**
+ * El botón principal.
+ *
+ * Los colores van en utilidades de Tailwind y no en una clase de
+ * `global.css`: las utilidades viven en una capa que gana a la de
+ * componentes, así que el `bg-primary` que trae el botón de shadcn pisa
+ * cualquier regla escrita allí. Y el relleno es `--solido` y no
+ * `--acento`, porque el acento con tinta oscura encima suspende la
+ * propia herramienta de contraste de este sitio.
+ */
+const BOTON =
+  'border border-[var(--solido)] bg-[var(--solido)] font-semibold text-[var(--solido-ink)] hover:bg-[color-mix(in_srgb,var(--solido)_86%,#000)]';
+
+interface Props {
+  lang: Lang;
+}
+
+export default function Reloj({ lang }: Props) {
+  const tr = (clave: keyof typeof R) => t(R[clave], lang);
+  const locale = LOCALES[lang];
+
+  const [cara, setCara] = useState<Cara>(CARA_INICIAL);
+  const [pestana, setPestana] = useState<Pestana>('alarma');
+  const [listo, setListo] = useState(false);
+
+  const [alarma, setAlarma] = useState<Alarma>(ALARMA_INICIAL);
+  const [alarmaSuena, setAlarmaSuena] = useState(false);
+
+  const [crono, setCrono] = useState<Cronometro>(CRONOMETRO_INICIAL);
+  const [puesta, setPuesta] = useState<Puesta>(PUESTA_INICIAL);
+  const [temporizador, setTemporizador] = useState<Temporizador>(TEMPORIZADOR_INICIAL);
+
+  const [conSonido, setConSonido] = useState(true);
+  const [permiso, setPermiso] = useState<Permiso>('default');
+
+  /** El latido: dos relojes, porque cada cosa cuenta contra el suyo. */
+  const [ahora, setAhora] = useState(() => Date.now());
+  const [mono, setMono] = useState(() => (typeof performance !== 'undefined' ? performance.now() : 0));
+
+  // ---------- al llegar ----------
+
+  useEffect(() => {
+    const p = leerParams();
+
+    const tipo = p.get('c');
+    const formato = p.get('h');
+    setCara({
+      tipo: tipo === 'analogica' ? 'analogica' : 'digital',
+      formato: formato === '12' || formato === '24' ? formato : 'auto',
+      fecha: p.get('d') !== '0',
+      segundos: p.get('s') !== '0',
+    });
+
+    const hora = p.get('a');
+    if (hora && horaValida(hora)) setAlarma({ hora, activa: false });
+
+    const t = p.get('t');
+    if (t) {
+      const [h, m, s] = t.split(':').map(Number);
+      setPuesta({
+        horas: limitarPuesta(h, 'horas'),
+        minutos: limitarPuesta(m, 'minutos'),
+        segundos: limitarPuesta(s, 'segundos'),
+      });
+    }
+
+    setPermiso(permisoActual());
+    setListo(true);
+  }, []);
+
+  useEffect(() => {
+    if (!listo) return;
+    escribirParams({
+      c: cara.tipo === 'analogica' ? 'analogica' : null,
+      h: cara.formato === 'auto' ? null : cara.formato,
+      d: cara.fecha ? null : '0',
+      s: cara.segundos ? null : '0',
+      a: alarma.hora === ALARMA_INICIAL.hora ? null : alarma.hora,
+      t:
+        puestaMs(puesta) === puestaMs(PUESTA_INICIAL)
+          ? null
+          : `${puesta.horas}:${puesta.minutos}:${puesta.segundos}`,
+    });
+  }, [listo, cara, alarma.hora, puesta]);
+
+  // ---------- el latido ----------
+
+  const corriendo =
+    crono.estado === 'andando' || temporizador.estado === 'andando' || alarma.activa;
+
+  useEffect(() => {
+    /*
+     * Cada cuánto repintar, según lo que haya que ver:
+     *
+     *   · Con el cronómetro andando hace falta ir fino, porque enseña
+     *     centésimas. 50 ms se lee como continuo sin ser un derroche.
+     *   · Con los segundos a la vista o algo contando, cuatro veces por
+     *     segundo: el número solo cambia una, pero así nunca se ve un
+     *     segundo congelado al volver de otra pestaña.
+     *   · Sin nada de eso, el reloj solo enseña horas y minutos: medio
+     *     minuto basta y la pestaña deja de despertar al procesador.
+     */
+    const cada =
+      crono.estado === 'andando' ? 50 : cara.segundos || corriendo || alarmaSuena ? 250 : 30_000;
+
+    const id = setInterval(() => {
+      setAhora(Date.now());
+      if (typeof performance !== 'undefined') setMono(performance.now());
+    }, cada);
+
+    return () => clearInterval(id);
+  }, [crono.estado, cara.segundos, corriendo, alarmaSuena]);
+
+  // ---------- la alarma ----------
+
+  const faltaAlarma = faltaParaAlarma(alarma, new Date(ahora));
+
+  useEffect(() => {
+    if (!alarma.activa || alarmaSuena) return;
+    if (faltaAlarma === null || faltaAlarma > 0) return;
+
+    setAlarmaSuena(true);
+    setAlarma((a) => ({ ...a, activa: false }));
+    if (conSonido) sonar(true, 6);
+    notificar(tr('avisoAlarmaTitulo'), tr('avisoAlarmaCuerpo'), 'dgo-reloj-alarma');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [faltaAlarma, alarma.activa, alarmaSuena, conSonido]);
+
+  // ---------- el temporizador ----------
+
+  const quedaTemporizador = restanteTemporizador(temporizador, puesta, ahora);
+
+  useEffect(() => {
+    if (temporizador.estado !== 'andando' || quedaTemporizador > 0) return;
+
+    setTemporizador({ estado: 'sonando', total: temporizador.total });
+    if (conSonido) sonar(false, 4);
+    notificar(tr('avisoTemporizadorTitulo'), tr('avisoTemporizadorCuerpo'), 'dgo-reloj-temp');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quedaTemporizador, temporizador, conSonido]);
+
+  // ---------- el título de la pestaña ----------
+
+  const original = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!listo) return;
+    if (original.current === null) original.current = document.title;
+
+    /*
+     * Qué se enseña en el título, por orden de urgencia. Solo cabe una
+     * cosa, así que gana lo que está a punto de pasar sobre lo que
+     * simplemente está corriendo.
+     */
+    const texto = alarmaSuena
+      ? `${tr('alarmaSonando')}`
+      : temporizador.estado === 'sonando'
+        ? tr('temporizadorSonando')
+        : temporizador.estado === 'andando'
+          ? `${comoCuenta(quedaTemporizador)} · ${tr('temporizador')}`
+          : crono.estado === 'andando'
+            ? `${comoCronometro(transcurrido(crono, mono))} · ${tr('cronometro')}`
+            : null;
+
+    document.title = texto ?? original.current;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listo, alarmaSuena, temporizador.estado, crono.estado, comoCuenta(quedaTemporizador)]);
+
+  useEffect(
+    () => () => {
+      if (original.current !== null) document.title = original.current;
+    },
+    []
+  );
+
+  // ---------- los mandos ----------
+
+  function conGesto(hacer: () => void) {
+    arrancarAudio();
+    hacer();
+  }
+
+  function probarSonido() {
+    arrancarAudio();
+    setTimeout(() => sonar(true, 2), 0);
+  }
+
+  async function pedirPermiso() {
+    setPermiso(await pedirPermisoAviso());
+  }
+
+  const cronoVa = crono.estado === 'andando';
+
+  function cronoArrancar() {
+    conGesto(() =>
+      setCrono((c) =>
+        c.estado === 'andando'
+          ? c
+          : { estado: 'andando', acumulado: c.acumulado, desde: performance.now(), vueltas: c.vueltas }
+      )
+    );
+  }
+
+  function cronoParar() {
+    setCrono((c) =>
+      c.estado === 'andando'
+        ? { estado: 'parado', acumulado: transcurrido(c, performance.now()), vueltas: c.vueltas }
+        : c
+    );
+  }
+
+  function cronoVuelta() {
+    setCrono((c) => ({ ...c, vueltas: [...c.vueltas, transcurrido(c, performance.now())] }));
+  }
+
+  function cronoCero() {
+    setCrono(CRONOMETRO_INICIAL);
+  }
+
+  function tempEmpezar() {
+    conGesto(() =>
+      setTemporizador((t) => {
+        if (t.estado === 'pausa') {
+          return { estado: 'andando', terminaEn: Date.now() + t.restanteMs, total: t.total };
+        }
+        const total = puestaMs(puesta);
+        if (total <= 0) return t;
+        return { estado: 'andando', terminaEn: Date.now() + total, total };
+      })
+    );
+    setAhora(Date.now());
+  }
+
+  function tempPausar() {
+    setTemporizador((t) =>
+      t.estado === 'andando'
+        ? { estado: 'pausa', restanteMs: Math.max(0, t.terminaEn - Date.now()), total: t.total }
+        : t
+    );
+  }
+
+  function tempReiniciar() {
+    setTemporizador(TEMPORIZADOR_INICIAL);
+  }
+
+  // ---------- pintado ----------
+
+  const fechaAhora = new Date(ahora);
+  const cronoMs = transcurrido(crono, mono);
+  const lista = vueltasDe(crono, mono);
+  const marcas = extremos(lista);
+  const proxima = alarma.activa ? proximaVez(alarma.hora, fechaAhora) : null;
+
+  /** Qué pestaña tiene algo andando, para el punto del acento. */
+  const activa: Record<Pestana, boolean> = {
+    alarma: alarma.activa || alarmaSuena,
+    cronometro: crono.estado === 'andando',
+    temporizador: temporizador.estado === 'andando' || temporizador.estado === 'sonando',
+  };
+
+  const nombrePestana = (p: Pestana) =>
+    p === 'alarma' ? tr('alarma') : p === 'cronometro' ? tr('cronometro') : tr('temporizador');
+
+  return (
+    <div className="grid gap-6">
+      {/* ================= El reloj, siempre arriba ================= */}
+      <section className="cara-reloj" data-tour="hora">
+        {cara.tipo === 'analogica' ? (
+          <Esfera fecha={fechaAhora} conSegundos={cara.segundos} />
+        ) : (
+          <p className="hora">{horaEscrita(fechaAhora, cara, locale)}</p>
+        )}
+
+        {cara.fecha && <p className="fecha">{fechaEscrita(fechaAhora, locale)}</p>}
+
+        {/* Los ajustes de la cara, discretos y debajo: se tocan una vez y
+            no se vuelven a mirar, así que no pueden competir con la hora. */}
+        <div className="ajustes-cara" data-tour="cara">
+          <div className="segmento" role="group" aria-label={tr('cara')}>
+            {(['digital', 'analogica'] as const).map((tipo) => (
+              <label key={tipo}>
+                <input
+                  type="radio"
+                  name="cara-tipo"
+                  checked={cara.tipo === tipo}
+                  onChange={() => setCara((c) => ({ ...c, tipo }))}
+                />
+                <span>{tipo === 'digital' ? tr('caraDigital') : tr('caraAnalogica')}</span>
+              </label>
+            ))}
+          </div>
+
+          <div className="segmento" role="group" aria-label={tr('formato')}>
+            {(['auto', '12', '24'] as const).map((formato) => (
+              <label key={formato}>
+                <input
+                  type="radio"
+                  name="cara-formato"
+                  checked={cara.formato === formato}
+                  onChange={() => setCara((c) => ({ ...c, formato }))}
+                />
+                <span>
+                  {formato === 'auto'
+                    ? tr('formatoAuto')
+                    : formato === '12'
+                      ? tr('formato12')
+                      : tr('formato24')}
+                </span>
+              </label>
+            ))}
+          </div>
+
+          <label className="interruptor">
+            <input
+              type="checkbox"
+              role="switch"
+              checked={cara.fecha}
+              onChange={(e) => setCara((c) => ({ ...c, fecha: e.target.checked }))}
+            />
+            <span className="texto">{tr('verFecha')}</span>
+          </label>
+
+          <label className="interruptor">
+            <input
+              type="checkbox"
+              role="switch"
+              checked={cara.segundos}
+              onChange={(e) => setCara((c) => ({ ...c, segundos: e.target.checked }))}
+            />
+            <span className="texto">{tr('verSegundos')}</span>
+          </label>
+        </div>
+      </section>
+
+      {/* ================= Las tres pestañas ================= */}
+      <div>
+        <div className="pestanas-reloj" role="tablist" aria-label={tr('cara')} data-tour="modos">
+          {PESTANAS.map((p) => (
+            <button
+              key={p}
+              role="tab"
+              type="button"
+              aria-selected={pestana === p}
+              aria-controls={`panel-${p}`}
+              id={`tab-${p}`}
+              onClick={() => setPestana(p)}
+            >
+              {nombrePestana(p)}
+              {/* El punto dice qué está corriendo aunque no se esté
+                  mirando. Sin él, cambiar de pestaña daría la impresión
+                  de que lo otro se ha parado. */}
+              {activa[p] && (
+                <span className="punto" aria-label={tr('enMarcha')} title={tr('enMarcha')} />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* ---------------- Alarma ---------------- */}
+        {pestana === 'alarma' && (
+          <section
+            className="panel-modo"
+            role="tabpanel"
+            id="panel-alarma"
+            aria-labelledby="tab-alarma"
+            data-tour="alarma"
+          >
+            {alarmaSuena ? (
+              <div className="sonando">
+                <p className="titular">{tr('alarmaSonando')}</p>
+                <p className="cuando">{horaEscrita(fechaAhora, cara, locale)}</p>
+                <Button onClick={() => setAlarmaSuena(false)} className={BOTON}>
+                  <BellSlashIcon aria-hidden="true" weight="fill" />
+                  {tr('callar')}
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="fila-alarma">
+                  <Label htmlFor="alarma-hora">{tr('aQueHora')}</Label>
+                  <Input
+                    id="alarma-hora"
+                    type="time"
+                    value={alarma.hora}
+                    onChange={(e) => setAlarma((a) => ({ ...a, hora: e.target.value }))}
+                    className="w-[9rem]"
+                  />
+                  <Button
+                    onClick={() =>
+                      conGesto(() => setAlarma((a) => ({ ...a, activa: !a.activa })))
+                    }
+                    variant={alarma.activa ? 'outline' : 'default'}
+                    className={alarma.activa ? undefined : BOTON}
+                    disabled={!horaValida(alarma.hora)}
+                  >
+                    {alarma.activa ? (
+                      <>
+                        <BellSlashIcon aria-hidden="true" />
+                        {tr('quitarAlarma')}
+                      </>
+                    ) : (
+                      <>
+                        <BellIcon aria-hidden="true" weight="fill" />
+                        {tr('ponerAlarma')}
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {proxima && faltaAlarma !== null && (
+                  <p className="cuenta-alarma" aria-live="polite">
+                    {tr('suenaEn')} <strong>{comoCuenta(faltaAlarma)}</strong>
+                    {' · '}
+                    {tr('sueneA')}{' '}
+                    <strong>
+                      {new Intl.DateTimeFormat(locale, {
+                        weekday: 'long',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        ...(cara.formato !== 'auto' ? { hour12: cara.formato === '12' } : {}),
+                      }).format(proxima)}
+                    </strong>
+                  </p>
+                )}
+
+                <p className="nota-limite">{tr('alarmaAviso')}</p>
+              </>
+            )}
+          </section>
+        )}
+
+        {/* ---------------- Cronómetro ---------------- */}
+        {pestana === 'cronometro' && (
+          <section
+            className="panel-modo"
+            role="tabpanel"
+            id="panel-cronometro"
+            aria-labelledby="tab-cronometro"
+            data-tour="cronometro"
+          >
+            <p className="numero-grande">{comoCronometro(cronoMs)}</p>
+
+            <div className="mandos-modo">
+              {cronoVa ? (
+                <Button onClick={cronoParar} className={BOTON}>
+                  <StopIcon aria-hidden="true" weight="fill" />
+                  {tr('parar')}
+                </Button>
+              ) : (
+                <Button onClick={cronoArrancar} className={BOTON}>
+                  <PlayIcon aria-hidden="true" weight="fill" />
+                  {cronoMs > 0 ? tr('seguir') : tr('arrancar')}
+                </Button>
+              )}
+
+              <Button variant="outline" onClick={cronoVuelta} disabled={!cronoVa}>
+                <FlagIcon aria-hidden="true" />
+                {tr('vuelta')}
+              </Button>
+
+              <Button variant="outline" onClick={cronoCero} disabled={cronoMs === 0}>
+                <ArrowCounterClockwiseIcon aria-hidden="true" />
+                {tr('aCero')}
+              </Button>
+            </div>
+
+            {lista.length > 0 && (
+              <table className="tabla-vueltas">
+                <caption className="sr-only">{tr('vueltas')}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">{tr('vueltaNum')}</th>
+                    <th scope="col">{tr('duracion')}</th>
+                    <th scope="col">{tr('total')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lista.map((v) => (
+                    <tr
+                      key={v.numero}
+                      className={
+                        v.numero === marcas.rapida
+                          ? 'rapida'
+                          : v.numero === marcas.lenta
+                            ? 'lenta'
+                            : undefined
+                      }
+                    >
+                      <th scope="row">
+                        {v.numero}
+                        {v.numero === marcas.rapida && (
+                          <span className="marca">{tr('masRapida')}</span>
+                        )}
+                        {v.numero === marcas.lenta && (
+                          <span className="marca">{tr('masLenta')}</span>
+                        )}
+                      </th>
+                      <td>{comoCronometro(v.duracion)}</td>
+                      <td>{comoCronometro(v.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+        )}
+
+        {/* ---------------- Temporizador ---------------- */}
+        {pestana === 'temporizador' && (
+          <section
+            className="panel-modo"
+            role="tabpanel"
+            id="panel-temporizador"
+            aria-labelledby="tab-temporizador"
+            data-tour="temporizador"
+          >
+            {temporizador.estado === 'sonando' ? (
+              <div className="sonando">
+                <p className="titular">{tr('temporizadorSonando')}</p>
+                <Button onClick={tempReiniciar} className={BOTON}>
+                  <ArrowCounterClockwiseIcon aria-hidden="true" />
+                  {tr('reiniciar')}
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="anillo-temporizador">
+                  <svg viewBox="0 0 100 100" aria-hidden="true">
+                    <circle className="pista" cx="50" cy="50" r="45" />
+                    <circle
+                      className="hecho"
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      style={{
+                        strokeDashoffset:
+                          283 - 283 * avanceTemporizador(temporizador, puesta, ahora),
+                      }}
+                    />
+                  </svg>
+                  <p className="numero-grande">{comoCuenta(quedaTemporizador)}</p>
+                </div>
+
+                {temporizador.estado === 'parado' && (
+                  <>
+                    <div className="campos-puesta">
+                      {(['horas', 'minutos', 'segundos'] as const).map((clave) => (
+                        <div key={clave} className="campo-puesta">
+                          <Input
+                            id={`puesta-${clave}`}
+                            type="number"
+                            inputMode="numeric"
+                            min={LIMITES_PUESTA[clave].min}
+                            max={LIMITES_PUESTA[clave].max}
+                            value={puesta[clave]}
+                            onChange={(e) =>
+                              setPuesta((p) => ({
+                                ...p,
+                                [clave]: limitarPuesta(Number(e.target.value), clave),
+                              }))
+                            }
+                            className="w-[4.5rem] text-center"
+                          />
+                          <Label htmlFor={`puesta-${clave}`}>
+                            {clave === 'horas'
+                              ? tr('horas')
+                              : clave === 'minutos'
+                                ? tr('minutos')
+                                : tr('segundos')}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Los ratos que se ponen de verdad, a un toque. Poner
+                        cinco minutos no debería costar tres campos. */}
+                    <div className="atajos">
+                      <span className="titulo-atajos">{tr('atajos')}</span>
+                      {ATAJOS.map((min) => (
+                        <Button
+                          key={min}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPuesta({ horas: 0, minutos: min, segundos: 0 })}
+                        >
+                          {min} {tr('minutos')}
+                        </Button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                <div className="mandos-modo">
+                  {temporizador.estado === 'andando' ? (
+                    <Button onClick={tempPausar} className={BOTON}>
+                      <PauseIcon aria-hidden="true" weight="fill" />
+                      {tr('pausar')}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={tempEmpezar}
+                      className={BOTON}
+                      disabled={puestaMs(puesta) <= 0 && temporizador.estado === 'parado'}
+                    >
+                      <PlayIcon aria-hidden="true" weight="fill" />
+                      {temporizador.estado === 'pausa' ? tr('seguir') : tr('empezar')}
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    onClick={tempReiniciar}
+                    disabled={temporizador.estado === 'parado'}
+                  >
+                    <ArrowCounterClockwiseIcon aria-hidden="true" />
+                    {tr('reiniciar')}
+                  </Button>
+                </div>
+              </>
+            )}
+          </section>
+        )}
+      </div>
+
+      {/* ================= El aviso, común a los tres ================= */}
+      <fieldset className="tarjeta-control" data-tour="aviso">
+        <legend className="sr-only">{tr('aviso')}</legend>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <label className="interruptor">
+            <input
+              type="checkbox"
+              role="switch"
+              checked={conSonido}
+              onChange={(e) => setConSonido(e.target.checked)}
+            />
+            <span className="texto">{tr('sonido')}</span>
+          </label>
+
+          {conSonido && (
+            <Button variant="outline" size="sm" onClick={probarSonido}>
+              {tr('probarSonido')}
+            </Button>
+          )}
+        </div>
+
+        {permiso === 'granted' && (
+          <p className="text-[length:var(--fs-small)] text-ink-soft">{tr('notificacion')} ✓</p>
+        )}
+        {permiso === 'default' && (
+          <Button variant="outline" size="sm" onClick={pedirPermiso} className="justify-self-start">
+            {tr('notificacionPedir')}
+          </Button>
+        )}
+        {permiso === 'denied' && (
+          <p className="text-[length:var(--fs-small)] text-ink-soft">
+            {tr('notificacionDenegada')}
+          </p>
+        )}
+        {permiso === 'no-hay' && (
+          <p className="text-[length:var(--fs-small)] text-ink-soft">{tr('notificacionNoHay')}</p>
+        )}
+      </fieldset>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------- auxiliares
+
+/**
+ * La esfera.
+ *
+ * Se dibuja en SVG con las marcas de las doce horas. Las agujas se mueven
+ * de forma continua —el porqué está en la librería— y el segundero solo
+ * aparece si se han pedido los segundos, porque si no repintaría cuatro
+ * veces por segundo para nada.
+ */
+function Esfera({ fecha, conSegundos }: { fecha: Date; conSegundos: boolean }) {
+  const a = agujas(fecha);
+
+  return (
+    <div className="esfera" role="img" aria-label={fecha.toLocaleTimeString()}>
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <circle className="borde" cx="50" cy="50" r="48" />
+
+        {Array.from({ length: 12 }, (_, i) => (
+          <line
+            key={i}
+            className={i % 3 === 0 ? 'marca fuerte' : 'marca'}
+            x1="50"
+            y1={i % 3 === 0 ? 8 : 10}
+            x2="50"
+            y2="14"
+            transform={`rotate(${i * 30} 50 50)`}
+          />
+        ))}
+
+        <line className="aguja horas" x1="50" y1="50" x2="50" y2="28" transform={`rotate(${a.horas} 50 50)`} />
+        <line
+          className="aguja minutos"
+          x1="50"
+          y1="50"
+          x2="50"
+          y2="18"
+          transform={`rotate(${a.minutos} 50 50)`}
+        />
+        {conSegundos && (
+          <line
+            className="aguja segundos"
+            x1="50"
+            y1="56"
+            x2="50"
+            y2="14"
+            transform={`rotate(${a.segundos} 50 50)`}
+          />
+        )}
+
+        <circle className="eje" cx="50" cy="50" r="2.5" />
+      </svg>
+    </div>
+  );
+}

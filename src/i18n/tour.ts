@@ -35,6 +35,19 @@ export interface PasoTour {
   cuerpo: T;
   /** Solo aparece en algunos estados: no se exige que exista. */
   opcional?: boolean;
+  /**
+   * Un selector que hay que PULSAR antes de enseñar este paso.
+   *
+   * Existe por el reloj: el cronómetro y el temporizador viven en
+   * pestañas, así que sus controles no están en el HTML hasta que alguien
+   * abre la suya. Sin esto habría dos malas salidas —marcarlos
+   * `opcional` y que el paso a paso nunca los enseñara, o señalar la
+   * pestaña en vez del control que se está explicando—.
+   *
+   * Un paso con `abre` tampoco se exige en el HTML publicado: por
+   * definición no está hasta que se pulsa.
+   */
+  abre?: string;
 }
 
 export const TOUR: Record<ToolKey, PasoTour[]> = {
@@ -96,6 +109,69 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
       cuerpo: {
         es: 'Los husos son exactos a nivel de condado, que es el nivel al que existen de verdad. Los datos son de GeoNames y la línea está ahí porque su licencia lo pide; ábrela si quieres el detalle de hasta dónde llega la precisión.',
         en: 'Zones are exact at county level, which is the level at which they really exist. The data is from GeoNames and that line is there because its licence asks for it; open it if you want the detail on how far the precision goes.',
+      },
+    },
+  ],
+
+  // ------------------------------------------------------------ reloj
+  clock: [
+    {
+      ancla: 'hora',
+      titulo: { es: 'La hora, a lo grande', en: 'The time, big' },
+      cuerpo: {
+        es: 'Se queda arriba en las tres pestañas, porque es lo que se mira sin pensar y lo que da sentido a lo demás: una alarma se pone mirando la hora que es. En un portátil apoyado en la mesa se lee desde el otro lado de la habitación.',
+        en: 'It stays up here across all three tabs, because it is what you glance at without thinking and what gives the rest its meaning: you set an alarm by looking at what time it is. On a laptop propped on the desk you can read it from across the room.',
+      },
+    },
+    {
+      ancla: 'cara',
+      titulo: { es: 'Digital o de agujas', en: 'Digits or hands' },
+      cuerpo: {
+        es: 'Cambia la cara, el formato de 12 o 24 horas, y si quieres ver la fecha y los segundos. «Del idioma» usa el que corresponda: 24 h en español, 12 h en inglés. Todo viaja en la dirección, así que el reloj que te guste se guarda en marcadores.',
+        en: 'Switch the face, the 12 or 24 hour format, and whether the date and seconds show. «Match language» uses whichever fits: 24 h in Spanish, 12 h in English. It all travels in the address, so the clock you like can be bookmarked.',
+      },
+    },
+    {
+      ancla: 'modos',
+      titulo: { es: 'Los tres corren a la vez', en: 'All three run at once' },
+      cuerpo: {
+        es: 'Cambiar de pestaña no para nada: el punto del acento sobre una pestaña dice que ahí hay algo andando. Sería absurdo que mirar la alarma matase el cronómetro. La cuenta más urgente va además en el título de la pestaña del navegador, para verla desde otra.',
+        en: 'Switching tabs stops nothing: the accent dot on a tab means something is running there. It would be absurd for checking the alarm to kill the stopwatch. The most urgent count also goes in the browser tab title, so you can see it from another tab.',
+      },
+    },
+    {
+      ancla: 'alarma',
+      abre: '#tab-alarma',
+      titulo: { es: 'La alarma, y su límite', en: 'The alarm, and its limit' },
+      cuerpo: {
+        es: 'Pon una hora y te dice cuánto falta y qué día será, para no tener que hacer la cuenta. Lo que hay que saber antes de fiarse: solo suena con esta pestaña abierta. No hay servidor detrás, y el navegador no sabe despertar una página cerrada.',
+        en: 'Set a time and it tells you how long is left and which day it lands on, so you do not have to work it out. What to know before trusting it: it only rings while this tab is open. There is no server behind it, and the browser cannot wake a closed page.',
+      },
+    },
+    {
+      ancla: 'cronometro',
+      abre: '#tab-cronometro',
+      titulo: { es: 'Vueltas, con la más rápida marcada', en: 'Laps, with the fastest marked' },
+      cuerpo: {
+        es: 'Cada vuelta guarda su duración y el total, y se marcan la más rápida y la más lenta — solo entre las terminadas, porque la que está corriendo todavía va a crecer. Este cuenta con un reloj monótono, así que un ajuste de hora del sistema no le da un salto.',
+        en: 'Each lap keeps its own time and the running total, and the fastest and slowest are marked — only among finished laps, since the one still running is going to grow. This one counts on a monotonic clock, so a system time adjustment cannot make it jump.',
+      },
+    },
+    {
+      ancla: 'temporizador',
+      abre: '#tab-temporizador',
+      titulo: { es: 'De un toque', en: 'One tap' },
+      cuerpo: {
+        es: 'Horas, minutos y segundos, o los botones de abajo para los ratos que se ponen de verdad. Cuenta contra el reloj del sistema, así que no se atrasa aunque cambies de pestaña o el ordenador se suspenda.',
+        en: 'Hours, minutes and seconds, or the buttons below for the stretches people actually set. It counts against the system clock, so it does not fall behind if you switch tabs or the computer sleeps.',
+      },
+    },
+    {
+      ancla: 'aviso',
+      titulo: { es: 'Cómo te avisa', en: 'How it tells you' },
+      cuerpo: {
+        es: 'Un tono generado en el momento —sin archivo que descargar— y, si le das permiso, una notificación del sistema. El botón «Probar» te deja oírlo antes de necesitarlo, que es mejor que descubrir el volumen cuando ya suena.',
+        en: 'A tone generated on the spot — no file to download — and, if you allow it, a system notification. The «Play it» button lets you hear it before you need it, which beats discovering the volume when it is already ringing.',
       },
     },
   ],

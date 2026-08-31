@@ -60,6 +60,23 @@ export const TOOLS: Record<ToolKey, Tool> = {
     },
     icono: 'reloj',
   },
+  clock: {
+    name: { es: 'Reloj', en: 'Clock' },
+    // Lo que lo distingue del reloj del sistema: no es la hora, son las
+    // tres cosas que se necesitan CON la hora delante y que en un
+    // ordenador están cada una en un sitio distinto.
+    summary: {
+      es: 'La hora, una alarma, un cronómetro y un temporizador, en la misma pantalla.',
+      en: 'The time, an alarm, a stopwatch and a timer, all on one screen.',
+    },
+    description: {
+      es: 'Un reloj de pantalla completa —digital o analógico, con la fecha si la quieres y en 12 o 24 horas— con una alarma, un cronómetro con vueltas y un temporizador debajo. Los tres pueden correr a la vez y avisan con sonido y notificación. La alarma solo suena con la pestaña abierta: no hay servidor detrás.',
+      en: 'A full-screen clock — digital or analogue, with the date if you want it, in 12 or 24 hours — with an alarm, a stopwatch with laps and a timer underneath. All three can run at once and warn you with a sound and a notification. The alarm only rings while the tab is open: there is no server behind it.',
+    },
+    listo: true,
+    etiquetas: { ambito: ['productividad'], materia: 'tiempo', tarea: 'cronometrar' },
+    icono: 'despertador',
+  },
   pomodoro: {
     name: { es: 'Pomodoro', en: 'Pomodoro' },
     // Lo que distingue a este de los cien que hay: cuenta contra el

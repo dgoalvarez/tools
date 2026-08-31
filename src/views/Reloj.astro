@@ -1,0 +1,32 @@
+---
+/**
+ * La página del reloj.
+ *
+ * `client:load` como las demás: el HTML sale ya pintado del servidor, así
+ * que la hora aparece en su sitio desde el primer momento. La que se
+ * publica es la del servidor —siempre vieja por definición— y el
+ * JavaScript la corrige en cuanto llega; no hay hueco en blanco.
+ */
+import Tool from '../layouts/Tool.astro';
+import Reloj from '../islands/Reloj';
+import { UI } from '../i18n/ui';
+import { t, type Lang } from '../i18n/config';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<Tool lang={lang} tool="clock">
+  <Reloj client:load lang={lang} />
+
+  <noscript>
+    <p
+      class="mt-6 max-w-[var(--measure)] rounded-lg border border-line bg-surface-2 p-4 text-[length:var(--fs-small)] text-ink-muted"
+    >
+      {t(UI.sinJs, lang)}
+    </p>
+  </noscript>
+</Tool>

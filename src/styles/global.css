@@ -2100,3 +2100,360 @@
     background: var(--acento);
   }
 }
+
+/* ============================================================
+   El reloj
+
+   La hora se queda arriba en las tres pestañas: es lo que se mira sin
+   pensar, y es lo que da sentido a lo demás —una alarma se pone mirando
+   la hora que es—.
+   ============================================================ */
+
+@layer components {
+  .cara-reloj {
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+    padding: clamp(1.5rem, 3.5vw, 3rem) clamp(1.25rem, 2.5vw, 2rem);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background: var(--surface);
+  }
+
+  /* Cifras de ancho fijo: sin ellas el número entero se mueve cada vez
+     que un 1 sustituye a un 8, y un reloj que baila cansa. */
+  .cara-reloj .hora {
+    margin: 0;
+    font-size: clamp(3rem, 11vw, 7rem);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.035em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+
+  .cara-reloj .fecha {
+    margin: 0;
+    font-size: var(--fs-body);
+    color: var(--ink-muted);
+    /* La primera en mayúscula: Intl la devuelve en minúscula en español
+       —«domingo, 31 de agosto»— y aquí abre línea. */
+    &::first-letter {
+      text-transform: uppercase;
+    }
+  }
+
+  /* `.segmento` va a todo el ancho por defecto —lo necesita en la
+     herramienta de contraste— pero aquí son dos grupos pequeños en una
+     fila y tienen que ocupar lo suyo. */
+  .ajustes-cara .segmento {
+    width: auto;
+  }
+
+  .ajustes-cara {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem 1.25rem;
+    margin-block-start: 0.5rem;
+  }
+
+  /* ---------- La esfera ---------- */
+  .esfera {
+    width: min(100%, 16rem);
+    aspect-ratio: 1;
+  }
+
+  .esfera svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .esfera .borde {
+    fill: none;
+    stroke: var(--line);
+    stroke-width: 1.5;
+  }
+
+  .esfera .marca {
+    stroke: var(--ink-soft);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+  }
+
+  .esfera .marca.fuerte {
+    stroke: var(--ink-muted);
+    stroke-width: 2.5;
+  }
+
+  .esfera .aguja {
+    stroke: var(--ink);
+    stroke-linecap: round;
+  }
+
+  .esfera .aguja.horas {
+    stroke-width: 4;
+  }
+
+  .esfera .aguja.minutos {
+    stroke-width: 2.75;
+  }
+
+  /* El segundero en el acento: es la única aguja que se ve moverse, así
+     que es la que dice de un vistazo que el reloj está vivo. */
+  .esfera .aguja.segundos {
+    stroke: var(--acento);
+    stroke-width: 1.25;
+  }
+
+  .esfera .eje {
+    fill: var(--acento);
+  }
+
+  /* ---------- Las pestañas ---------- */
+  .pestanas-reloj {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    border-block-end: 1px solid var(--line);
+  }
+
+  .pestanas-reloj button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4375rem;
+    padding: 0.625rem 0.875rem;
+    border: 0;
+    border-block-end: 2px solid transparent;
+    background: none;
+    font: inherit;
+    font-size: var(--fs-small);
+    color: var(--ink-muted);
+    cursor: pointer;
+    /* Que la pestaña no cambie de ancho al pasar a negrita: si no, las
+       tres se mueven cada vez que se cambia de una a otra. */
+    margin-block-end: -1px;
+  }
+
+  .pestanas-reloj button:hover {
+    color: var(--ink);
+  }
+
+  .pestanas-reloj button[aria-selected='true'] {
+    border-block-end-color: var(--acento);
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* El punto que dice que ahí hay algo corriendo aunque no se esté
+     mirando. Sin él, cambiar de pestaña parecería pararlo. */
+  .pestanas-reloj .punto {
+    width: 0.4375rem;
+    height: 0.4375rem;
+    border-radius: 999px;
+    background: var(--acento);
+  }
+
+  /* ---------- El panel de cada modo ---------- */
+  .panel-modo {
+    display: grid;
+    justify-items: center;
+    gap: 1.25rem;
+    padding: clamp(1.5rem, 3vw, 2.25rem) clamp(1.25rem, 2.5vw, 2rem);
+    border: 1px solid var(--line);
+    border-block-start: 0;
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    background: var(--surface);
+  }
+
+  .panel-modo .numero-grande {
+    margin: 0;
+    font-size: clamp(2.5rem, 7vw, 4.5rem);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+
+  .mandos-modo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+  }
+
+  /* ---------- La alarma ---------- */
+  .fila-alarma {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+  }
+
+  .fila-alarma label {
+    font-size: var(--fs-small);
+    color: var(--ink-muted);
+  }
+
+  .cuenta-alarma {
+    margin: 0;
+    font-size: var(--fs-body);
+    text-align: center;
+    color: var(--ink-muted);
+  }
+
+  .cuenta-alarma strong {
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* El límite se dice de frente y no en letra pequeña: quien vaya a usar
+     esto de despertador tiene que saberlo ANTES. */
+  .nota-limite {
+    max-width: 46ch;
+    margin: 0;
+    font-size: var(--fs-small);
+    text-align: center;
+    text-wrap: balance;
+    color: var(--ink-soft);
+  }
+
+  .sonando {
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+  }
+
+  .sonando .titular {
+    margin: 0;
+    font-size: var(--fs-h2);
+    font-weight: 600;
+    color: var(--acento);
+  }
+
+  .sonando .cuando {
+    margin: 0;
+    font-size: var(--fs-body);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-muted);
+  }
+
+  /* ---------- Las vueltas ---------- */
+  .tabla-vueltas {
+    width: min(100%, 26rem);
+    border-collapse: collapse;
+    font-size: var(--fs-small);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tabla-vueltas th,
+  .tabla-vueltas td {
+    padding: 0.4375rem 0.5rem;
+    text-align: right;
+    border-block-end: 1px solid var(--line);
+  }
+
+  .tabla-vueltas thead th {
+    font-weight: 500;
+    color: var(--ink-soft);
+  }
+
+  /* La primera columna son los números de vuelta, que van a la izquierda:
+     su cabecera tiene que ir con ellos y no al otro lado de la columna. */
+  .tabla-vueltas thead th:first-child {
+    text-align: left;
+  }
+
+  .tabla-vueltas tbody th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--ink-muted);
+  }
+
+  .tabla-vueltas .marca {
+    margin-inline-start: 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 400;
+    color: var(--acento);
+  }
+
+  /* La más rápida y la más lenta se distinguen por el color del acento y
+     por su palabra al lado, no solo por el color: quien no distinga los
+     tonos sigue leyendo cuál es cuál. */
+  .tabla-vueltas .rapida td,
+  .tabla-vueltas .lenta td {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* ---------- El temporizador ---------- */
+  .anillo-temporizador {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: min(100%, 17rem);
+    aspect-ratio: 1;
+  }
+
+  .anillo-temporizador svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    /* Que el cero esté arriba y no a la derecha. */
+    transform: rotate(-90deg);
+  }
+
+  .anillo-temporizador circle {
+    fill: none;
+    stroke-width: 5;
+    stroke-linecap: round;
+  }
+
+  .anillo-temporizador .pista {
+    stroke: var(--surface-2);
+  }
+
+  .anillo-temporizador .hecho {
+    stroke: var(--acento);
+    stroke-dasharray: 283;
+    transition: stroke-dashoffset 0.3s linear;
+  }
+
+  .campos-puesta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  .campo-puesta {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .campo-puesta label {
+    font-size: var(--fs-small);
+    color: var(--ink-soft);
+  }
+
+  .atajos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+  }
+
+  .atajos .titulo-atajos {
+    margin-inline-end: 0.25rem;
+    font-size: var(--fs-small);
+    color: var(--ink-soft);
+  }
+}

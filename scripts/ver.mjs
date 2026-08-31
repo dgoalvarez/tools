@@ -99,6 +99,32 @@ const VISTAS = [
   { nombre: 'escala', ruta: 'es/escala', ancho: 1440, alto: 1000 },
   { nombre: 'contraste-claro', ruta: 'es/contraste', ancho: 1440, alto: 1000, tema: 'light' },
   { nombre: 'escala-claro', ruta: 'es/escala', ancho: 1440, alto: 1000, tema: 'light' },
+  { nombre: 'reloj', ruta: 'es/reloj', ancho: 1440, alto: 1100 },
+  { nombre: 'reloj-claro', ruta: 'es/reloj', ancho: 1440, alto: 1100, tema: 'light' },
+  { nombre: 'reloj-esfera', ruta: 'es/reloj', ancho: 1440, alto: 1100, query: 'c=analogica' },
+  { nombre: 'reloj-estrecho', ruta: 'es/reloj', ancho: 485, alto: 900 },
+  // Las dos pestañas que no se ven sin pulsar. El cronómetro se arranca y
+  // se le sacan tres vueltas, que es lo único que enseña la tabla.
+  {
+    nombre: 'reloj-cronometro',
+    ruta: 'es/reloj',
+    ancho: 1440,
+    alto: 1200,
+    clics: [
+      '#tab-cronometro',
+      '#panel-cronometro .mandos-modo button',
+      '#panel-cronometro .mandos-modo button:nth-of-type(2)',
+      '#panel-cronometro .mandos-modo button:nth-of-type(2)',
+      '#panel-cronometro .mandos-modo button:nth-of-type(2)',
+    ],
+  },
+  {
+    nombre: 'reloj-temporizador',
+    ruta: 'es/reloj',
+    ancho: 1440,
+    alto: 1200,
+    clics: ['#tab-temporizador'],
+  },
   { nombre: 'pomodoro', ruta: 'es/pomodoro', ancho: 1440, alto: 1000 },
   { nombre: 'pomodoro-claro', ruta: 'es/pomodoro', ancho: 1440, alto: 1000, tema: 'light' },
   // El ciclo largo con las duraciones al tope: doce puntos y «180:00»
@@ -176,6 +202,27 @@ window.addEventListener('load', () => {
 });
 <\/script>`;
 
+/**
+ * Un guion que pulsa cosas antes de la captura.
+ *
+ * Existe por el reloj: el cronómetro y el temporizador viven detrás de
+ * una pestaña, así que sin pulsar no hay nada que mirar. Se espera a que
+ * el elemento exista, porque la isla hidrata cuando le toca.
+ */
+const pulsar = (pasos) => `<script>
+window.addEventListener('load', () => {
+  const cola = ${JSON.stringify(pasos)};
+  let i = 0;
+  const t = setInterval(() => {
+    if (i >= cola.length) { clearInterval(t); return; }
+    const el = document.querySelector(cola[i]);
+    if (!el) return;
+    el.click();
+    i++;
+  }, 120);
+});
+</script>`;
+
 /** Siembra `sessionStorage` antes de que hidrate la isla. */
 const sembrar = (cuenta) => `<script>
   try { sessionStorage.setItem('dgo-pomodoro', '${JSON.stringify(cuenta)}'); } catch (e) {}
@@ -186,8 +233,8 @@ const sembrar = (cuenta) => `<script>
  * el tema claro —que no hay bandera de Chrome para pedirlo— y el paso a
  * paso, que solo aparece si alguien pulsa el botón.
  */
-function preparar(ruta, { tema, tour, siembra }) {
-  const marca = [tema ?? '', tour === undefined ? '' : `t${tour}`, siembra ? 's' : '']
+function preparar(ruta, { tema, tour, siembra, clics }) {
+  const marca = [tema ?? '', tour === undefined ? '' : `t${tour}`, siembra ? 's' : '', clics ? 'c' : '']
     .filter(Boolean)
     .join('_');
   const copia = join(dist, `_ver_${marca}_${ruta.replace(/\//g, '_')}.html`);
@@ -198,6 +245,7 @@ function preparar(ruta, { tema, tour, siembra }) {
   // isla lea `sessionStorage` al montarse.
   if (siembra) html = html.replace('</head>', sembrar(siembra) + '</head>');
   if (tour !== undefined) html = html.replace('</body>', abrirTour(tour) + '</body>');
+  if (clics) html = html.replace('</body>', pulsar(clics) + '</body>');
 
   writeFileSync(copia, html);
   return copia;
@@ -217,11 +265,12 @@ await new Promise((r) => setTimeout(r, 700));
 try {
   for (const vista of VISTAS) {
     let ruta = vista.ruta;
-    if (vista.tema || vista.tour !== undefined || vista.siembra) {
+    if (vista.tema || vista.tour !== undefined || vista.siembra || vista.clics) {
       const copia = preparar(vista.ruta, {
         tema: vista.tema,
         tour: vista.tour,
         siembra: vista.siembra,
+        clics: vista.clics,
       });
       temporales.push(copia);
       ruta = copia.slice(dist.length + 1).replace(/\\/g, '/').replace(/\.html$/, '');

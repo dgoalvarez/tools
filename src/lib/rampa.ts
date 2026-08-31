@@ -691,6 +691,33 @@ export function buscarVallesDeCroma(pasos: Paso[]): number[] {
   return valles;
 }
 
+/**
+ * Cuántos puntos de luminosidad hacen falta entre dos pasos vecinos para
+ * que se distingan.
+ *
+ * Dos puntos de OKLCH es el salto más pequeño que se ve con seguridad en
+ * dos superficies grandes puestas una al lado de la otra. Por debajo de
+ * eso, dos pasos son el mismo color con dos nombres.
+ */
+export const SALTO_MINIMO = 0.02;
+
+/**
+ * Los pasos que quedan pegados a su vecino de arriba.
+ *
+ * Existe porque nada impide pedir quince pasos entre el 90 % y el 70 %:
+ * la rampa sale, es correcta, y es inservible — quince variables para
+ * quince colores que nadie distingue. La herramienta no lo corrige (bajar
+ * pasos o abrir el rango es una decisión de quien la usa) pero tiene que
+ * decirlo.
+ */
+export function pasosIndistinguibles(pasos: Paso[]): number[] {
+  const juntos: number[] = [];
+  for (let i = 1; i < pasos.length; i++) {
+    if (pasos[i - 1].l - pasos[i].l < SALTO_MINIMO) juntos.push(i);
+  }
+  return juntos;
+}
+
 /** Nombres de variable repetidos: el segundo pisaría al primero sin avisar. */
 export function buscarNombresRepetidos(paleta: Paleta): string[] {
   const vistos = new Set<string>();

@@ -49,6 +49,8 @@ export const PALETA = {
     en: 'Click a colour to copy it.',
   },
   copiarColor: { es: 'Copiar', en: 'Copy' },
+  /** Lo que dice el aviso flotante al copiar. */
+  copiadoAviso: { es: 'Copiado:', en: 'Copied:' },
   ajustar: { es: 'Ajustar este paso', en: 'Tune this step' },
   /** Lo que se lee al pulsar una casilla, para el lector de pantalla. */
   verDetalle: { es: 'Ver el detalle de', en: 'See the detail of' },
@@ -113,6 +115,10 @@ export const PALETA = {
   escaleraDeformada: {
     es: 'Al forzar el anclaje, esta rampa deja de compartir la escalera con las demás: sus pasos ya no pesan lo mismo que los del resto.',
     en: 'Forcing the anchor makes this ramp stop sharing the ladder with the others: its steps no longer weigh the same as the rest.',
+  },
+  pasosJuntos: {
+    es: 'Con este rango y este número de pasos, algunos quedan tan juntos que no se distinguen: son dos variables para el mismo color. Sube el rango de claridad o baja el número de pasos.',
+    en: 'With this range and this step count, some steps land so close together that you cannot tell them apart: two variables for the same colour. Widen the lightness range or lower the step count.',
   },
   retoquesDormidos: {
     es: 'Hay retoques guardados en pasos que ahora no existen. No se han perdido: vuelven al subir el número de pasos.',

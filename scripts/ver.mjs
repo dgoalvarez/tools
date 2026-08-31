@@ -98,6 +98,15 @@ const VISTAS = [
   { nombre: 'paleta', ruta: 'es/paleta', ancho: 1440, alto: 1200 },
   { nombre: 'paleta-claro', ruta: 'es/paleta', ancho: 1440, alto: 1200, tema: 'light' },
   { nombre: 'paleta-estrecho', ruta: 'es/paleta', ancho: 485, alto: 900 },
+  // Las tintas desplegadas: es donde se comprueba que la frontera de
+  // polaridad se ve.
+  {
+    nombre: 'paleta-tintas',
+    ruta: 'es/paleta',
+    ancho: 1440,
+    alto: 1200,
+    clics: ['[data-tour="tintas"] summary'],
+  },
   // El selector abierto: es lo que hay que mirar para saber si el popover
   // tapa algo o si empuja la cuadrícula.
   {

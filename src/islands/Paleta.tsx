@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckIcon, PencilSimpleIcon, PlusIcon, TrashIcon, WarningIcon } from '@phosphor-icons/react';
 
+import AvisoFlotante from '@/components/AvisoFlotante';
 import BotonCopiar from '@/components/BotonCopiar';
 import SelectorColor from '@/islands/SelectorColor';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -20,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { t, type Lang } from '@/i18n/config';
+import { CONTRASTE as C } from '@/i18n/contrast';
 import { PALETA as P } from '@/i18n/paleta';
 import { leerColor } from '@/lib/contrast';
 import {
@@ -33,6 +35,7 @@ import {
   limpiarNombre,
   limiteDePolaridad,
   medirPaso,
+  pasosIndistinguibles,
   nombresPaso,
   retoquesDormidos,
   soltarRetoque,
@@ -107,6 +110,9 @@ export default function Paleta({ lang }: Props) {
 
   /** Qué casilla acaba de copiarse: «idDeTonalidad/nombreDePaso». */
   const [copiado, setCopiado] = useState<string | null>(null);
+  /** Lo que anuncia el aviso flotante. Lleva un contador para que copiar
+      el mismo color dos veces vuelva a avisar. */
+  const [aviso, setAviso] = useState<{ texto: string; n: number } | null>(null);
   const [formato, setFormato] = useState<'oklch' | 'hex'>('hex');
 
   // ---------- al llegar ----------
@@ -195,6 +201,10 @@ export default function Paleta({ lang }: Props) {
     () => tonalidades.flatMap((t) => retoquesDormidos(t, ajustes)),
     [tonalidades, ajustes]
   );
+  const juntos = useMemo(
+    () => paleta.rampas.some((r) => pasosIndistinguibles(r.pasos).length > 0),
+    [paleta]
+  );
 
   // ---------- los mandos ----------
 
@@ -242,6 +252,7 @@ export default function Paleta({ lang }: Props) {
     try {
       await navigator.clipboard.writeText(texto);
       setCopiado(clave);
+      setAviso((previo) => ({ texto, n: (previo?.n ?? 0) + 1 }));
       if (reloj.current) clearTimeout(reloj.current);
       reloj.current = setTimeout(() => setCopiado(null), 1800);
     } catch {
@@ -469,12 +480,18 @@ export default function Paleta({ lang }: Props) {
           </div>
         </section>
 
-        {/* ================= Las tintas ================= */}
-        <section className="tarjeta-control" data-tour="tintas">
-          <p className="titulo" aria-hidden="true">
-            {tr('tintas')}
-          </p>
-          <p className="ayuda-paleta">{tr('tintasIntro')}</p>
+        {/* =================================================================
+             Las tintas, plegadas.
+
+             Es información de comprobación, no de creación: se mira una
+             vez cuando ya hay una paleta que convence, no mientras se
+             está eligiendo el color. Abierta ocupaba tanto como la propia
+             paleta y duplicaba su cuadrícula justo debajo.
+           ================================================================= */}
+        <details className="acordeon" data-tour="tintas">
+          <summary>{tr('tintas')}</summary>
+          <div className="cuerpo">
+          <p className="intro">{tr('tintasIntro')}</p>
 
           <div className="rejilla-paleta" style={{ '--pasos': ajustes.pasos } as React.CSSProperties}>
             <span className="esquina" aria-hidden="true" />
@@ -513,7 +530,8 @@ export default function Paleta({ lang }: Props) {
               {tr('leyendaFrontera')}
             </li>
           </ul>
-        </section>
+          </div>
+        </details>
 
         {/* ---------- Lo que conviene saber ---------- */}
         <section className="tarjeta-control" data-tour="avisos">
@@ -525,6 +543,12 @@ export default function Paleta({ lang }: Props) {
             <p className="aviso-paleta">
               <WarningIcon aria-hidden="true" />
               {tr('escaleraDeformada')}
+            </p>
+          )}
+          {juntos && (
+            <p className="aviso-paleta">
+              <WarningIcon aria-hidden="true" />
+              {tr('pasosJuntos')}
             </p>
           )}
           {dormidos.length > 0 && (
@@ -558,6 +582,8 @@ export default function Paleta({ lang }: Props) {
           </div>
         </details>
       </div>
+
+      <AvisoFlotante mensaje={aviso ? `${tr('copiadoAviso')} ${aviso.texto}` : null} />
     </div>
   );
 }
@@ -704,6 +730,27 @@ function FilaTonalidad({
       >
         <TrashIcon aria-hidden="true" />
       </Button>
+
+      {/*
+        El color se escribe AQUÍ, en la tarjeta, y no solo dentro del
+        popover. Es lo que se toca de verdad —se pega un hexadecimal de
+        una marca y ya está— y esconderlo detrás de un clic obligaba a
+        abrir un panel para hacer lo más común.
+
+        Acepta lo mismo que el campo de la herramienta de contraste:
+        hexadecimal, rgb(), hsl(), oklch() o un nombre como «teal». El
+        marcador de posición lo dice.
+      */}
+      <Input
+        value={bruto}
+        onChange={(e) => cambiar(e.target.value)}
+        placeholder={t(C.formatoPlaceholder, lang)}
+        spellCheck={false}
+        autoComplete="off"
+        aria-invalid={color === null}
+        aria-label={`${tr('colorSemilla')} ${tono.nombre}`}
+        className="campo-semilla min-w-0 font-mono text-[0.8rem]"
+      />
     </div>
   );
 }
@@ -777,7 +824,7 @@ function FilaPaleta({
                 </button>
               </PopoverTrigger>
 
-              <PopoverContent side="bottom" align="end" className="w-[min(18rem,calc(100vw-2rem))]">
+              <PopoverContent side="bottom" align="end">
                 <div className="grid gap-3">
                   <div>
                     <p className="variable">{paso.variable}</p>
@@ -789,23 +836,33 @@ function FilaPaleta({
                   {paso.ancla && <p className="ayuda-paleta">{tr('anclaExplicado')}</p>}
                   {paso.recortado && <p className="ayuda-paleta">{tr('recortadoExplicado')}</p>}
 
-                  <div className="acciones-detalle">
-                    <span className="etiqueta-retoque">{tr('retocar')}</span>
-                    <span className="relative size-8 shrink-0">
-                      <input
-                        type="color"
-                        className="muestra-color"
-                        value={paso.hex}
-                        aria-label={`${tr('retocar')} ${paso.nombre}`}
-                        onChange={(e) => onRetocar(paso.nombre, e.target.value)}
-                      />
-                    </span>
-                    {paso.tocado && (
-                      <Button variant="outline" size="sm" onClick={() => onDevolver(paso.nombre)}>
-                        {tr('devolver')}
-                      </Button>
-                    )}
-                  </div>
+                  {/* El mismo selector que la semilla, no un cuadrado
+                      del sistema: retocar un paso es elegir un color, y
+                      elegir un color se hace igual en todo el sitio. */}
+                  <SelectorColor
+                    lang={lang}
+                    id={`retoque-${rampa.tonalidad.id}-${paso.nombre}`}
+                    etiqueta={tr('retocar')}
+                    bruto={paso.hex}
+                    hex={paso.hex}
+                    valido
+                    onCambio={(valor) => {
+                      const leido = leerColor(valor);
+                      if (leido) onRetocar(paso.nombre, leido.hex);
+                    }}
+                    sinTarjeta
+                  />
+
+                  {paso.tocado && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onDevolver(paso.nombre)}
+                      className="justify-self-start"
+                    >
+                      {tr('devolver')}
+                    </Button>
+                  )}
                 </div>
               </PopoverContent>
             </Popover>

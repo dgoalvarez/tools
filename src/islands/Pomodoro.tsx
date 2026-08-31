@@ -401,15 +401,22 @@ export default function Pomodoro({ lang }: Props) {
               paso={0.5}
               onCambio={(v) => setAjustes((a) => ({ ...a, largo: v }))}
             />
-            <Minutos
+          </div>
+
+          {/* La cadencia, fuera de la rejilla: no es una duración, es una
+              cuenta de pomodoros, y era la única fila que no se medía en
+              minutos. Ahí «pomodoros» le imponía su ancho a «min». */}
+          <div className="fila-cada">
+            <Label htmlFor="cada">{tr('cada')}</Label>
+            <Numero
               id="cada"
-              etiqueta={tr('cada')}
-              unidad={tr('pomodoros')}
               valor={ajustes.cada}
               limites={LIMITES.cada}
               paso={1}
               onCambio={(v) => setAjustes((a) => ({ ...a, cada: v }))}
+              className="w-[3.75rem] text-center"
             />
+            <span className="unidad">{tr('pomodoros')}</span>
           </div>
 
           <p className="text-[length:var(--fs-small)] text-ink-soft">{tr('admiteMedios')}</p>
@@ -453,6 +460,7 @@ export default function Pomodoro({ lang }: Props) {
               id="margen"
               etiqueta={tr('margen')}
               unidad={tr('segundos')}
+              anchoUnidad="1.75rem"
               valor={ajustes.margen}
               limites={LIMITES.margen}
               paso={1}
@@ -615,8 +623,12 @@ export default function Pomodoro({ lang }: Props) {
 // ------------------------------------------------------------- auxiliares
 
 /**
- * Un campo de un ajuste, con su etiqueta a la izquierda y su unidad a la
- * derecha.
+ * El campo desnudo: solo el <input> y las reglas de cuándo se aplica lo
+ * que se escribe.
+ *
+ * Se separó de la fila porque hay dos formas de presentarlo —con la
+ * unidad dentro de la caja, y suelto dentro de una frase— y las dos
+ * necesitan exactamente el mismo comportamiento.
  *
  * Sobre cuándo se aplica lo que se escribe, que es donde estaba el fallo:
  *
@@ -630,10 +642,89 @@ export default function Pomodoro({ lang }: Props) {
  *     mínimo antes de llegar al segundo dígito. Por eso lo que está
  *     fuera de rango —o a medio escribir— se deja estar hasta el blur.
  */
+function Numero({
+  id,
+  valor,
+  limites,
+  paso,
+  onCambio,
+  describe,
+  className,
+}: {
+  id: string;
+  valor: number;
+  limites: { min: number; max: number };
+  paso: number;
+  onCambio: (valor: number) => void;
+  describe?: string;
+  /**
+   * El ancho y el relleno tienen que venir como UTILIDADES de Tailwind y
+   * no desde `global.css`. Las utilidades viven en una capa que gana a la
+   * de componentes, así que el `w-full` y el `px-3` que trae el Input de
+   * shadcn pisaban cualquier regla escrita allí: la unidad se pintaba
+   * encima del número —«m25»— y el campo de la cadencia ocupaba la fila
+   * entera.
+   */
+  className?: string;
+}) {
+  const [bruto, setBruto] = useState(String(valor));
+
+  useEffect(() => {
+    setBruto(String(valor));
+  }, [valor]);
+
+  /** Al medio o al entero, según el paso del ajuste. */
+  const aPaso = (n: number) => Math.round(n / paso) * paso;
+
+  return (
+    <Input
+      id={id}
+      type="number"
+      inputMode="decimal"
+      min={limites.min}
+      max={limites.max}
+      step={paso}
+      value={bruto}
+      aria-describedby={describe}
+      className={className}
+      onChange={(e) => {
+        const texto = e.target.value;
+        setBruto(texto);
+
+        // Solo se aplica lo que ya es un número válido dentro de su
+        // rango. Un campo vacío o un «0» de camino a «30» se quedan
+        // esperando al blur.
+        const n = Number(texto.replace(',', '.'));
+        if (texto.trim() !== '' && Number.isFinite(n) && n >= limites.min && n <= limites.max) {
+          onCambio(aPaso(n));
+        }
+      }}
+      onBlur={() => {
+        const n = Number(bruto.replace(',', '.'));
+        if (!Number.isFinite(n)) {
+          setBruto(String(valor));
+          return;
+        }
+        onCambio(aPaso(Math.min(limites.max, Math.max(limites.min, n))));
+      }}
+    />
+  );
+}
+
+/**
+ * Una fila de ajuste: etiqueta a la izquierda, campo a la derecha con su
+ * unidad dentro de la caja.
+ *
+ * La unidad va dentro y no en una columna aparte porque en una rejilla
+ * una columna mide lo que mide su contenido más ancho: con «pomodoros»
+ * en la lista, las filas de «min» quedaban con un hueco enorme a la
+ * derecha del número. El porqué largo está en `global.css`.
+ */
 function Minutos({
   id,
   etiqueta,
   unidad,
+  anchoUnidad,
   valor,
   limites,
   paso,
@@ -642,51 +733,39 @@ function Minutos({
   id: string;
   etiqueta: string;
   unidad: string;
+  /** Sitio que hay que reservarle a la unidad dentro de la caja. */
+  anchoUnidad?: string;
   valor: number;
   limites: { min: number; max: number };
   paso: number;
   onCambio: (valor: number) => void;
 }) {
-  const [bruto, setBruto] = useState(String(valor));
-
-  useEffect(() => {
-    setBruto(String(valor));
-  }, [valor]);
-
   return (
     <div className="fila-ajuste">
-      <Label htmlFor={id}>{etiqueta}</Label>
-      <Input
-        id={id}
-        type="number"
-        inputMode="decimal"
-        min={limites.min}
-        max={limites.max}
-        step={paso}
-        value={bruto}
-        onChange={(e) => {
-          const texto = e.target.value;
-          setBruto(texto);
+      <Label htmlFor={id}>
+        {etiqueta}
+        {/* La unidad de dentro es decorativa —está pintada encima del
+            campo— así que el lector de pantalla la oye aquí, dentro del
+            nombre del campo: «Trabajo, min». */}
+        <span className="sr-only"> {unidad}</span>
+      </Label>
 
-          // Solo se aplica lo que ya es un número válido dentro de su
-          // rango. Un campo vacío o un «0» de camino a «30» se quedan
-          // esperando al blur.
-          const n = Number(texto.replace(',', '.'));
-          if (texto.trim() !== '' && Number.isFinite(n) && n >= limites.min && n <= limites.max) {
-            onCambio(Math.round(n * (1 / paso)) / (1 / paso));
-          }
-        }}
-        onBlur={() => {
-          const n = Number(bruto.replace(',', '.'));
-          if (!Number.isFinite(n)) {
-            setBruto(String(valor));
-            return;
-          }
-          const dentro = Math.min(limites.max, Math.max(limites.min, n));
-          onCambio(Math.round(dentro * (1 / paso)) / (1 / paso));
-        }}
-      />
-      <span className="unidad">{unidad}</span>
+      <div
+        className="campo"
+        style={anchoUnidad ? ({ '--ancho-unidad': anchoUnidad } as React.CSSProperties) : undefined}
+      >
+        <Numero
+          id={id}
+          valor={valor}
+          limites={limites}
+          paso={paso}
+          onCambio={onCambio}
+          className="pr-[var(--ancho-unidad,2.5rem)]"
+        />
+        <span className="unidad" aria-hidden="true">
+          {unidad}
+        </span>
+      </div>
     </div>
   );
 }

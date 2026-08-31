@@ -1976,14 +1976,22 @@
     gap: 0.5rem;
   }
 
+  /*
+    La unidad va DENTRO del campo, no en una columna aparte.
+
+    En una rejilla, una columna mide siempre lo que mide su contenido más
+    ancho de todas las filas. Con la unidad fuera, «pomodoros» le imponía
+    su tamaño a «min», y las tres filas de minutos quedaban con cuatro
+    centímetros de nada a la derecha del número. Fijar la columna no lo
+    arreglaba: solo elegía a cuál de las dos palabras le quedaba mal.
+
+    Dentro del campo, cada unidad ocupa lo suyo, el número sigue pegado a
+    ella y los tres campos siguen siendo del mismo ancho, que es lo que
+    hace que la lista se lea como una tabla.
+  */
   .fila-ajuste {
     display: grid;
-    /* La columna de la unidad es FIJA y no `auto`. Con `auto` la fila de
-       «pomodoros» —una palabra mucho más larga que «min»— empujaba su
-       campo a la izquierda y esa fila se salía de la columna que forman
-       las otras tres. Alineados, los cuatro números se leen como una
-       tabla. */
-    grid-template-columns: minmax(0, 1fr) 4.5rem 4.5rem;
+    grid-template-columns: minmax(0, 1fr) 7rem;
     align-items: center;
     gap: 0.625rem;
   }
@@ -1994,10 +2002,64 @@
     color: var(--ink-muted);
   }
 
+  .fila-ajuste .campo {
+    position: relative;
+  }
+
+  /* Las cifras a la derecha, justo antes de su unidad: así el 5 y el 25
+     acaban en la misma columna y la lista se lee como una tabla.
+
+     El RELLENO que le hace sitio a la unidad no está aquí sino en una
+     utilidad sobre el propio campo: las utilidades de Tailwind ganan a
+     esta capa, así que el `px-3` del Input de shadcn se lo comía y la
+     unidad se pintaba encima del número. */
   .fila-ajuste input {
-    /* Las cifras a la derecha: así el 5 y el 25 acaban en la misma
-       columna y la lista se lee como una tabla. */
     text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .fila-ajuste .campo .unidad {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0.75rem;
+    display: grid;
+    place-items: center;
+    font-size: var(--fs-small);
+    color: var(--ink-soft);
+    /* Que pulsar encima de «min» ponga el cursor en el campo y no haga
+       nada, que es lo que espera cualquiera que apunte ahí. */
+    pointer-events: none;
+  }
+
+  /*
+    La cadencia va aparte, y con una línea encima.
+
+    No es una duración: es una cuenta de pomodoros, y era la única fila
+    que no se medía en minutos. Sacarla de la rejilla resuelve el ancho de
+    «pomodoros» y de paso dice la verdad sobre lo que es.
+  */
+  .fila-cada {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding-block-start: 0.75rem;
+    border-block-start: 1px solid var(--line);
+  }
+
+  .fila-cada label,
+  .fila-cada .unidad {
+    font-size: var(--fs-small);
+    color: var(--ink-muted);
+  }
+
+  .fila-cada .unidad {
+    color: var(--ink-soft);
+  }
+
+  /* El ancho y el centrado van también en utilidades, por lo mismo: aquí
+     el `w-full` del Input ganaba y el campo se comía la fila entera. */
+  .fila-cada input {
     font-variant-numeric: tabular-nums;
   }
 
@@ -2005,21 +2067,18 @@
      aquí no sobra, y el paso de medio minuto se escribe antes de lo que
      se pulsa treinta veces. */
   .fila-ajuste input::-webkit-outer-spin-button,
-  .fila-ajuste input::-webkit-inner-spin-button {
+  .fila-ajuste input::-webkit-inner-spin-button,
+  .fila-cada input::-webkit-outer-spin-button,
+  .fila-cada input::-webkit-inner-spin-button {
     margin: 0;
     -webkit-appearance: none;
     appearance: none;
   }
 
-  .fila-ajuste input[type='number'] {
+  .fila-ajuste input[type='number'],
+  .fila-cada input[type='number'] {
     -moz-appearance: textfield;
     appearance: textfield;
-  }
-
-  .fila-ajuste .unidad {
-    font-size: var(--fs-small);
-    color: var(--ink-soft);
-    white-space: nowrap;
   }
 
   /* ---------- Los puntos del ciclo ---------- */

@@ -78,7 +78,13 @@ const other = otherLang(lang);
         data-desplegar={t(UI.desplegarMenu, lang)}
         data-plegar={t(UI.plegarMenu, lang)}
       >
-        <Icono nombre="barras" tamano={18} />
+        {/* Los dos iconos van en el HTML y elige el CSS, como en el
+            conmutador de tema: así el botón sale correcto en el primer
+            pintado, incluso antes de hidratarse. Decidirlo en JavaScript
+            haría que apareciera la hamburguesa un instante y cambiara a
+            equis en cuanto llegara el script. */}
+        <Icono nombre="barras" tamano={18} class="plegado" />
+        <Icono nombre="cerrar" tamano={18} class="abierto" />
       </button>
     </div>
 

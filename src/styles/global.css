@@ -475,6 +475,22 @@
     cursor: pointer;
   }
 
+  /* Desplegado, la hamburguesa pasa a ser una equis: el mismo botón dice
+     lo que hace en cada estado, que es lo que ya dice su etiqueta. Los dos
+     iconos están en el HTML y elige el CSS, así que también acierta antes
+     de que llegue el JavaScript. */
+  .riel-plegar .abierto {
+    display: none;
+  }
+
+  :root[data-riel='abierto'] .riel-plegar .plegado {
+    display: none;
+  }
+
+  :root[data-riel='abierto'] .riel-plegar .abierto {
+    display: block;
+  }
+
   .riel-plegar:hover {
     background: var(--surface-2);
     color: var(--ink);

@@ -11,6 +11,7 @@
  * Cada página existe en un solo idioma, declarado en <html lang>, y apunta
  * a su equivalente en el otro mediante hreflang.
  */
+import { ClientRouter } from 'astro:transitions';
 import BarraLateral from '../components/BarraLateral.astro';
 import BarraMovil from '../components/BarraMovil.astro';
 import Lanzador from '../components/Lanzador.astro';
@@ -124,15 +125,23 @@ const ogImage = new URL('/og.png', site).href;
     <meta name="twitter:image:alt" content={t(UI.ogImageAlt, lang)} />
 
     {/*
-      Aplica antes del primer pintado las dos cosas que alguien puede haber
-      elegido: el tema y si el menú se queda abierto. Si no fuera antes,
-      quien tenga guardado el modo claro vería un destello oscuro, y el
-      menú daría un salto de ancho nada más cargar.
+      Aplica antes del primer pintado las tres cosas que no pueden esperar
+      a que llegue el JavaScript de la página: el tema elegido, si el menú
+      se queda abierto, y que hay JavaScript. Si no fuera antes, quien
+      tenga guardado el modo claro vería un destello oscuro, el menú daría
+      un salto de ancho, y los botones que necesitan JavaScript aparecerían
+      de golpe empujando lo que tuvieran debajo.
 
       `data-theme` solo se escribe cuando alguien ha elegido a mano. Si
       nadie ha elegido, el atributo no existe y manda `prefers-color-scheme`
       desde el CSS — que es lo que hace que el sitio se vea bien aunque
       este script no llegue a ejecutarse.
+
+      Se vuelve a aplicar en `astro:after-swap`: al cambiar de página, el
+      enrutador sustituye los atributos del <html> por los del documento
+      nuevo, que viene del servidor y no sabe nada de lo que hay guardado.
+      Sin esto, la primera navegación apagaría el tema y plegaría el menú.
+      `after-swap` corre antes de pintar, así que no se ve.
 
       Si editas este script, actualiza el hash de la CSP en vercel.json;
       scripts/check-csp.mjs rompe la compilación si se te olvida.
@@ -140,13 +149,36 @@ const ogImage = new URL('/og.png', site).href;
     <script is:inline>
       (function () {
         var raiz = document.documentElement;
-        try {
-          var tema = localStorage.getItem('dgo-tools-theme');
-          if (tema === 'dark' || tema === 'light') raiz.dataset.theme = tema;
-          if (localStorage.getItem('dgo-tools-riel') === 'abierto') raiz.dataset.riel = 'abierto';
-        } catch (e) {}
+        function aplicar() {
+          raiz.dataset.js = '1';
+          try {
+            var tema = localStorage.getItem('dgo-tools-theme');
+            if (tema === 'dark' || tema === 'light') raiz.dataset.theme = tema;
+            else delete raiz.dataset.theme;
+            if (localStorage.getItem('dgo-tools-riel') === 'abierto') raiz.dataset.riel = 'abierto';
+            else delete raiz.dataset.riel;
+          } catch (e) {}
+        }
+        aplicar();
+        document.addEventListener('astro:after-swap', aplicar);
       })();
     </script>
+
+    {/*
+      El enrutador del cliente: al seguir un enlace del sitio, trae la
+      página nueva y sustituye el contenido en vez de recargar el
+      navegador entero.
+
+      Es lo que quita el parpadeo en blanco entre herramientas. Y no es
+      solo estético: en una recarga completa el navegador vuelve a montar
+      las fuentes, el CSS y las islas de React, y ese hueco es justo donde
+      se veía saltar la navegación.
+
+      Sigue siendo un sitio de páginas: cada herramienta tiene su URL, su
+      HTML completo y funciona sin JavaScript. Esto solo se pone por
+      encima cuando puede.
+    */}
+    <ClientRouter />
   </head>
 
   <body style={`--acento: ${acento}; --solido: ${solido}`}>

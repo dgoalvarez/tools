@@ -3,45 +3,71 @@
  * riel y abrir la hoja de móvil.
  *
  * No es imprescindible. Sin este archivo la barra sigue navegando con sus
- * enlaces, y por eso el botón que lo abre nace con `hidden` y es este
- * script quien lo enseña: un botón que no responde es peor que un botón
- * que no está.
+ * enlaces; los tres botones que sí lo necesitan llevan `solo-con-js` y no
+ * se pintan hasta que el script en línea de la maqueta marca `data-js` en
+ * el <html>, antes del primer pintado. Un botón que no responde es peor
+ * que un botón que no está.
  *
  * Astro lo empaqueta aparte, así que no añade ningún script en línea y la
  * política de seguridad no se entera.
+ *
+ * ---------------------------------------------------------------------
+ * Por qué todo cuelga de `astro:page-load`
+ *
+ * Con el enrutador del cliente, cambiar de herramienta ya no recarga el
+ * navegador: se sustituye el cuerpo de la página. Este módulo se ejecuta
+ * UNA sola vez, y los nodos a los que se enganchó dejan de existir en la
+ * primera navegación — el riel de la página nueva es otro riel, sin
+ * ningún escuchador.
+ *
+ * `astro:page-load` corre en la carga inicial y después de cada cambio de
+ * página, así que es el único sitio donde esto funciona en los dos casos.
+ * Lo que va a nivel de `document` —el atajo de teclado— se engancha una
+ * vez y busca su diálogo en el momento de usarlo, porque el documento sí
+ * sobrevive a los cambios de página.
  */
-const dialogo = document.querySelector<HTMLDialogElement>('[data-bento-dialog]');
-const botones = document.querySelectorAll<HTMLButtonElement>('[data-bento]');
-const cerrar = document.querySelector<HTMLButtonElement>('[data-bento-cerrar]');
 
-if (dialogo && typeof dialogo.showModal === 'function') {
+const RIEL = 'dgo-tools-riel';
+
+/** ¿Cae el punto pulsado fuera de la caja del diálogo? */
+function pulsoFuera(dialogo: HTMLDialogElement, evento: MouseEvent): boolean {
+  const caja = dialogo.getBoundingClientRect();
+  return (
+    evento.clientX < caja.left ||
+    evento.clientX > caja.right ||
+    evento.clientY < caja.top ||
+    evento.clientY > caja.bottom
+  );
+}
+
+/* ============================================================
+   El lanzador
+   ============================================================ */
+
+function montarLanzador() {
+  const botones = document.querySelectorAll<HTMLButtonElement>('[data-bento]');
+  const dialogo = document.querySelector<HTMLDialogElement>('[data-bento-dialog]');
+
+  // Sin <dialog> el buscador no abre, así que su botón se esconde: es la
+  // misma regla de siempre, un botón que no responde es peor que uno que
+  // no está. Se esconde solo este, no todo lo que necesita JavaScript.
+  if (!dialogo || typeof dialogo.showModal !== 'function') {
+    for (const boton of botones) boton.hidden = true;
+    return;
+  }
+
   for (const boton of botones) {
-    boton.hidden = false;
     boton.addEventListener('click', () => dialogo.showModal());
   }
 
-  cerrar?.addEventListener('click', () => dialogo.close());
+  dialogo
+    .querySelector<HTMLButtonElement>('[data-bento-cerrar]')
+    ?.addEventListener('click', () => dialogo.close());
 
   // Pulsar fuera de la tarjeta cierra. El <dialog> no lo trae de fábrica:
-  // el clic en el fondo llega al propio diálogo, así que se comprueba que
-  // el punto pulsado caiga fuera de su caja.
+  // el clic en el fondo llega al propio diálogo.
   dialogo.addEventListener('click', (evento) => {
-    const caja = dialogo.getBoundingClientRect();
-    const fuera =
-      evento.clientX < caja.left ||
-      evento.clientX > caja.right ||
-      evento.clientY < caja.top ||
-      evento.clientY > caja.bottom;
-    if (fuera) dialogo.close();
-  });
-
-  // El atajo que anuncia la propia pastilla. Si no funcionara, la
-  // pastilla estaría mintiendo.
-  document.addEventListener('keydown', (evento) => {
-    if (evento.key.toLowerCase() !== 'k' || !(evento.metaKey || evento.ctrlKey)) return;
-    evento.preventDefault();
-    if (dialogo.open) dialogo.close();
-    else dialogo.showModal();
+    if (pulsoFuera(dialogo, evento)) dialogo.close();
   });
 
   // En Windows y Linux el atajo se escribe Ctrl, no ⌘. La pastilla lo
@@ -53,20 +79,32 @@ if (dialogo && typeof dialogo.showModal === 'function') {
   }
 }
 
+// El atajo que anuncia la propia pastilla. Si no funcionara, la pastilla
+// estaría mintiendo. Va en el documento y se engancha una sola vez, así
+// que busca el diálogo de la página que haya en ese momento.
+document.addEventListener('keydown', (evento) => {
+  if (evento.key.toLowerCase() !== 'k' || !(evento.metaKey || evento.ctrlKey)) return;
+  const dialogo = document.querySelector<HTMLDialogElement>('[data-bento-dialog]');
+  if (!dialogo || typeof dialogo.showModal !== 'function') return;
+  evento.preventDefault();
+  if (dialogo.open) dialogo.close();
+  else dialogo.showModal();
+});
 
 /* ============================================================
    Plegar y desplegar el riel
 
    El estado vive en `data-riel` del <html> y se recuerda en
    `localStorage`. Lo lee además el script en línea de `Base.astro`, que
-   corre ANTES del primer pintado: sin eso, quien lo deja abierto vería el
-   riel plegarse y desplegarse de un salto en cada carga.
+   corre ANTES del primer pintado y después de cada cambio de página: sin
+   eso, quien lo deja abierto vería el riel plegarse y desplegarse de un
+   salto cada vez.
    ============================================================ */
 
-const RIEL = 'dgo-tools-riel';
-const plegar = document.querySelector<HTMLButtonElement>('[data-riel-plegar]');
+function montarPlegado() {
+  const plegar = document.querySelector<HTMLButtonElement>('[data-riel-plegar]');
+  if (!plegar) return;
 
-if (plegar) {
   const raiz = document.documentElement;
 
   const pintar = () => {
@@ -79,7 +117,6 @@ if (plegar) {
     }
   };
 
-  plegar.hidden = false;
   pintar();
 
   plegar.addEventListener('click', () => {
@@ -106,33 +143,44 @@ if (plegar) {
    quedaría abierta encima de la página nueva.
    ============================================================ */
 
-const hoja = document.querySelector<HTMLDialogElement>('[data-hoja]');
-const abrirHoja = document.querySelector<HTMLButtonElement>('[data-hoja-abrir]');
+function montarHoja() {
+  const hoja = document.querySelector<HTMLDialogElement>('[data-hoja]');
+  const abrir = document.querySelector<HTMLButtonElement>('[data-hoja-abrir]');
+  if (!abrir) return;
 
-if (hoja && abrirHoja && typeof hoja.showModal === 'function') {
-  abrirHoja.hidden = false;
-  abrirHoja.addEventListener('click', () => hoja.showModal());
+  if (!hoja || typeof hoja.showModal !== 'function') {
+    abrir.hidden = true;
+    return;
+  }
+
+  abrir.addEventListener('click', () => hoja.showModal());
 
   hoja.querySelector<HTMLButtonElement>('[data-hoja-cerrar]')?.addEventListener('click', () => {
     hoja.close();
   });
 
-  // El clic en el fondo llega al propio diálogo, así que se comprueba que
-  // el punto pulsado caiga fuera de su caja.
   hoja.addEventListener('click', (evento) => {
-    const caja = hoja.getBoundingClientRect();
-    const fuera =
-      evento.clientX < caja.left ||
-      evento.clientX > caja.right ||
-      evento.clientY < caja.top ||
-      evento.clientY > caja.bottom;
-    if (fuera) hoja.close();
+    if (pulsoFuera(hoja, evento)) hoja.close();
   });
 
-  // Seguir un enlace cierra la hoja. En una navegación normal da igual
-  // —la página se recarga entera— pero el buscador que abre desde dentro
-  // sí necesita que la hoja se aparte.
+  // Seguir un enlace cierra la hoja. Con el enrutador del cliente esto ya
+  // no es un detalle: la página cambia sin recargar, así que sin esto la
+  // hoja se quedaría abierta encima de la herramienta recién abierta.
   for (const enlace of hoja.querySelectorAll('a, [data-bento]')) {
     enlace.addEventListener('click', () => hoja.close());
   }
 }
+
+function iniciar() {
+  // El cinturón del script en línea: si aquel no llegó a correr —lo tumbó
+  // la política de seguridad, o el hash se quedó viejo— los botones
+  // seguirían escondidos aunque sí haya JavaScript. Aquí ya es tarde para
+  // evitar el salto, pero es mejor que perderlos.
+  document.documentElement.dataset.js = '1';
+
+  montarLanzador();
+  montarPlegado();
+  montarHoja();
+}
+
+document.addEventListener('astro:page-load', iniciar);

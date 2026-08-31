@@ -412,7 +412,24 @@
     }
   }
 
-  /* ---------- La marca y el botón de plegar ---------- */
+  /* ---------- La cabecera: la marca y el buscador ----------
+
+     Van juntos y con una línea debajo, la misma que separa el pie. La
+     línea marca un cambio de CLASE de cosa: arriba se SALE de la
+     herramienta (la marca lleva a la portada, el buscador abre la
+     lista entera), en medio se ELIGE una, y abajo se AJUSTA el sitio.
+
+     Antes solo había línea entre los dos grupos de herramientas y encima
+     del pie, así que el buscador quedaba pegado a la lista como si fuera
+     una herramienta más — y no lo es: es una acción, no un destino. */
+  .riel-cabecera {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding-block-end: 0.375rem;
+    border-block-end: 1px solid var(--line);
+  }
+
   .riel-marca {
     display: flex;
     align-items: center;
@@ -664,15 +681,26 @@
     }
   }
 
+  /* La misma división que en el riel: marca y buscador arriba, con su
+     línea; las herramientas en medio; los ajustes al pie. */
+  .hoja-inicio {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding-block-end: 0.5rem;
+    border-block-end: 1px solid var(--line);
+  }
+
   .hoja-cabecera {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    padding: 0.25rem 0.5rem 0.75rem;
+    padding: 0.25rem 0.5rem 0.5rem;
   }
 
   .hoja-lista {
+    margin-block-start: 0.25rem;
     display: flex;
     flex-direction: column;
     gap: 0.125rem;
@@ -686,6 +714,28 @@
     gap: 0.125rem;
     padding-block-start: 0.5rem;
     border-block-start: 1px solid var(--line);
+  }
+
+  /*
+    Lo que sin JavaScript no haría nada.
+
+    Un botón que no responde es peor que uno que no está, así que estos
+    tres —plegar el riel, abrir el buscador, abrir la hoja— solo aparecen
+    cuando `data-js` está puesto en el <html>. Lo pone el script en línea
+    de la maqueta, que corre ANTES del primer pintado.
+
+    Ese «antes» es todo el asunto. Antes nacían con el atributo `hidden` y
+    los enseñaba el script de la navegación, que llega bastante después del
+    primer pintado: la fila del buscador aparecía de la nada y empujaba
+    hacia abajo las seis herramientas, en cada carga de cada página. Se veía
+    como un tirón de la barra. Decidido antes de pintar, no se mueve nada.
+
+    Sigue habiendo salida sin JavaScript: la portada lista todas las
+    herramientas, el riel las lleva todas como enlaces de verdad, y el pie
+    lleva a la portada.
+  */
+  :root:not([data-js]) .solo-con-js {
+    display: none;
   }
 
   /* ---------- La pastilla ---------- */
@@ -739,7 +789,6 @@
     }
   }
 
-
   /* ---------- El lanzador ---------- */
   .bento::backdrop {
     background: color-mix(in srgb, var(--bg) 72%, transparent);
@@ -773,7 +822,6 @@
     }
   }
 }
-
 
 /* ============================================================
    Las barras del selector de color
@@ -1042,8 +1090,7 @@
     /* Blanco → color por la horizontal, transparente → negro por la
        vertical. El tono lo pone --tono en línea. */
     background-image:
-      linear-gradient(to top, #000, transparent),
-      linear-gradient(to right, #fff, transparent);
+      linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent);
     background-color: var(--tono);
   }
 
@@ -1429,7 +1476,6 @@
     font-weight: 600;
     color: var(--danger);
   }
-
 }
 
 /* ============================================================
@@ -2407,7 +2453,6 @@
   }
 
   .tarjeta-modo .numero-grande {
-
     margin: 0;
     font-size: clamp(2.5rem, 7vw, 4.5rem);
     font-weight: 600;

@@ -45,43 +45,53 @@ const other = otherLang(lang);
 ---
 
 <nav class="riel" aria-label={t(UI.navTools, lang)}>
-  <div class="riel-marca">
-    <a href={route('home', lang)} class="riel-logo" title={t(UI.siteName, lang)}>
-      <Marca />
-    </a>
+  {/*
+    La marca y el buscador van juntos y separados de las herramientas por
+    una línea, igual que el idioma y el tema están separados por otra al
+    pie. La línea marca un cambio de CLASE de cosa: aquí arriba se sale de
+    la herramienta, en medio se elige una, abajo se ajusta el sitio.
+  */}
+  <div class="riel-cabecera">
+    <div class="riel-marca">
+      <a href={route('home', lang)} class="riel-logo" title={t(UI.siteName, lang)}>
+        <Marca />
+      </a>
 
-    {/*
-      El botón de plegar nace oculto: sin JavaScript no plegaría nada, y
-      un botón que no responde es peor que uno que no está. Con el riel
-      plegado la marca no cabe, así que este botón pasa a ser lo único de
-      la fila y se centra solo.
-    */}
+      {/*
+        Los dos botones que necesitan JavaScript —este y el del buscador—
+        se esconden desde el CSS mientras `data-js` no esté puesto en el
+        <html>, y quien lo pone es el script en línea que corre ANTES del
+        primer pintado. Antes nacían con `hidden` y los enseñaba el script
+        de la navegación, que llega después: la fila del buscador aparecía
+        de la nada y empujaba la lista de herramientas hacia abajo en cada
+        carga. La regla sigue siendo la misma —un botón que no responde es
+        peor que uno que no está— pero ahora se decide antes de pintar y no
+        se mueve nada.
+      */}
+      <button
+        type="button"
+        class="riel-plegar solo-con-js"
+        data-riel-plegar
+        aria-expanded="false"
+        aria-label={t(UI.desplegarMenu, lang)}
+        title={t(UI.desplegarMenu, lang)}
+        data-desplegar={t(UI.desplegarMenu, lang)}
+        data-plegar={t(UI.plegarMenu, lang)}
+      >
+        <Icono nombre="barras" tamano={18} />
+      </button>
+    </div>
+
     <button
       type="button"
-      class="riel-plegar"
-      data-riel-plegar
-      aria-expanded="false"
-      aria-label={t(UI.desplegarMenu, lang)}
-      title={t(UI.desplegarMenu, lang)}
-      data-desplegar={t(UI.desplegarMenu, lang)}
-      data-plegar={t(UI.plegarMenu, lang)}
-      hidden
+      class="riel-item riel-buscar solo-con-js"
+      data-bento
+      title={t(UI.verTodas, lang)}
     >
-      <Icono nombre="barras" tamano={18} />
+      <span class="icono"><Icono nombre="lupa" tamano={18} /></span>
+      <span class="nombre">{t(UI.verTodas, lang)}</span>
     </button>
   </div>
-
-  {/* Sin JavaScript no abriría el buscador, así que también nace oculto. */}
-  <button
-    type="button"
-    class="riel-item riel-buscar"
-    data-bento
-    title={t(UI.verTodas, lang)}
-    hidden
-  >
-    <span class="icono"><Icono nombre="lupa" tamano={18} /></span>
-    <span class="nombre">{t(UI.verTodas, lang)}</span>
-  </button>
 
   <div class="riel-lista">
     <NavHerramientas lang={lang} abierta={abierta} />

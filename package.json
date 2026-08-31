@@ -11,7 +11,8 @@
     "astro": "astro",
     "comprobar": "node scripts/comprobar-contraste.ts && node scripts/comprobar-escala.ts && node scripts/comprobar-husos.ts && node scripts/comprobar-encabezado.ts",
     "build-data": "node scripts/build-data.mjs",
-    "ver": "node scripts/ver.mjs"
+    "ver": "node scripts/ver.mjs",
+    "romper": "node scripts/comprobar-roturas.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^6.0.4",

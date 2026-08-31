@@ -1,0 +1,225 @@
+/**
+ * ¿Se sale algo de su caja?
+ *
+ * Uso:  npm run build && node scripts/comprobar-roturas.mjs
+ *
+ * Existe por un fallo concreto. Al elegir un origen de nombre largo en
+ * husos horarios —«Santo Domingo de los Colorados, Santo Domingo de los
+ * Tsáchilas»— la tarjeta de la cita crecía de 352 px a 597 y se llevaba
+ * por delante su título y los campos de fecha y hora, montándose encima
+ * de la columna de al lado.
+ *
+ * Lo que lo hace peligroso es que NO desbordaba la página: la tarjeta
+ * crecía dentro de su columna, así que `scrollWidth === clientWidth`
+ * seguía diciendo que todo iba bien. Ninguna de las comprobaciones que
+ * había lo habría visto, y una captura solo lo enseña si a alguien se le
+ * ocurre escribir justo ese nombre.
+ *
+ * Aquí se compara cada elemento con su padre, y se le da contenido
+ * hostil a propósito: nombres largos, ocho ciudades, prefijos absurdos.
+ *
+ * ---------------------------------------------------------------------
+ * Por qué no va en `npm run build`
+ *
+ * Necesita un navegador, y la compilación tiene que funcionar en una
+ * máquina que no lo tenga. Se ejecuta a mano, como `npm run comprobar`.
+ *
+ * Se ha comprobado que la sonda sirve para algo de las dos maneras: sobre
+ * la versión con el fallo dice «se sale 263px», y sobre la arreglada dice
+ * «nada roto». Una alarma que nunca suena no es una alarma.
+ */
+import { spawn, execFileSync } from 'node:child_process';
+import { existsSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
+const dist = join(raiz, 'dist');
+const PUERTO = 8787;
+
+const CANDIDATOS = [
+  'C:/Program Files/Google/Chrome/Application/chrome.exe',
+  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+  'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  '/usr/bin/google-chrome',
+  '/usr/bin/chromium',
+];
+
+const chrome = CANDIDATOS.find(existsSync);
+if (!chrome) {
+  console.error('✗ No hay Chrome ni Edge donde suelen estar. Sin navegador no se puede comprobar.');
+  process.exit(1);
+}
+
+if (!existsSync(dist)) {
+  console.error('✗ No existe dist/. Compila antes: npm run build');
+  process.exit(1);
+}
+
+/**
+ * La sonda. Compara cada elemento con su padre y se salta los padres que
+ * recortan o desplazan a propósito: ahí salirse es lo que se ha pedido,
+ * que es exactamente cómo funciona `truncate`.
+ */
+const SONDA = `
+window.__romperse = function () {
+  const rotos = [];
+  for (const el of document.querySelectorAll('body *')) {
+    const padre = el.parentElement;
+    if (!padre || padre === document.body) continue;
+    const cp = getComputedStyle(padre);
+    if (cp.overflowX !== 'visible' || cp.overflowY !== 'visible') continue;
+    const ce = getComputedStyle(el);
+    if (ce.position === 'absolute' || ce.position === 'fixed' || ce.display === 'none') continue;
+    const r = el.getBoundingClientRect();
+    const rp = padre.getBoundingClientRect();
+    if (r.width === 0 || rp.width === 0) continue;
+    const exceso = Math.max(rp.left - r.left, r.right - rp.right);
+    if (exceso > 1) {
+      if (rotos.some((x) => x.el.contains(el))) continue;
+      rotos.push({ el, exceso });
+    }
+  }
+  return rotos.slice(0, 6).map((x) =>
+    x.el.tagName.toLowerCase() + '.' + (String(x.el.className).slice(0, 30) || '-') +
+    ' se sale ' + Math.round(x.exceso) + 'px'
+  );
+};
+`;
+
+/** Escribe en un campo de React: el valor va por el setter nativo. */
+const ESCRIBIR = `
+function __escribir(el, valor) {
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  setter.call(el, valor);
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+}
+function __esperar(fn, ms) {
+  return new Promise((ok, mal) => {
+    const t0 = Date.now();
+    const t = setInterval(() => {
+      const r = fn();
+      if (r) { clearInterval(t); ok(r); }
+      else if (Date.now() - t0 > (ms || 12000)) { clearInterval(t); mal(new Error('no llegó')); }
+    }, 100);
+  });
+}
+`;
+
+/** El caso que destapó todo: elegir a mano un origen de nombre larguísimo. */
+const ORIGEN_LARGO = `
+(async () => {
+  const d = await __esperar(() => document.querySelector('details[data-tour="origen"]'));
+  d.open = true;
+  const campo = await __esperar(() => document.querySelector('#origen'));
+  __escribir(campo, 'santo domingo de los');
+  const opcion = await __esperar(() => d.querySelector('ul button'));
+  opcion.click();
+  await new Promise((r) => setTimeout(r, 900));
+  d.open = false;
+})()
+`;
+
+/**
+ * Qué se somete a qué.
+ *
+ * `hacer` es lo que hay que tocar antes de mirar, para los estados a los
+ * que no se llega por la dirección.
+ */
+const CASOS = [
+  {
+    nombre: 'husos · ocho ciudades',
+    ruta: 'es/horarios',
+    query:
+      'z=America/New_York,Asia/Tokyo,Europe/Madrid,Asia/Kolkata,Pacific/Auckland,Europe/London,America/Sao_Paulo,America/Los_Angeles',
+  },
+  { nombre: 'husos · origen de nombre largo', ruta: 'es/horarios', hacer: ORIGEN_LARGO },
+  { nombre: 'contraste · par que suspende', ruta: 'es/contraste', query: 't=8a8a8a&b=ffffff' },
+  { nombre: 'contraste · par que aprueba', ruta: 'es/contraste' },
+  {
+    nombre: 'escala · nombres y prefijo absurdos',
+    ruta: 'es/escala',
+    query:
+      'p=prefijoLarguisimoDeVerdad&n=0:nombreExageradamenteLargoParaProbar,1:otroNombreMuyMuyLargo',
+  },
+  { nombre: 'escala · con pasos apagados', ruta: 'es/escala', query: 'x=2,4' },
+  { nombre: 'portada', ruta: 'es' },
+  { nombre: 'portada en inglés', ruta: 'en' },
+];
+
+/** Los anchos donde la maqueta cambia de forma. */
+const ANCHOS = [1440, 869, 485];
+
+/** Chrome descuenta el marco de la ventana y tiene un mínimo por abajo. */
+const MARCO = 31;
+
+const temporales = [];
+const servidor = spawn('python', ['-m', 'http.server', String(PUERTO)], {
+  cwd: dist,
+  stdio: 'ignore',
+});
+await new Promise((r) => setTimeout(r, 700));
+
+let fallos = 0;
+let mirados = 0;
+
+try {
+  for (const caso of CASOS) {
+    const archivo = join(dist, `_rot_${caso.nombre.replace(/[^a-z0-9]+/gi, '_')}.html`);
+    const guion =
+      SONDA +
+      ESCRIBIR +
+      `window.addEventListener('load', () => {
+         const listo = () => setTimeout(() => {
+           document.title = 'ROTURAS:' + (window.__romperse().join(' ;; ') || 'ninguna');
+         }, 700);
+         ${caso.hacer ? `${caso.hacer}.then(listo).catch((e) => { document.title = 'ROTURAS:FALLO ' + e.message; });` : 'setTimeout(listo, 1200);'}
+       });`;
+
+    const html = readFileSync(join(dist, `${caso.ruta}.html`), 'utf8');
+    writeFileSync(archivo, html.replace('</body>', `<script>${guion}</script></body>`));
+    temporales.push(archivo);
+
+    const url = `http://localhost:${PUERTO}/${archivo.slice(dist.length + 1).replace(/\\/g, '/')}${
+      caso.query ? `?${caso.query}` : ''
+    }`;
+
+    for (const ancho of ANCHOS) {
+      const salida = execFileSync(
+        chrome,
+        [
+          '--headless=new',
+          '--disable-gpu',
+          `--window-size=${ancho + MARCO},900`,
+          '--virtual-time-budget=22000',
+          '--dump-dom',
+          url,
+        ],
+        { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }
+      );
+
+      const titulo = /<title>([^<]*)<\/title>/.exec(salida)?.[1] ?? '';
+      const roturas = titulo.startsWith('ROTURAS:') ? titulo.slice(8) : '(no respondió)';
+      mirados++;
+
+      if (roturas === 'ninguna') {
+        console.log(`  ok    ${caso.nombre.padEnd(34)} ${ancho} px`);
+      } else {
+        fallos++;
+        console.log(`  ROTO  ${caso.nombre.padEnd(34)} ${ancho} px`);
+        console.log(`        ${roturas}`);
+      }
+    }
+  }
+} finally {
+  servidor.kill();
+  for (const t of temporales) rmSync(t, { force: true });
+}
+
+console.log(
+  fallos === 0
+    ? `\n✓ nada se sale de su caja (${mirados} comprobaciones)\n`
+    : `\n✗ ${fallos} de ${mirados} se salen de su caja\n`
+);
+process.exit(fallos === 0 ? 0 : 1);

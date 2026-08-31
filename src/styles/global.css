@@ -862,6 +862,23 @@
      navegadores lo pintan por su cuenta encima de la caja. El nombre
      accesible del grupo sigue estando en el legend, que se queda en
      `sr-only`; esto es solo lo que se ve. */
+  /*
+    Lo mismo que en `.columna-herramienta`, un nivel más adentro, y por
+    el mismo motivo: un elemento de rejilla nace con `min-width: auto` y
+    no encoge por debajo del ancho de su contenido.
+
+    Aquí lo destapó un origen de nombre largo en husos horarios. Al
+    elegir «Santo Domingo de los Colorados, Santo Domingo», el
+    `<details>` del origen se plantaba en 597 px dentro de una tarjeta de
+    352, y al crecer la tarjeta se llevaba por delante el título y los
+    campos de fecha y hora. El `truncate` del nombre no servía de nada:
+    truncar recorta lo que se pinta, pero no reduce el ancho mínimo que
+    la rejilla reserva.
+  */
+  .tarjeta-control > * {
+    min-width: 0;
+  }
+
   .tarjeta-control .titulo {
     margin: 0;
     font-size: 0.8125rem;

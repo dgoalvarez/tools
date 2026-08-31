@@ -2926,6 +2926,14 @@
     border-radius: 1px;
   }
 
+  /* Los avisos, debajo de la cuadrícula y dentro de su tarjeta. */
+  .avisos-paleta {
+    display: grid;
+    gap: 0.5rem;
+    padding-block-start: 0.875rem;
+    border-block-start: 1px solid var(--line);
+  }
+
   .cabecera-paleta {
     display: flex;
     flex-wrap: wrap;

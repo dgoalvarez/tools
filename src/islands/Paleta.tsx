@@ -11,14 +11,7 @@
  * cuadrícula y el panel de detalle.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  CheckIcon,
-  CopySimpleIcon,
-  PencilSimpleIcon,
-  PlusIcon,
-  TrashIcon,
-  WarningIcon,
-} from '@phosphor-icons/react';
+import { CheckIcon, PencilSimpleIcon, PlusIcon, TrashIcon, WarningIcon } from '@phosphor-icons/react';
 
 import AvisoFlotante from '@/components/AvisoFlotante';
 import BotonCopiar from '@/components/BotonCopiar';
@@ -239,28 +232,6 @@ export default function Paleta({ lang }: Props) {
     ]);
   }
 
-  /**
-   * Duplica una tonalidad.
-   *
-   * Construir una paleta casi nunca es empezar de cero cada tono: es
-   * tener el azul de la marca y querer «ese mismo pero un poco más
-   * apagado» al lado para compararlos. Sin esto había que copiar el
-   * hexadecimal a mano en una tonalidad nueva.
-   */
-  function duplicar(id: string) {
-    setTonalidades((previas) => {
-      const i = previas.findIndex((t) => t.id === id);
-      if (i === -1) return previas;
-      const copia: Tonalidad = {
-        ...previas[i],
-        id: `d${Date.now()}`,
-        nombre: `color${previas.length + 1}`,
-        retoques: { ...previas[i].retoques },
-      };
-      return [...previas.slice(0, i + 1), copia, ...previas.slice(i + 1)];
-    });
-  }
-
   function quitar(id: string) {
     setTonalidades((previas) => previas.filter((t) => t.id !== id));
   }
@@ -318,7 +289,6 @@ export default function Paleta({ lang }: Props) {
                 onSemilla={(valor) => editar(tono.id, { semilla: valor })}
                 onNombre={(valor) => editar(tono.id, { nombre: limpiarNombre(valor) })}
                 onAncla={(valor) => editar(tono.id, { anclaForzada: valor })}
-                onDuplicar={() => duplicar(tono.id)}
                 onQuitar={() => quitar(tono.id)}
               />
             ))}
@@ -505,6 +475,42 @@ export default function Paleta({ lang }: Props) {
               />
             ))}
           </div>
+
+          {/*
+            Los avisos van pegados a la cuadrícula, dentro de su tarjeta.
+
+            Estaban en una tarjeta aparte más abajo, y ahí un aviso sobre
+            un paso concreto quedaba a dos tarjetas de distancia del paso
+            del que hablaba. Un aviso que no está junto a lo que avisa es
+            un aviso que se lee tarde.
+          */}
+          <div className="avisos-paleta" data-tour="avisos">
+            {paleta.rampas.some((r) => r.escaleraDeformada) && (
+              <p className="aviso-paleta">
+                <WarningIcon aria-hidden="true" />
+                {tr('escaleraDeformada')}
+              </p>
+            )}
+            {rompen && (
+              <p className="aviso-paleta">
+                <WarningIcon aria-hidden="true" />
+                {tr('retoqueRompe')}
+              </p>
+            )}
+            {juntos && (
+              <p className="aviso-paleta">
+                <WarningIcon aria-hidden="true" />
+                {tr('pasosJuntos')}
+              </p>
+            )}
+            {dormidos.length > 0 && (
+              <p className="aviso-paleta">
+                <WarningIcon aria-hidden="true" />
+                {tr('retoquesDormidos')}
+              </p>
+            )}
+            <p className="ayuda-paleta">{tr('soloSrgb')}</p>
+          </div>
         </section>
 
         {/* =================================================================
@@ -556,39 +562,6 @@ export default function Paleta({ lang }: Props) {
           </div>
         </details>
 
-        {/* ---------- Lo que conviene saber ---------- */}
-        <section className="tarjeta-control" data-tour="avisos">
-          <p className="titulo" aria-hidden="true">
-            {tr('avisos')}
-          </p>
-
-          {paleta.rampas.some((r) => r.escaleraDeformada) && (
-            <p className="aviso-paleta">
-              <WarningIcon aria-hidden="true" />
-              {tr('escaleraDeformada')}
-            </p>
-          )}
-          {rompen && (
-            <p className="aviso-paleta">
-              <WarningIcon aria-hidden="true" />
-              {tr('retoqueRompe')}
-            </p>
-          )}
-          {juntos && (
-            <p className="aviso-paleta">
-              <WarningIcon aria-hidden="true" />
-              {tr('pasosJuntos')}
-            </p>
-          )}
-          {dormidos.length > 0 && (
-            <p className="aviso-paleta">
-              <WarningIcon aria-hidden="true" />
-              {tr('retoquesDormidos')}
-            </p>
-          )}
-          <p className="ayuda-paleta">{tr('soloSrgb')}</p>
-        </section>
-
         {/* ---------- El CSS ---------- */}
         <details className="acordeon" data-tour="css">
           <summary>
@@ -638,7 +611,6 @@ function FilaTonalidad({
   onSemilla,
   onNombre,
   onAncla,
-  onDuplicar,
   onQuitar,
 }: {
   tono: Tonalidad;
@@ -648,7 +620,6 @@ function FilaTonalidad({
   onSemilla: (valor: string) => void;
   onNombre: (valor: string) => void;
   onAncla: (valor: number | null) => void;
-  onDuplicar: () => void;
   onQuitar: () => void;
 }) {
   const tr = (clave: keyof typeof P) => t(P[clave], lang);
@@ -755,15 +726,6 @@ function FilaTonalidad({
           se lee como pulsable hasta que el puntero pasa por encima, y en
           una pantalla táctil no pasa por encima nunca. */}
       <div className="acciones-tonalidad">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={onDuplicar}
-          title={tr('duplicar')}
-          aria-label={`${tr('duplicar')} ${tono.nombre}`}
-        >
-          <CopySimpleIcon aria-hidden="true" />
-        </Button>
         <Button
           variant="outline"
           size="icon"

@@ -107,7 +107,6 @@ export const PALETA = {
   },
 
   // ---------- Avisos ----------
-  avisos: { es: 'Lo que conviene saber', en: 'Worth knowing' },
   escaleraDeformada: {
     es: 'Al forzar el anclaje, esta rampa deja de compartir la escalera con las demás: sus pasos ya no pesan lo mismo que los del resto.',
     en: 'Forcing the anchor makes this ramp stop sharing the ladder with the others: its steps no longer weigh the same as the rest.',
@@ -116,7 +115,6 @@ export const PALETA = {
     es: 'Hay un paso retocado que se sale del orden: es más claro que el de arriba o más oscuro que el de abajo, así que la rampa deja de ir de claro a oscuro. Se respeta —el retoque es tuyo— pero conviene saberlo.',
     en: 'A tuned step is out of order: it is lighter than the one above or darker than the one below, so the ramp stops going light to dark. It is respected — the tweak is yours — but worth knowing.',
   },
-  duplicar: { es: 'Duplicar', en: 'Duplicate' },
   pasosJuntos: {
     es: 'Con este rango y este número de pasos, algunos quedan tan juntos que no se distinguen: son dos variables para el mismo color. Sube el rango de claridad o baja el número de pasos.',
     en: 'With this range and this step count, some steps land so close together that you cannot tell them apart: two variables for the same colour. Widen the lightness range or lower the step count.',

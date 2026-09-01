@@ -86,7 +86,18 @@ const VISTAS = [
     alto: 900,
     clics: ['[data-hoja-abrir]'],
   },
+  // Sin nada puesto: el primer vistazo de verdad, con la tarjeta de en
+  // vivo todavía vacía y enseñando para qué sirve.
   { nombre: 'husos', ruta: 'es/horarios', ancho: 1440, alto: 900 },
+  // La tarjeta de en vivo con sitio puesto y sin hora: la cifra grande
+  // corriendo, y debajo la diferencia con la referencia.
+  {
+    nombre: 'husos-vivo',
+    ruta: 'es/horarios',
+    ancho: 1440,
+    alto: 900,
+    query: 'v=America%2FNew_York~Miami%2C%20Florida&z=Europe/Madrid,America/Lima',
+  },
   // Con una hora puesta: el estado al que se llega tocando cualquier
   // hora, y en el que cada fila enseña además la de verdad en pequeño.
   {
@@ -94,7 +105,8 @@ const VISTAS = [
     ruta: 'es/horarios',
     ancho: 1440,
     alto: 900,
-    query: 'd=2026-09-04&h=17:00&z=America/New_York,America/Los_Angeles,Europe/Madrid',
+    query:
+      'd=2026-09-04&h=17:00&v=America%2FNew_York~Miami%2C%20Florida&z=America/Los_Angeles,Europe/Madrid',
   },
   // Con ciudades de verdad: es donde se ve si la lista aguanta. Van por
   // la dirección, que es como se comparte un cálculo en este sitio.
@@ -112,14 +124,14 @@ const VISTAS = [
     ancho: 1440,
     alto: 900,
     tema: 'light',
-    query: 'z=America/New_York,Asia/Tokyo,Asia/Kolkata,Europe/Madrid',
+    query: 'v=Asia%2FTokyo~Tokio&z=America/New_York,Asia/Kolkata,Europe/Madrid',
   },
   {
     nombre: 'husos-estrecho',
     ruta: 'es/horarios',
     ancho: 485,
     alto: 900,
-    query: 'z=America/New_York,Asia/Tokyo,Asia/Kolkata',
+    query: 'v=America%2FNew_York~Miami%2C%20Florida&z=Asia/Tokyo,Asia/Kolkata',
   },
   { nombre: 'paleta', ruta: 'es/paleta', ancho: 1440, alto: 1200 },
   { nombre: 'paleta-claro', ruta: 'es/paleta', ancho: 1440, alto: 1200, tema: 'light' },
@@ -152,7 +164,14 @@ const VISTAS = [
   { nombre: 'reloj-claro', ruta: 'es/reloj', ancho: 1440, alto: 1100, tema: 'light' },
   { nombre: 'reloj-esfera', ruta: 'es/reloj', ancho: 1440, alto: 1100, query: 'c=analogica' },
   // El reloj mundial con sitios puestos: no se llega de otra forma.
-  { nombre: 'reloj-mundial', ruta: 'es/reloj', ancho: 1440, alto: 1200, query: 'w=America%2FNew_York~Carolina%20del%20Norte%20(hora%20oriental)%3BAmerica%2FLos_Angeles~Los%20%C3%81ngeles%3BAsia%2FTokyo~Tokio%3BEurope%2FMadrid~Madrid' },
+  {
+    nombre: 'reloj-mundial',
+    ruta: 'es/reloj',
+    ancho: 1440,
+    alto: 1200,
+    query:
+      'w=America%2FNew_York~Carolina%20del%20Norte%20(hora%20oriental)%3BAmerica%2FLos_Angeles~Los%20%C3%81ngeles%3BAsia%2FTokyo~Tokio%3BEurope%2FMadrid~Madrid',
+  },
   { nombre: 'reloj-estrecho', ruta: 'es/reloj', ancho: 485, alto: 900 },
   // Doce vueltas: es donde la lista deja de crecer y pasa a desplazarse
   // dentro de su caja.

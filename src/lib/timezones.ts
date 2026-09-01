@@ -372,6 +372,59 @@ export function convertir(
   return { instante, ambiguedad, horaCorregida, origen, destinos: convertidos };
 }
 
+// ------------------------------------------------------------- reloj vivo
+
+export interface RelojVivo {
+  /** La hora que marca el reloj allí, escrita en el idioma de la página. */
+  hora: string;
+  /** «viernes 4 de septiembre», para leer. */
+  fecha: string;
+  /** «vie 4 sep», para caber. */
+  fechaCorta: string;
+  /** «EDT», «GMT-5»… tal como lo nombra el propio sitio. */
+  abreviatura: string;
+  /** Horas de diferencia respecto a la referencia. Puede tener media hora. */
+  diferencia: number;
+  /** −1 si allí es el día anterior, +1 si el siguiente, 0 si el mismo. */
+  saltoDeDia: -1 | 0 | 1;
+}
+
+/**
+ * El reloj de un sitio AHORA, sin pasar por `Temporal`.
+ *
+ * La tarjeta de arriba enseña la hora de verdad de un sitio y sigue
+ * corriendo aunque abajo haya una hora puesta. Son las dos preguntas a la
+ * vez —«¿qué hora es allí ahora mismo?» y «¿a qué hora le cae esto?»— y la
+ * primera no puede pararse porque se esté contestando la segunda: saber si
+ * quien está allí está despierto es justo lo que hace falta EN EL MOMENTO
+ * de decidir la hora.
+ *
+ * Va sin `Temporal` a propósito, y no por ahorrar. Aquí no se pregunta por
+ * una hora de pared que pueda no existir o existir dos veces: se parte de
+ * un instante que ya ocurrió, y para eso `Intl` basta y es síncrono.
+ * Esperar los 40 KB del polyfill dejaría en blanco los primeros cientos de
+ * milisegundos justo la cifra más grande de la pantalla.
+ */
+export function relojEnVivo(
+  instante: Date,
+  zona: string,
+  zonaReferencia: string,
+  lang: string
+): RelojVivo {
+  const partes = formatear(instante, zona, lang);
+
+  const diferencia = (desfaseDeZona(instante, zona) - desfaseDeZona(instante, zonaReferencia)) / 60;
+
+  const alli = diaEnZona(instante, zona);
+  const aqui = diaEnZona(instante, zonaReferencia);
+
+  return {
+    ...partes,
+    diferencia,
+    saltoDeDia: alli === aqui ? 0 : alli < aqui ? -1 : 1,
+  };
+}
+
 // ------------------------------------------------------------------ frase
 
 /**

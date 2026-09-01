@@ -86,11 +86,19 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
   // ------------------------------------------------------------ husos
   timezones: [
     {
-      ancla: 'hora',
-      titulo: { es: 'Empieza en vivo', en: 'It starts live' },
+      ancla: 'vivo',
+      titulo: { es: 'El sitio que miras todo el día', en: 'The place you watch all day' },
       cuerpo: {
-        es: 'Al entrar, esto va con el reloj: cada sitio enseña la hora que es allí ahora mismo. En cuanto tocas una hora —esta o la de cualquier fila— se queda quieta en ella y todas las demás se traducen. La fecha importa: hay sitios que cambian la hora dos veces al año y otros que no, así que las mismas cinco de la tarde no siempre caen a la misma hora allí.',
-        en: 'When you arrive this runs with the clock: every place shows what time it is there right now. The moment you touch a time — this one or any row’s — it holds still and all the others translate. The date matters: some places change their clocks twice a year and others do not, so the same five in the afternoon does not always land at the same time there.',
+        es: 'Uno solo, con su hora de verdad en grande: la persona con la que trabajas a diario, la oficina de la otra punta. Y esta cifra no se para nunca, ni siquiera cuando abajo pones una hora concreta — porque saber si allí están despiertos es justo lo que hace falta EN EL MOMENTO de decidir la hora. Debajo, la diferencia contigo; y con una hora puesta, a qué hora le cae allí.',
+        en: 'Just one, with its real time in large type: the person you work with every day, the office on the other side of the world. And this figure never stops, not even when you set a specific time below — because knowing whether they are awake there is exactly what you need AT THE MOMENT of choosing the time. Underneath, the difference from you; and once a time is set, what time it lands there.',
+      },
+    },
+    {
+      ancla: 'hora',
+      titulo: { es: 'La hora de la que se parte', en: 'The time everything starts from' },
+      cuerpo: {
+        es: 'Al entrar va con el reloj: todo enseña la hora que es ahora mismo. En cuanto tocas una hora —esta o la de cualquier fila— se queda quieta en ella y todas las demás se traducen. La fecha importa: hay sitios que cambian la hora dos veces al año y otros que no, así que las mismas cinco de la tarde no siempre caen a la misma hora allí.',
+        en: 'When you arrive it runs with the clock: everything shows the time right now. The moment you touch a time — this one or any row’s — it holds still and all the others translate. The date matters: some places change their clocks twice a year and others do not, so the same five in the afternoon does not always land at the same time there.',
       },
     },
     {

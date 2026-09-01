@@ -11,6 +11,22 @@
  * línea que se pega en WhatsApp. La tabla es el camino, no el destino.
  *
  * ---------------------------------------------------------------------
+ * Tres papeles, y por eso tres tarjetas
+ *
+ * Un sitio no es un sitio: según para qué esté puesto se mira de una
+ * manera distinta y a un ritmo distinto. Son tres papeles y antes los
+ * tres compartían una sola lista, que es lo que se ha deshecho:
+ *
+ *   1. **El que se sigue en vivo.** Se pone una vez y se mira veinte
+ *      veces al día, siempre la misma pregunta: ¿está despierto ahora?
+ *      Tarjeta propia arriba, cifra grande, y el reloj no se para nunca.
+ *   2. **La referencia.** De dónde es la hora que se escribe. Casi nunca
+ *      cambia: es la de uno, un día tras otro.
+ *   3. **Los demás sitios.** Van y vienen —hoy uno, mañana otro— y lo que
+ *      se quiere de ellos es compararlos entre sí, así que van en una
+ *      lista con todas las horas en la misma columna.
+ *
+ * ---------------------------------------------------------------------
  * Dos preguntas a la vez, y por eso no hay dos modos
  *
  * Quien usa esto tiene dos necesidades que conviven:
@@ -27,6 +43,10 @@
  * una hora — la de arriba o la de cualquier fila. Un botón devuelve a en
  * vivo, y mientras está quieta cada fila sigue enseñando en pequeño la
  * hora que es allí de verdad.
+ *
+ * La tarjeta de arriba es la excepción y es a propósito: esa NO se queda
+ * quieta. Es el único sitio de la pantalla donde la pregunta «¿qué hora es
+ * allí ahora?» sigue contestándose mientras se contesta la otra.
  *
  * ---------------------------------------------------------------------
  * Se puede tocar la hora de CUALQUIER fila
@@ -66,6 +86,7 @@ import {
   nombreDePais,
   nombreDeZona,
   obtenerTemporal,
+  relojEnVivo,
   zonaDelNavegador,
   camposEnZona,
   type Coincidencia,
@@ -95,6 +116,55 @@ function zonaValida(zona: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Un sitio, tal y como viaja en la dirección: `zona~nombre`.
+ *
+ * El nombre viaja aparte y no se reconstruye desde la zona. Con ciudades
+ * daba igual —quien abría el enlace veía «New York» en vez de «Miami,
+ * Florida» y la hora era la misma—, pero con estados y países no: «Florida
+ * (hora central)» volvía como «Chicago», que es otro sitio con la misma
+ * hora. La hora seguía siendo correcta y la respuesta, engañosa.
+ *
+ * Devuelve `null` si la zona no existe: una dirección manipulada nunca
+ * debe romper la página.
+ */
+function sitioDeEnlace(trozo: string): Destino | null {
+  const corte = trozo.indexOf('~');
+  const zona = corte === -1 ? trozo : trozo.slice(0, corte);
+  if (!zonaValida(zona)) return null;
+
+  const nombre = (corte === -1 ? '' : trozo.slice(corte + 1)) || nombreDeZona(zona);
+  return {
+    id: `${zona}|${nombre}`,
+    etiqueta: nombre,
+    ciudad: nombre,
+    region: '',
+    pais: '',
+    zona,
+    fuente: 'zona',
+  };
+}
+
+/** Un sitio salido del buscador. Lo construyen los dos sitios que lo eligen. */
+function sitioDeCoincidencia(c: Coincidencia): Destino {
+  return {
+    id: `${c.zona}|${c.etiqueta}`,
+    etiqueta: c.etiqueta,
+    ciudad: c.ciudad,
+    region: c.region,
+    pais: c.pais,
+    zona: c.zona,
+    fuente: 'ciudad',
+  };
+}
+
+/** Y al revés. El nombre solo se escribe cuando aporta algo. */
+function sitioAEnlace(sitio: Destino): string {
+  return sitio.etiqueta === nombreDeZona(sitio.zona)
+    ? sitio.zona
+    : `${sitio.zona}~${sitio.etiqueta}`;
 }
 
 /**
@@ -168,6 +238,23 @@ export default function Timezones({ lang }: Props) {
 
   const [origen, setOrigen] = useState(ORIGEN_INICIAL);
   const [destinos, setDestinos] = useState<Destino[]>([]);
+
+  /**
+   * El sitio que se sigue en vivo, o ninguno.
+   *
+   * Es un papel distinto de los de la lista y por eso vive aparte, en su
+   * propia tarjeta y en su propio estado. Los sitios de abajo van y vienen
+   * —hoy un cliente, mañana otro—; este se pone una vez y se mira todo el
+   * día.
+   *
+   * Estuvo la opción de que fuera un destino más, marcado y anclado
+   * arriba de la lista. Se descartó por lo que costaba: la lista se congela
+   * cuando pones una hora, y este sitio es justo el que NO puede congelarse
+   * —la pregunta que contesta es «¿está despierto ahora?»—. Tenerlo dentro
+   * obligaba a que una fila de la lista se comportara al revés que las
+   * demás, que es la clase de excepción que nadie recuerda al mes.
+   */
+  const [fijo, setFijo] = useState<Destino | null>(null);
 
   /**
    * El reloj de la herramienta.
@@ -290,19 +377,19 @@ export default function Timezones({ lang }: Props) {
     setDestinos((previos) =>
       previos.some((d) => d.zona === c.zona && d.etiqueta === c.etiqueta)
         ? previos
-        : [
-            ...previos,
-            {
-              id: `${c.zona}|${c.etiqueta}`,
-              etiqueta: c.etiqueta,
-              ciudad: c.ciudad,
-              region: c.region,
-              pais: c.pais,
-              zona: c.zona,
-              fuente: 'ciudad',
-            },
-          ]
+        : [...previos, sitioDeCoincidencia(c)]
     );
+  }
+
+  /**
+   * Pone el sitio de arriba, reemplazando al que hubiera.
+   *
+   * Es uno solo y no una lista, y eso es lo que le da sentido a la
+   * tarjeta: una cifra grande contesta de un vistazo, seis cifras
+   * medianas ya son una lista y para eso está la de abajo.
+   */
+  function fijarSitio(c: Coincidencia) {
+    setFijo(sitioDeCoincidencia(c));
   }
 
   function quitar(id: string) {
@@ -345,42 +432,27 @@ export default function Timezones({ lang }: Props) {
       setOrigen({ zona: enlaceOrigen, etiqueta: nombreDeZona(enlaceOrigen) });
     }
 
+    /* El sitio de arriba, el que va en vivo. Uno solo, sin separador. */
+    const enlaceFijo = params.get('v');
+    if (enlaceFijo) {
+      const sitio = sitioDeEnlace(enlaceFijo);
+      if (sitio) setFijo(sitio);
+    }
+
     /*
-      Los sitios viajan en el enlace como `zona~nombre`, separados por
-      punto y coma.
+      Los sitios de la lista, separados por punto y coma.
 
-      Antes viajaba solo la zona y el nombre se reconstruía a partir de
-      ella. Con ciudades pasaba: quien abría el enlace veía «New York» en
-      vez de «Miami, Florida», y la hora era la misma. Con estados y países
-      ya no pasa: «Florida (hora central)» volvía como «Chicago», que es
-      otro sitio con la misma hora. La hora seguía siendo correcta y la
-      respuesta, engañosa.
-
-      El nombre solo se escribe cuando aporta algo, así que un enlace con
-      Tokio sigue siendo `z=Asia/Tokyo`. Y el separador es `;` y no `,`
-      porque los nombres llevan comas dentro: «Miami, Florida».
+      El separador es `;` y no `,` porque los nombres llevan comas dentro:
+      «Miami, Florida». Y el nombre solo se escribe cuando aporta algo, así
+      que un enlace con Tokio sigue siendo `z=Asia/Tokyo`.
     */
     const enlaceZonas = params.get('z');
     if (enlaceZonas) {
       const validas = enlaceZonas
         .split(enlaceZonas.includes(';') ? ';' : ',')
         .slice(0, 12)
-        .map((trozo) => {
-          const corte = trozo.indexOf('~');
-          const zona = corte === -1 ? trozo : trozo.slice(0, corte);
-          const nombre = corte === -1 ? '' : trozo.slice(corte + 1);
-          return { zona, nombre: nombre || nombreDeZona(zona) };
-        })
-        .filter(({ zona }) => zonaValida(zona))
-        .map(({ zona, nombre }): Destino => ({
-          id: `${zona}|${nombre}`,
-          etiqueta: nombre,
-          ciudad: nombre,
-          region: '',
-          pais: '',
-          zona,
-          fuente: 'zona',
-        }));
+        .map(sitioDeEnlace)
+        .filter((sitio): sitio is Destino => sitio !== null);
       if (validas.length) setDestinos(validas);
     }
 
@@ -395,14 +467,11 @@ export default function Timezones({ lang }: Props) {
       d: enVivo ? null : fecha,
       h: enVivo ? null : hora,
       o: origen.zona === ORIGEN_INICIAL.zona ? null : origen.zona,
-      z: destinos.length
-        ? destinos
-            .map((d) => (d.etiqueta === nombreDeZona(d.zona) ? d.zona : `${d.zona}~${d.etiqueta}`))
-            .join(';')
-        : null,
+      v: fijo ? sitioAEnlace(fijo) : null,
+      z: destinos.length ? destinos.map(sitioAEnlace).join(';') : null,
     });
     setCopiado(null);
-  }, [enlaceLeido, enVivo, fecha, hora, origen, destinos]);
+  }, [enlaceLeido, enVivo, fecha, hora, origen, fijo, destinos]);
 
   // ---------- la conversión ----------
 
@@ -418,17 +487,48 @@ export default function Timezones({ lang }: Props) {
     return { año: año ?? 2026, mes: mes ?? 1, dia: dia ?? 1, hora: h ?? 0, minuto: m ?? 0 };
   }, [fechaMostrada, horaMostrada]);
 
+  /**
+   * Los sitios que hay que convertir: el fijo primero y luego la lista.
+   *
+   * Van juntos a `convertir` y se separan después. Podrían hacerse dos
+   * llamadas, una por tarjeta, pero entonces habría dos instantes que
+   * mantener de acuerdo. Con una sola, la tarjeta de arriba y la lista de
+   * abajo salen literalmente del mismo cálculo y no pueden discrepar.
+   *
+   * Un sitio que esté arriba y abajo a la vez se queda solo arriba: dos
+   * filas idénticas no dicen nada y comparten identificador, que es lo que
+   * de verdad rompería el reparto de después.
+   */
+  const todos = useMemo(
+    () => (fijo ? [fijo, ...destinos.filter((d) => d.id !== fijo.id)] : destinos),
+    [fijo, destinos]
+  );
+
   useEffect(() => {
     if (!momento) return;
     let cancelado = false;
     obtenerTemporal().then((Temporal) => {
       if (cancelado) return;
-      setResultado(convertir(Temporal, momento, origen.zona, origen.etiqueta, destinos, lang));
+      setResultado(convertir(Temporal, momento, origen.zona, origen.etiqueta, todos, lang));
     });
     return () => {
       cancelado = true;
     };
-  }, [momento, origen, destinos, lang]);
+  }, [momento, origen, todos, lang]);
+
+  /** Lo que le toca a la tarjeta de arriba, y lo que le toca a la lista. */
+  const conversionFija = fijo
+    ? (resultado?.destinos.find((c) => c.destino.id === fijo.id) ?? null)
+    : null;
+  const conversiones = resultado?.destinos.filter((c) => c.destino.id !== fijo?.id) ?? [];
+
+  /**
+   * El reloj del sitio fijo, siempre en hora de verdad.
+   *
+   * No sale de `resultado` a propósito: `resultado` se queda quieto en la
+   * hora que hayas puesto, y esta cifra no puede quedarse quieta nunca.
+   */
+  const reloj = ahora && fijo ? relojEnVivo(ahora, fijo.zona, origen.zona, lang) : null;
 
   // ---------- acciones ----------
 
@@ -475,6 +575,123 @@ export default function Timezones({ lang }: Props) {
     <div className="grid gap-8 lg:grid-cols-[minmax(0,var(--col-controles))_minmax(0,1fr)] lg:items-start">
       {/* ---------------- Controles ---------------- */}
       <div className="columna-herramienta gap-4">
+        {/*
+          El sitio que se sigue en vivo.
+
+          Va el primero y con la cifra más grande de la pantalla porque es
+          la pregunta que se hace más veces al día y la que menos tarda en
+          contestarse: ¿está despierto ahora?
+
+          Y sigue corriendo con una hora puesta abajo. Es lo que lo separa
+          de la lista: cuando estás decidiendo a qué hora poner algo, saber
+          qué hora es allí AHORA es justo el dato que hace falta, no el que
+          estorba.
+        */}
+        <section className="tarjeta-control" data-tour="vivo">
+          <h2 className="titulo">{tr('vivoTitulo')}</h2>
+
+          {!fijo ? (
+            <>
+              <BuscadorLugar
+                id="vivo"
+                lang={lang}
+                textos={{ ...textosBuscador, etiqueta: tr('vivoBuscar'), ayuda: '' }}
+                pedirLugares={pedirLugares}
+                pedirZips={pedirZips}
+                onElegir={fijarSitio}
+              />
+              <p className="text-[length:var(--fs-small)] text-ink-soft">{tr('vivoVacio')}</p>
+            </>
+          ) : (
+            <div className="reloj-vivo">
+              <div className="encabezado">
+                <span className="lugar truncate" title={fijo.etiqueta}>
+                  {fijo.ciudad}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => setFijo(null)}
+                  aria-label={tr('vivoQuitar')}
+                  title={tr('vivoQuitar')}
+                >
+                  <XIcon aria-hidden="true" />
+                </Button>
+              </div>
+
+              <p className="meta truncate" title={fijo.zona}>
+                {[fijo.region, nombreDePais(fijo.pais, lang), reloj?.abreviatura]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
+
+              {/* El espacio duro mantiene el alto mientras el reloj aún no
+                  ha hidratado. Sin él la tarjeta pega un salto al entrar. */}
+              <p className="cifra">{reloj?.hora || ' '}</p>
+
+              <p className="pie">
+                <span className="truncate">
+                  {reloj?.fechaCorta}
+                  {reloj && reloj.saltoDeDia !== 0 && (
+                    <>
+                      {' · '}
+                      <span className="aviso-dia">
+                        {reloj.saltoDeDia > 0 ? tr('diaSiguienteCorto') : tr('diaAnteriorCorto')}
+                      </span>
+                    </>
+                  )}
+                </span>
+                <span className="marca-vivo">
+                  <span className="punto" aria-hidden="true" />
+                  {tr('enVivo')}
+                </span>
+              </p>
+
+              {/*
+                El renglón de abajo tiene alto FIJO y cambia de contenido,
+                no de tamaño. En vivo dice la diferencia con la referencia;
+                con una hora puesta, a qué hora le cae allí — y esa sí se
+                puede escribir, como cualquier otra de la pantalla.
+
+                Si apareciera y desapareciera, poner una hora empujaría
+                hacia abajo las dos tarjetas siguientes. `min-height` no
+                sirve aquí: pone un suelo, no reserva el sitio.
+              */}
+              <div className="convertida">
+                {enVivo || !conversionFija ? (
+                  <span className="truncate">
+                    {reloj && reloj.diferencia === 0
+                      ? `${tr('mismaQue')} ${origen.etiqueta}`
+                      : `${diferenciaTexto(reloj?.diferencia ?? 0)} ${tr('respectoA')} ${origen.etiqueta}`}
+                  </span>
+                ) : (
+                  <>
+                    <span className="truncate">{tr('aEsaHora')}</span>
+                    <input
+                      type="time"
+                      className="hora"
+                      value={enCampo(conversionFija.minutos)}
+                      onChange={(e) => ponerHoraEn(conversionFija, e.target.value)}
+                      aria-label={`${tr('cambiarEstaHora')}: ${fijo.ciudad}`}
+                    />
+                    {/* El aviso va aquí y no arriba a propósito. Arriba, la
+                        fecha es la de AHORA; el salto de día que importa es
+                        el de la hora puesta, y es el error que de verdad se
+                        comete: acertar la hora y errar el día. */}
+                    {conversionFija.saltoDeDia !== 0 && (
+                      <span className="aviso-dia">
+                        {conversionFija.saltoDeDia > 0
+                          ? tr('diaSiguienteCorto')
+                          : tr('diaAnteriorCorto')}
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+
         <section className="tarjeta-control" data-tour="hora">
           <h2 className="titulo">{tr('origenTitulo')}</h2>
 
@@ -622,7 +839,7 @@ export default function Timezones({ lang }: Props) {
               {/* Un mensaje con todas, no una línea por ciudad. Si son
                   cinco sitios se manda un mensaje con los cinco, no cinco
                   frases iguales seguidas. */}
-              {destinos.length > 0 && resultado && (
+              {todos.length > 0 && resultado && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -691,7 +908,7 @@ export default function Timezones({ lang }: Props) {
               </div>
             )}
 
-            {resultado?.destinos.map((c) => {
+            {conversiones.map((c) => {
               const debajo = [c.destino.region, nombreDePais(c.destino.pais, lang), c.abreviatura]
                 .filter(Boolean)
                 .join(' · ');
@@ -714,7 +931,6 @@ export default function Timezones({ lang }: Props) {
                     enVivo={enVivo}
                     enCampo={enCampo}
                     onCambio={ponerHoraEn}
-                    onCongelar={congelar}
                     onCongelar={congelar}
                     etiqueta={tr('cambiarEstaHora')}
                   />

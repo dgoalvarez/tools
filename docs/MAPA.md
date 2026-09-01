@@ -12,7 +12,7 @@ Existe para no volver a averiguar lo mismo cada sesión.
 
 | | Ruta · es | Ruta · en | Materia | Tarea | Ámbito | Pasos |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Husos horarios** | `/es/horarios` | `/en/timezones` | tiempo | convertir | productividad | 7 |
+| **Husos horarios** | `/es/horarios` | `/en/timezones` | tiempo | convertir | productividad | 8 |
 | **Reloj** | `/es/reloj` | `/en/clock` | tiempo | cronometrar | productividad | 7 |
 | **Pomodoro** | `/es/pomodoro` | `/en/pomodoro` | tiempo | cronometrar | productividad | 4 |
 | **Notas** | `/es/notas` | `/en/notes` | texto | anotar | productividad | 5 |
@@ -142,8 +142,8 @@ Sin React ni DOM: se corre con `node`, y por eso se puede comprobar.
 - tipos · `Ajustes`, `Esquema`, `Paso`, `Cruce`
 
 **`timezones.ts`**
-- funciones · `obtenerTemporal`, `zonaDelNavegador`, `nombreDeZona`, `localeDe`, `camposEnZona`, `desfaseDeZona`, `diaDeZona`, `minutosEnZona`, `convertir`, `componerFrase`, `componerLista`, `normalizar`, `nombreGenericoDeZona`, `nombreDePais`, `buscarLugares`, `zonaDeZip`
-- tipos · `FuenteDestino`, `Destino`, `Conversion`, `Momento`, `Ambiguedad`, `Resultado`, `DatosLugares`, `DatosZips`, `TipoLugar`, `Coincidencia`
+- funciones · `obtenerTemporal`, `zonaDelNavegador`, `nombreDeZona`, `localeDe`, `camposEnZona`, `desfaseDeZona`, `diaDeZona`, `minutosEnZona`, `convertir`, `relojEnVivo`, `componerFrase`, `componerLista`, `normalizar`, `nombreGenericoDeZona`, `nombreDePais`, `buscarLugares`, `zonaDeZip`
+- tipos · `FuenteDestino`, `Destino`, `Conversion`, `Momento`, `Ambiguedad`, `Resultado`, `RelojVivo`, `DatosLugares`, `DatosZips`, `TipoLugar`, `Coincidencia`
 
 **`url-state.ts`**
 - funciones · `leerParams`, `escribirParams`, `leerParam`

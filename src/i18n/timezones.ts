@@ -4,6 +4,37 @@
 import type { T } from './config';
 
 export const HUSOS = {
+  // ---------- El sitio que se sigue en vivo ----------
+  /**
+   * La tarjeta de arriba: un solo sitio, con su reloj corriendo siempre.
+   *
+   * Es un papel distinto de los de abajo y por eso tiene tarjeta propia.
+   * Los sitios de la lista van y vienen —hoy un cliente, mañana otro—;
+   * este no cambia y se mira todo el día, para saber si quien está allí
+   * está despierto antes de escribirle.
+   */
+  vivoTitulo: { es: 'En vivo', en: 'Live' },
+  /**
+   * El rótulo del buscador de esta tarjeta.
+   *
+   * NO puede ser el mismo que el de abajo. Con los dos puestos —«Ciudad,
+   * estado, país o código ZIP» las dos veces— la pantalla enseñaba dos
+   * campos idénticos, uno encima del otro, y no había forma de saber
+   * cuál hacía qué sin probarlos. Este dice para qué es; el de abajo
+   * puede seguir diciendo qué acepta, porque ya no compite con nadie.
+   */
+  vivoBuscar: { es: 'Qué sitio quieres seguir', en: 'Which place to follow' },
+  vivoVacio: {
+    es: 'El sitio que consultas a diario. Su hora real seguirá corriendo aquí aunque abajo pongas una hora concreta.',
+    en: 'The place you check every day. Its real time keeps running here even when you set a specific time below.',
+  },
+  vivoQuitar: { es: 'Quitar este sitio', en: 'Remove this place' },
+  /** Delante de la hora convertida, dentro de la tarjeta en vivo. */
+  aEsaHora: { es: 'A esa hora, allí', en: 'At that time, there' },
+  /** «−1 h respecto a Bogotá», cuando no hay ninguna hora puesta. */
+  respectoA: { es: 'respecto a', en: 'compared to' },
+  mismaQue: { es: 'La misma hora que', en: 'Same time as' },
+
   // ---------- El origen ----------
   origenTitulo: { es: 'La hora', en: 'The time' },
   /** Mientras la herramienta va sola, con el reloj. */

@@ -1592,6 +1592,147 @@
     }
   }
 
+  /* ---------- El sitio que se sigue en vivo ---------- */
+
+  /*
+    Una sola cifra grande, y todo lo demás alrededor en letra pequeña.
+
+    Es la tarjeta que se mira de reojo veinte veces al día —«¿está
+    despierto?»— así que la hora tiene que leerse desde lejos y sin
+    buscarla. Lo que la rodea, dónde es y qué día es allí, cabe en la letra
+    pequeña porque solo se lee la primera vez.
+  */
+  /*
+    `minmax(0, 1fr)` y no `1fr` a secas. Una columna implícita de grid se
+    dimensiona por su contenido, así que un nombre largo —«Santo Domingo
+    de los Colorados, Santo Domingo de los Tsáchilas»— la ensanchaba y se
+    llevaba por delante la columna de al lado. El `truncate` de dentro no
+    puede hacer nada mientras la columna que lo contiene no tenga techo.
+  */
+  .reloj-vivo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.125rem;
+  }
+
+  .reloj-vivo .encabezado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .reloj-vivo .lugar {
+    min-width: 0;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--ink);
+  }
+
+  .reloj-vivo .meta {
+    min-width: 0;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: var(--ink-soft);
+  }
+
+  /* Cifras de ancho fijo: sin ellas la hora cambia de ancho al pasar de
+     minuto, y algo que se mueve solo se lleva la mirada cada vez. */
+  .reloj-vivo .cifra {
+    margin-block-start: 0.375rem;
+    font-size: 2.5rem;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+
+  .reloj-vivo .pie {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-width: 0;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-muted);
+  }
+
+  .reloj-vivo .aviso-dia {
+    font-weight: 600;
+    color: var(--danger);
+  }
+
+  /*
+    Alto FIJO, no mínimo.
+
+    Este renglón cambia de contenido —la diferencia mientras va en vivo, la
+    hora convertida cuando hay una puesta— pero no puede cambiar de alto:
+    si lo hiciera, poner una hora empujaría hacia abajo las dos tarjetas
+    siguientes. `min-height` pone un suelo, no reserva el sitio.
+  */
+  .reloj-vivo .convertida {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-width: 0;
+    height: 2.75rem;
+    margin-block-start: 0.5rem;
+    padding-block-start: 0.5rem;
+    border-block-start: 1px solid var(--line);
+    font-size: var(--fs-small);
+    color: var(--ink-muted);
+  }
+
+  /* El mismo campo que en la lista y por el mismo motivo: si el control se
+     nota, la cifra deja de leerse como una hora y pasa a leerse como un
+     formulario. Lo único que lo delata es el subrayado al pasar por
+     encima, que dice «esto se cambia» sin ocupar sitio. */
+  .reloj-vivo .convertida input.hora {
+    appearance: none;
+    -webkit-appearance: none;
+    min-width: 0;
+    padding: 0 0.125rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    font-family: inherit;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    cursor: text;
+    flex: none;
+  }
+
+  /* El aviso de otro día no se encoge nunca: si algo tiene que ceder
+     ancho en un teléfono, que sea el rótulo de al lado, que se puede
+     deducir, y no la palabra que evita el error. */
+  .reloj-vivo .convertida .aviso-dia {
+    flex: none;
+  }
+
+  .reloj-vivo .convertida input.hora:hover {
+    box-shadow: inset 0 -0.125rem 0 var(--acento);
+  }
+
+  .reloj-vivo .convertida input.hora:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 2px;
+  }
+
+  .reloj-vivo .convertida input.hora::-webkit-calendar-picker-indicator {
+    opacity: 0.35;
+    cursor: pointer;
+  }
+
+  .reloj-vivo .convertida input.hora:hover::-webkit-calendar-picker-indicator {
+    opacity: 0.7;
+  }
+
   /* La hora de referencia: la tuya. Se tiñe con el acento en vez de
      llevar tarjeta aparte, para que caiga en la misma columna que las
      demás — que es justo lo que se quiere comparar. */

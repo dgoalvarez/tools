@@ -319,12 +319,39 @@ const CASOS = [
   {
     nombre: 'reloj · mundial lleno',
     ruta: 'es/reloj',
-    query: 'w=America%2FNew_York~Carolina%20del%20Norte%20(hora%20oriental)%3BAmerica%2FChicago~Florida%20(hora%20central)%3BAsia%2FKathmandu~Katmand%C3%BA%3BPacific%2FKiritimati~Kiribati%20(hora%20de%20las%20Line)%3BEurope%2FMadrid~Comunidad%20Valenciana%3BAsia%2FTokyo~Jap%C3%B3n%3BAmerica%2FSao_Paulo~S%C3%A3o%20Paulo%3BAustralia%2FPerth~Australia%20Occidental',
+    query:
+      'w=America%2FNew_York~Carolina%20del%20Norte%20(hora%20oriental)%3BAmerica%2FChicago~Florida%20(hora%20central)%3BAsia%2FKathmandu~Katmand%C3%BA%3BPacific%2FKiritimati~Kiribati%20(hora%20de%20las%20Line)%3BEurope%2FMadrid~Comunidad%20Valenciana%3BAsia%2FTokyo~Jap%C3%B3n%3BAmerica%2FSao_Paulo~S%C3%A3o%20Paulo%3BAustralia%2FPerth~Australia%20Occidental',
   },
   {
     nombre: 'husos · hora fija y seis sitios',
     ruta: 'es/horarios',
-    query: 'd=2026-11-01&h=23:30&' + 'z=America%2FNew_York~Carolina%20del%20Norte%20(hora%20oriental)%3BAmerica%2FChicago~Florida%20(hora%20central)%3BAsia%2FKathmandu~Katmand%C3%BA%3BPacific%2FKiritimati~Kiribati%3BEurope%2FMadrid~Madrid%3BAsia%2FTokyo~Tokio',
+    query:
+      'd=2026-11-01&h=23:30&' +
+      'z=America%2FNew_York~Carolina%20del%20Norte%20(hora%20oriental)%3BAmerica%2FChicago~Florida%20(hora%20central)%3BAsia%2FKathmandu~Katmand%C3%BA%3BPacific%2FKiritimati~Kiribati%3BEurope%2FMadrid~Madrid%3BAsia%2FTokyo~Tokio',
+  },
+  /*
+    La tarjeta de en vivo, que es la que lleva la cifra más grande de la
+    pantalla y por tanto la que menos sitio deja para el nombre. El de
+    Santo Domingo es el que reventó la tarjeta de al lado en su día.
+  */
+  {
+    nombre: 'husos · en vivo de nombre largo',
+    ruta: 'es/horarios',
+    query:
+      'v=America%2FNew_York~Santo%20Domingo%20de%20los%20Colorados%2C%20Santo%20Domingo%20de%20los%20Ts%C3%A1chilas',
+  },
+  /*
+    Y con una hora puesta, que es cuando el renglón de abajo cambia de
+    contenido: pasa de decir la diferencia a llevar un campo de hora. Si
+    el alto no estuviera clavado, esto empujaría las dos tarjetas de
+    debajo. Con salto de día, además, para que salga el aviso rojo.
+  */
+  {
+    nombre: 'husos · en vivo con hora y salto de día',
+    ruta: 'es/horarios',
+    query:
+      'd=2026-11-01&h=23:30&v=Pacific%2FKiritimati~Kiribati%20(hora%20de%20las%20Line)&' +
+      'z=America%2FNew_York~Carolina%20del%20Norte%20(hora%20oriental)%3BAsia%2FKathmandu~Katmand%C3%BA',
   },
   { nombre: 'notas · vacía', ruta: 'es/notas' },
   { nombre: 'notas · cuarenta líneas', ruta: 'es/notas', hacer: NOTAS_LLENA },

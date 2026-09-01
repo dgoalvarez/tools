@@ -12,7 +12,9 @@ import { fileURLToPath } from 'node:url';
 
 import {
   obtenerTemporal,
+  camposEnZona,
   convertir,
+  relojEnVivo,
   componerFrase,
   componerLista,
   buscarLugares,
@@ -249,6 +251,80 @@ console.log('\n4b. El mensaje con todas las horas');
   );
 }
 
+console.log('\n4c. El reloj en vivo de la tarjeta de arriba');
+{
+  /*
+    Esta tarjeta no pasa por `convertir`: sale de `Intl` y es síncrona,
+    para que la cifra más grande de la pantalla no espere a que se
+    descargue el polyfill de `Temporal`.
+
+    Que sean dos caminos distintos es justo lo que hay que vigilar. Si uno
+    de los dos se desvía, la tarjeta de arriba y la lista de abajo dirían
+    horas distintas del MISMO instante, y no habría forma de saber cuál de
+    las dos miente.
+  */
+  const VERANO = new Date('2026-07-15T20:00:00Z'); // 15:00 en Bogotá
+  const INVIERNO = new Date('2026-01-15T20:00:00Z'); // 15:00 en Bogotá
+
+  // El caso que existe la herramienta para no fallar: la misma ciudad,
+  // la misma hora de Bogotá, y dos respuestas distintas según el mes.
+  // Un desfase fijo daría la misma las dos veces.
+  const miamiVerano = relojEnVivo(VERANO, 'America/New_York', BOGOTA, 'es');
+  const miamiInvierno = relojEnVivo(INVIERNO, 'America/New_York', BOGOTA, 'es');
+
+  afirmar(miamiVerano.diferencia === 1, `en julio Miami va 1 h por delante (${miamiVerano.hora})`);
+  afirmar(
+    miamiInvierno.diferencia === 0,
+    `en enero Miami va a la misma hora (${miamiInvierno.hora})`
+  );
+  afirmar(
+    miamiVerano.diferencia !== miamiInvierno.diferencia,
+    'la misma ciudad, dos respuestas: el horario de verano se está teniendo en cuenta'
+  );
+
+  // Los husos de media hora salen enteros o no salen.
+  const india = relojEnVivo(VERANO, 'Asia/Kolkata', BOGOTA, 'es');
+  afirmar(india.diferencia === 10.5, `India va 10,5 h por delante (${india.diferencia})`);
+
+  // El error que de verdad se comete: acertar la hora y errar el día.
+  const tokio = relojEnVivo(VERANO, 'Asia/Tokyo', BOGOTA, 'es');
+  afirmar(tokio.saltoDeDia === 1, `en Tokio ya es el día siguiente (${tokio.fechaCorta})`);
+
+  const madrugada = new Date('2026-07-16T06:00:00Z'); // 01:00 en Bogotá
+  const california = relojEnVivo(madrugada, 'America/Los_Angeles', BOGOTA, 'es');
+  afirmar(
+    california.saltoDeDia === -1,
+    `a la 1 de la madrugada en Bogotá, en California es el día anterior (${california.fechaCorta})`
+  );
+
+  const mismo = relojEnVivo(VERANO, BOGOTA, BOGOTA, 'es');
+  afirmar(mismo.diferencia === 0 && mismo.saltoDeDia === 0, 'un sitio contra sí mismo no difiere');
+
+  // Y la que ata los dos caminos: mismo instante, misma hora escrita.
+  for (const zona of ['America/New_York', 'Asia/Tokyo', 'Asia/Kolkata', 'Australia/Eucla']) {
+    const campos = camposEnZona(VERANO, BOGOTA);
+    const [año, mes, dia] = campos.fecha.split('-').map(Number);
+    const [h, m] = campos.hora.split(':').map(Number);
+
+    const porTemporal = convertir(
+      Temporal,
+      { año: año!, mes: mes!, dia: dia!, hora: h!, minuto: m! },
+      BOGOTA,
+      'Bogotá',
+      [destino(zona, zona)],
+      'es'
+    ).destinos[0]!;
+    const porIntl = relojEnVivo(VERANO, zona, BOGOTA, 'es');
+
+    afirmar(
+      porTemporal.hora === porIntl.hora &&
+        porTemporal.diferencia === porIntl.diferencia &&
+        porTemporal.saltoDeDia === porIntl.saltoDeDia,
+      `${zona}: la tarjeta y la lista dicen lo mismo (${porIntl.hora}, ${porIntl.diferencia} h)`
+    );
+  }
+}
+
 console.log('\n5. Las horas que no existen y las que ocurren dos veces');
 {
   // 8 de marzo de 2026, 2:30 de la madrugada en Nueva York: esa hora no existe.
@@ -393,9 +469,7 @@ console.log('\n8. Las ciudades, en los dos idiomas');
   }
 
   // Y la ficha tiene que escribirla en el idioma de la página.
-  const enEspanol = buscarLugares(ciudades, 'london', 'es').find(
-    (c) => c.zona === 'Europe/London'
-  );
+  const enEspanol = buscarLugares(ciudades, 'london', 'es').find((c) => c.zona === 'Europe/London');
   afirmar(enEspanol?.ciudad === 'Londres', `en español se escribe «${enEspanol?.ciudad}»`);
 
   const enIngles = buscarLugares(ciudades, 'london', 'en').find((c) => c.zona === 'Europe/London');
@@ -452,7 +526,10 @@ console.log('\n9. Estados, departamentos y países');
 
   // ---------- que estén ----------
   const antioquia = soloDivisiones('antioquia').find((c) => c.pais === 'CO');
-  afirmar(antioquia?.zona === 'America/Bogota', `Antioquia está y es de Bogotá (${antioquia?.zona})`);
+  afirmar(
+    antioquia?.zona === 'America/Bogota',
+    `Antioquia está y es de Bogotá (${antioquia?.zona})`
+  );
 
   const colombia = soloPaises('colombia');
   afirmar(colombia.length === 1, 'Colombia sale una vez: no está partida');
@@ -524,7 +601,8 @@ console.log('\n9. Estados, departamentos y países');
   // matiz aparecería en un resultado único y sobraría.
   const cuentaDivision = new Map<string, number>();
   for (const [nombre, , pais, , , , partido] of ciudades.divisiones) {
-    if (partido) cuentaDivision.set(`${pais}|${nombre}`, (cuentaDivision.get(`${pais}|${nombre}`) ?? 0) + 1);
+    if (partido)
+      cuentaDivision.set(`${pais}|${nombre}`, (cuentaDivision.get(`${pais}|${nombre}`) ?? 0) + 1);
   }
   afirmar(
     [...cuentaDivision.values()].every((n) => n > 1),

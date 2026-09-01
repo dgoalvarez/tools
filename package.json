@@ -5,15 +5,17 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/check-routes.mjs && node scripts/check-etiquetas.mjs && astro check && astro build && node scripts/check-pages.mjs && node scripts/check-tour.mjs && node scripts/check-csp.mjs",
+    "build": "node scripts/check-routes.mjs && node scripts/check-etiquetas.mjs && node scripts/mapa.mjs --comprobar && astro check && astro build && node scripts/check-pages.mjs && node scripts/check-tour.mjs && node scripts/check-csp.mjs",
+    "verificar": "npm run build && npm run comprobar && npm run romper && npm run navegar",
     "check": "astro check",
     "preview": "astro preview",
     "astro": "astro",
     "comprobar": "node scripts/comprobar-contraste.ts && node scripts/comprobar-escala.ts && node scripts/comprobar-rampas.ts && node scripts/comprobar-notas.ts && node scripts/comprobar-husos.ts && node scripts/comprobar-pomodoro.ts && node scripts/comprobar-reloj.ts && node scripts/comprobar-encabezado.ts",
-    "build-data": "node scripts/build-data.mjs",
-    "ver": "node scripts/ver.mjs",
     "romper": "node scripts/comprobar-roturas.mjs",
-    "navegar": "node scripts/comprobar-navegacion.mjs"
+    "navegar": "node scripts/comprobar-navegacion.mjs",
+    "ver": "node scripts/ver.mjs",
+    "mapa": "node scripts/mapa.mjs",
+    "build-data": "node scripts/build-data.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^6.0.4",

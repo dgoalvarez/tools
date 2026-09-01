@@ -316,6 +316,16 @@ const CASOS = [
   { nombre: 'paleta · quince pasos', ruta: 'es/paleta', query: 'n=15' },
   { nombre: 'paleta · semilla casi blanca', ruta: 'es/paleta', query: 't=casi:fbfbfa' },
   { nombre: 'paleta · con las tintas', ruta: 'es/paleta' },
+  {
+    nombre: 'reloj · mundial lleno',
+    ruta: 'es/reloj',
+    query: 'w=America%2FNew_York~Carolina%20del%20Norte%20(hora%20oriental)%3BAmerica%2FChicago~Florida%20(hora%20central)%3BAsia%2FKathmandu~Katmand%C3%BA%3BPacific%2FKiritimati~Kiribati%20(hora%20de%20las%20Line)%3BEurope%2FMadrid~Comunidad%20Valenciana%3BAsia%2FTokyo~Jap%C3%B3n%3BAmerica%2FSao_Paulo~S%C3%A3o%20Paulo%3BAustralia%2FPerth~Australia%20Occidental',
+  },
+  {
+    nombre: 'husos · hora fija y seis sitios',
+    ruta: 'es/horarios',
+    query: 'd=2026-11-01&h=23:30&' + 'z=America%2FNew_York~Carolina%20del%20Norte%20(hora%20oriental)%3BAmerica%2FChicago~Florida%20(hora%20central)%3BAsia%2FKathmandu~Katmand%C3%BA%3BPacific%2FKiritimati~Kiribati%3BEurope%2FMadrid~Madrid%3BAsia%2FTokyo~Tokio',
+  },
   { nombre: 'notas · vacía', ruta: 'es/notas' },
   { nombre: 'notas · cuarenta líneas', ruta: 'es/notas', hacer: NOTAS_LLENA },
   { nombre: 'notas · sin un espacio', ruta: 'es/notas', hacer: NOTAS_SIN_ESPACIOS },

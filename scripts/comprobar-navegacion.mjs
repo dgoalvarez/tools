@@ -30,39 +30,48 @@
  * documento nuevo viene del servidor sin saber nada de lo guardado.
  *
  * ---------------------------------------------------------------------
- * Cuatro trampas que costaron un rato, por si vuelven
+ * Cómo se cierra el círculo, y por qué así
+ *
+ * La sonda **avisa por la red**: cuando tiene el veredicto pide
+ * `/resultado?m=…` y este mismo archivo, que es quien sirve las páginas,
+ * lo recoge. El navegador corre con el reloj de verdad y se le mata en
+ * cuanto contesta.
+ *
+ * Antes iba de otra forma —`--virtual-time-budget` para acelerar el reloj
+ * y `--dump-dom` para leer el veredicto del título— y **fallaba una de
+ * cada tres veces**, no siempre en el mismo caso. La causa: con el reloj
+ * acelerado los temporizadores se disparan a toda velocidad y la red no,
+ * así que el tiempo virtual se agotaba mientras la página siguiente
+ * venía por el cable. Chrome volcaba el DOM y se iba a mitad de la
+ * navegación, y la sonda lo contaba como «no respondió». Una alarma que
+ * falla una de cada tres enseña a ignorar el rojo, que es peor que no
+ * tenerla.
+ *
+ * Tarda unos segundos más y sale siempre igual, que es lo único que se le
+ * pide a una alarma.
+ *
+ * ---------------------------------------------------------------------
+ * Tres trampas más, por si vuelven
  *
  *   · **Nada de `execFileSync`.** El servidor de aquí abajo comparte
  *     proceso con la sonda, y una llamada síncrona deja parado el bucle
  *     de eventos: Chrome pedía la página, nadie contestaba, y el proceso
  *     se quedaba colgado hasta el tiempo de espera.
- *   · **Nada de esperar con `setTimeout`.** Con `--virtual-time-budget`
- *     los temporizadores se disparan a toda velocidad mientras la red va
- *     a su ritmo real. Un «espera 1800 ms» tras pulsar el enlace ocurría
- *     ANTES de que la página nueva llegara, y la sonda medía la vieja.
- *     Se espera con `astro:page-load`, que es el aviso de verdad.
+ *   · **El rastro no avisa.** El título va contando por dónde va la
+ *     sonda, y eso es solo para mirar una captura: si el rastro también
+ *     avisara por la red, el primer aviso sería «llego a la carga 1» y
+ *     ese sería el veredicto. Avisa `__decir`, y nadie más.
  *   · **Puerto 0.** Con uno fijo esto fallaba con EADDRINUSE en Windows
  *     sin que nadie estuviera escuchando: hay rangos que Hyper-V reserva
  *     y que no se ven ocupados hasta que se intentan abrir.
- *   · **Un solo salto por caso.** Se intentó ir de notas a otra
- *     herramienta y volver, y salía verde dos de cada tres veces: el clic
- *     que da el segundo salto se pierde a veces, y con reintentos seguía
- *     siendo caprichoso. Una comprobación que falla una de cada tres
- *     enseña a ignorar el rojo, que es peor que no comprobar. El caso de
- *     la libreta hace un salto y mira el almacenamiento, que es lo que de
- *     verdad se afirma; que al volver se restaure lo cubre el caso
- *     «notas llena», que siembra y mide.
  *
  * Uso:  npm run build && node scripts/comprobar-navegacion.mjs
  */
 import { createServer } from 'node:http';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
-const correr = promisify(execFile);
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(raiz, 'dist');
@@ -111,12 +120,35 @@ const TIPOS = {
 /** El caso en marcha: qué página se somete y con qué guion. */
 let sonda = null;
 
+/**
+ * Lo que la página tiene que contar, cuando lo cuente.
+ *
+ * La sonda avisa pidiendo /resultado, y aquí se resuelve la espera. Antes
+ * el veredicto se leía del DOM volcado con `--dump-dom`, y eso ataba el
+ * resultado al momento en que Chrome decidía volcar: con el reloj virtual
+ * acelerado, el tiempo se agotaba mientras la página siguiente venía por
+ * la red, y la sonda decía «no respondió» a una navegación que estaba a
+ * medio hacer. Fallaba una de cada tres veces, y no siempre la misma.
+ *
+ * Contándolo por la red, el volcado deja de importar: se espera al aviso
+ * y ya está.
+ */
+let contar = null;
+
 const servidor = createServer((pet, res) => {
   // Sin esto Chrome deja los sockets abiertos y el tiempo virtual no se
   // agota: el proceso no llega a volcar el DOM.
   res.setHeader('connection', 'close');
 
   const ruta = decodeURIComponent(new URL(pet.url, 'http://x').pathname);
+
+  if (ruta === '/resultado') {
+    const mensaje = new URL(pet.url, 'http://x').searchParams.get('m') ?? '';
+    res.writeHead(204);
+    res.end();
+    contar?.(mensaje);
+    return;
+  }
 
   if (ruta === '/sonda') {
     const html = readFileSync(join(dist, sonda.pagina), 'utf8');
@@ -176,7 +208,12 @@ const COMUN = [
   '  }',
   '  return out;',
   '}',
-  'function __decir(texto) { document.title = "SONDA:" + texto; }',
+  // El título se sigue escribiendo: sirve para mirar una captura. Lo que
+  // cuenta de verdad es el aviso, que llega cuando llega.
+  'function __decir(texto) {',
+  '  document.title = "SONDA:" + texto;',
+  '  try { fetch("/resultado?m=" + encodeURIComponent(texto)); } catch (e) {}',
+  '}',
   // Un error dentro de un guion no dice nada por su cuenta: la sonda solo
   // ve que el titulo no cambio. Esto lo cuenta.
   'window.addEventListener("error", function (e) {',
@@ -193,7 +230,7 @@ const COMUN = [
   // Deja rastro de por donde va: si algo se queda a medias, lo ultimo
   // que quedo escrito dice en que carga fue. Cada cambio de pagina pisa el
   // titulo con el suyo, asi que sobrevive el ultimo.
-  '    __decir("llego a la carga " + veces + ", esperando la " + n);',
+  '    document.title = "SONDA:llego a la carga " + veces + ", esperando la " + n;',
   '    if (veces !== n) return;',
   '    setTimeout(fn, 150);',
   '  });',
@@ -398,6 +435,18 @@ const CASOS = [
     guion: guionSalto(false, LIBRETA_SEMBRADA),
   },
   {
+    nombre: 'sin tiron · husos en vivo',
+    pagina: 'es/horarios.html',
+    ancho: 1440,
+    guion: guionSalto(false),
+  },
+  {
+    nombre: 'sin tiron · reloj mundial',
+    pagina: 'es/reloj.html',
+    ancho: 1440,
+    guion: guionSalto(false),
+  },
+  {
     nombre: 'control · con hidden salta',
     pagina: 'es/paleta.html',
     ancho: 1440,
@@ -431,23 +480,40 @@ try {
     sonda = caso;
     process.stdout.write(`  ...   ${caso.nombre}\r`);
 
-    const { stdout } = await correr(
+    /*
+      Sin `--virtual-time-budget`: aquí el reloj es el de verdad.
+
+      El reloj acelerado servía cuando lo único que había que hacer era
+      esperar a que una página se asentara. En cuanto hay que pulsar un
+      enlace y esperar a la siguiente, estorba: los temporizadores corren a
+      toda velocidad y la red no, así que las esperas se cumplen antes de
+      que llegue nada. Estas comprobaciones tardan unos segundos más y
+      salen siempre igual, que es lo único que se le pide a una alarma.
+    */
+    const espera = new Promise((r) => {
+      contar = r;
+    });
+
+    const hijo = spawn(
       chrome,
       [
         '--headless=new',
         '--disable-gpu',
+        '--no-first-run',
+        '--disable-extensions',
         `--window-size=${caso.ancho + MARCO},900`,
-        `--virtual-time-budget=${caso.presupuesto ?? 25000}`,
-        '--dump-dom',
         `http://127.0.0.1:${PUERTO}/sonda`,
       ],
-      { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 120000 }
+      { stdio: 'ignore' }
     );
 
-    const titulo = /<title>([^<]*)<\/title>/.exec(stdout)?.[1] ?? '';
-    const dicho = titulo.startsWith('SONDA:')
-      ? titulo.slice(6)
-      : '(no respondió: probablemente hubo recarga entera)';
+    const dicho = await Promise.race([
+      espera,
+      new Promise((r) => setTimeout(() => r('(no respondió en 45 s)'), 45_000)),
+    ]);
+
+    contar = null;
+    hijo.kill();
     const bien = caso.esperado === 'roto' ? dicho !== 'quieto' : dicho === 'quieto';
     const ancho = String(caso.ancho).padStart(4);
 

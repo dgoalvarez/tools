@@ -87,10 +87,10 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
   timezones: [
     {
       ancla: 'hora',
-      titulo: { es: 'La hora de la que partes', en: 'The time you start from' },
+      titulo: { es: 'Empieza en vivo', en: 'It starts live' },
       cuerpo: {
-        es: 'Escribe el día y la hora tal y como los tienes tú en la cabeza. Todo lo demás sale de aquí.',
-        en: 'Type the day and the time exactly as you have them in your head. Everything else follows from this.',
+        es: 'Al entrar, esto va con el reloj: cada sitio enseña la hora que es allí ahora mismo. En cuanto tocas una hora —esta o la de cualquier fila— se queda quieta en ella y todas las demás se traducen. La fecha importa: hay sitios que cambian la hora dos veces al año y otros que no, así que las mismas cinco de la tarde no siempre caen a la misma hora allí.',
+        en: 'When you arrive this runs with the clock: every place shows what time it is there right now. The moment you touch a time — this one or any row’s — it holds still and all the others translate. The date matters: some places change their clocks twice a year and others do not, so the same five in the afternoon does not always land at the same time there.',
       },
     },
     {
@@ -105,8 +105,8 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
       ancla: 'destinos',
       titulo: { es: 'En qué sitios la quieres saber', en: 'Where you want to know it' },
       cuerpo: {
-        es: 'Busca por ciudad —en español o en inglés— o por código postal de Estados Unidos. El código postal está porque siete estados están partidos entre dos husos: en Florida o en Tennessee, saber el estado no basta.',
-        en: 'Search by city — in English or Spanish — or by US ZIP code. The ZIP code is there because seven states are split between two zones: in Florida or Tennessee, knowing the state is not enough.',
+        es: 'Ciudades, estados y departamentos, países, o un código postal de Estados Unidos. En español o en inglés: «Carolina del Norte» y «North Carolina» encuentran lo mismo. Y los sitios partidos entre husos —Florida, Texas, Estados Unidos entero— salen una vez por huso en vez de elegir por ti.',
+        en: 'Cities, states and provinces, countries, or a US ZIP code. In English or Spanish: “North Carolina” and “Carolina del Norte” find the same place. And places split between zones — Florida, Texas, the whole of the United States — come up once per zone instead of choosing for you.',
       },
     },
     {
@@ -147,6 +147,14 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
 
   // ------------------------------------------------------------ reloj
   clock: [
+    {
+      ancla: 'mundial',
+      titulo: { es: 'Qué hora es en otro sitio', en: 'What time it is elsewhere' },
+      cuerpo: {
+        es: 'Añade los sitios que te interesen y su hora se queda delante, corriendo al segundo, con la diferencia contigo. Ciudades, estados, países o un código postal de Estados Unidos. Para traducir una hora concreta —«si esto es a las cinco aquí, ¿a qué hora le toca allí?»— está la herramienta de husos horarios.',
+        en: 'Add the places you care about and their time stays in front of you, ticking by the second, with the difference from yours. Cities, states, countries or a US ZIP code. To translate a specific time — “if this is at five here, what time is it there?” — that is what the time zones tool is for.',
+      },
+    },
     {
       ancla: 'hora',
       titulo: { es: 'La hora, a lo grande', en: 'The time, big' },

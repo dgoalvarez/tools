@@ -6,6 +6,14 @@ import type { T } from './config';
 export const HUSOS = {
   // ---------- El origen ----------
   origenTitulo: { es: 'La hora', en: 'The time' },
+  /** Mientras la herramienta va sola, con el reloj. */
+  enVivo: { es: 'En vivo', en: 'Live' },
+  volverAAhora: { es: 'Volver a ahora', en: 'Back to now' },
+  /** Delante de la hora actual de un sitio, en letra pequeña. */
+  ahoraCorto: { es: 'ahora', en: 'now' },
+  /** El título de la lista cuando va en vivo. */
+  resultadosAhora: { es: 'Qué hora es allí ahora', en: 'What time it is there now' },
+  cambiarEstaHora: { es: 'Cambiar esta hora', en: 'Change this time' },
   fecha: { es: 'Fecha', en: 'Date' },
   hora: { es: 'Hora', en: 'Time' },
   zonaOrigen: { es: 'Hora de', en: 'Time in' },
@@ -14,9 +22,9 @@ export const HUSOS = {
 
   // ---------- Añadir destinos ----------
   destinosTitulo: { es: 'En qué sitios', en: 'Where' },
-  buscar: { es: 'Ciudad o código ZIP de Estados Unidos', en: 'City or US ZIP code' },
+  buscar: { es: 'Ciudad, estado, país o código ZIP', en: 'City, state, country or ZIP code' },
   buscarAyuda: {
-    es: 'Escribe el nombre de una ciudad o cinco dígitos de un código postal estadounidense.',
+    es: 'Una ciudad, un estado o departamento, un país, o cinco dígitos de un código postal estadounidense.',
     en: 'Type a city name or the five digits of a US ZIP code.',
   },
   miUbicacion: { es: 'Mi ubicación', en: 'My location' },

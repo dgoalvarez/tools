@@ -4,6 +4,28 @@
 import type { T } from './config';
 
 export const RELOJ = {
+  // ---------- El reloj mundial ----------
+  mundial: { es: 'Reloj mundial', en: 'World clock' },
+  mundialVacio: {
+    es: 'Añade los sitios cuya hora quieras tener delante.',
+    en: 'Add the places whose time you want in front of you.',
+  },
+  mundialBuscar: {
+    es: 'Ciudad, estado, país o código ZIP',
+    en: 'City, state, country or ZIP code',
+  },
+  quitarSitio: { es: 'Quitar', en: 'Remove' },
+  /** Cuando allí es otro día. */
+  mundialManana: { es: 'mañana', en: 'tomorrow' },
+  mundialAyer: { es: 'ayer', en: 'yesterday' },
+  /** La diferencia con la hora de aquí. */
+  mundialIgual: { es: 'tu misma hora', en: 'your time' },
+  cargandoSitios: { es: 'Cargando…', en: 'Loading…' },
+  sinSitios: { es: 'Ningún sitio se llama así', en: 'No place by that name' },
+  zipSinSitio: {
+    es: 'Ese código postal no está en los datos',
+    en: 'That ZIP code is not in the data',
+  },
   // ---------- Las pestañas ----------
   alarma: { es: 'Alarma', en: 'Alarm' },
   cronometro: { es: 'Cronómetro', en: 'Stopwatch' },

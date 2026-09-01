@@ -3,7 +3,7 @@
  * volcados públicos de GeoNames.
  *
  * Uso:  node scripts/build-data.mjs
- * Sale: public/data/ciudades.json
+ * Sale: public/data/lugares.json
  *       public/data/zips.json
  *
  * Se ejecuta a mano y el resultado se versiona. No forma parte de
@@ -34,6 +34,25 @@
  * Es exacto a nivel de condado, que es el nivel al que existen de verdad
  * las zonas horarias. No baja de ahí porque por debajo no hay nada que
  * bajar.
+ *
+ * ---------------------------------------------------------------------
+ * Estados, departamentos y países
+ *
+ * Se buscan igual que las ciudades, y con la misma trampa multiplicada:
+ * Florida está partida entre dos husos, Estados Unidos entre seis, España
+ * entre dos —la península y Canarias—, y Brasil, México y Australia
+ * también.
+ *
+ * Aquí no se elige por nadie. Un sitio partido sale **una vez por huso**:
+ * «Florida · hora oriental» y «Florida · hora central» son dos resultados
+ * distintos en el buscador. El nombre del huso no se guarda: lo pone
+ * `Intl` en el idioma de la página, y sale gratis.
+ *
+ * Qué cuenta como «partido»: se suma la población de los lugares poblados
+ * de cada huso, y entra todo huso con al menos el 2 % del sitio. El corte
+ * existe porque los datos tienen ruido —un pueblo mal etiquetado no puede
+ * partir un país en dos— y el 2 % está elegido para que Canarias (4,3 %
+ * de España) entre y el ruido no.
  */
 import { execFileSync } from 'node:child_process';
 import {
@@ -54,6 +73,40 @@ const salida = join(raiz, 'public', 'data');
 
 /** Población mínima para que una ciudad aparezca en el buscador. */
 const POBLACION_MINIMA = 50000;
+
+/**
+ * Cuándo un huso minoritario sale como opción propia de un sitio.
+ *
+ * El primer intento fue un porcentaje: el 2 % de la población. Los datos
+ * lo desmintieron. La Península Superior de Michigan es el 0,69 % del
+ * estado y va en hora central; el rincón de Alabama que vive en hora
+ * oriental es el 1,92 %; el condado de Malheur en Oregón, el 0,49 %.
+ * Ninguno es ruido: son sitios donde vive gente y donde la respuesta a
+ * «¿qué hora es?» es otra.
+ *
+ * Un porcentaje mide lo pequeño que es un sitio, no si existe. Así que se
+ * mide si existe: **dos lugares poblados y dos mil habitantes**. Un pueblo
+ * mal etiquetado es uno solo, y ahí se queda fuera.
+ */
+const LUGARES_MINIMOS = 2;
+const HABITANTES_MINIMOS = 2000;
+
+/**
+ * El nombre con el que el navegador anuncia un huso, sin decir si está en
+ * horario de verano: «Eastern Time», «Central Time».
+ *
+ * Se usa en inglés y solo como CLAVE para fundir husos que dicen lo
+ * mismo. Lo que se enseña lo calcula la página en su idioma.
+ */
+function nombreGenerico(zona) {
+  try {
+    return new Intl.DateTimeFormat('en', { timeZone: zona, timeZoneName: 'longGeneric' })
+      .formatToParts(new Date())
+      .find((p) => p.type === 'timeZoneName').value;
+  } catch {
+    return zona;
+  }
+}
 
 const FUENTES = [
   { archivo: 'cities500.zip', url: 'https://download.geonames.org/export/dump/cities500.zip' },
@@ -186,6 +239,11 @@ function seleccionar(lugares, regiones) {
     if (region) ids.add(region.id);
   }
 
+  // Y TODAS las divisiones, no solo las de las ciudades grandes: una
+  // provincia sin ninguna ciudad de 50.000 habitantes se puede buscar
+  // igual, y también quiere su nombre en los dos idiomas.
+  for (const region of regiones.values()) ids.add(region.id);
+
   return { elegidas, ids };
 }
 
@@ -248,7 +306,139 @@ function construirCiudades(elegidas, regiones, alternos) {
     .sort((a, b) => b[7] - a[7])
     .map((c) => c.slice(0, 7));
 
-  return { zonas, regiones: nombresRegion, ciudades };
+  return { zonas, regiones: nombresRegion, ciudades, idDeZona };
+}
+
+// ------------------------------------------------ divisiones y países
+
+/**
+ * Reparte los lugares poblados de un sitio entre sus husos.
+ *
+ * Devuelve los husos que se llevan al menos `UMBRAL_ZONA` de la
+ * población, y siempre al menos el mayor. Si sale más de uno, el sitio
+ * está partido y en el buscador aparecerá una vez por huso.
+ */
+function repartirPorZona(filas) {
+  const porZona = new Map();
+  let total = 0;
+
+  for (const f of filas) {
+    const zona = f[17];
+    if (!zona) continue;
+    const poblacion = Number(f[14]) || 0;
+    const dato = porZona.get(zona);
+    if (dato) {
+      dato.poblacion += poblacion;
+      dato.lugares++;
+    } else {
+      porZona.set(zona, { poblacion, lugares: 1 });
+    }
+    total += poblacion;
+  }
+
+  /*
+    Se funden las zonas que se llaman igual, y no es un detalle.
+
+    Alaska tiene cuatro zonas IANA y las cuatro se anuncian como «hora de
+    Alaska»; Indiana tiene dos que son «hora oriental»; Dakota del Norte,
+    dos que son «hora central». Sin fundirlas, el buscador ofrecía cuatro
+    resultados idénticos para Alaska y obligaba a elegir entre dos cosas
+    escritas exactamente igual — que es peor que no ofrecer nada.
+
+    Se agrupa por el nombre genérico en inglés, que es estable, y se queda
+    el identificador de la zona con más gente. Las diferencias entre esas
+    zonas son de historia del horario de verano, no de la hora que es hoy.
+  */
+  const porNombre = new Map();
+  for (const [zona, dato] of porZona) {
+    const nombre = nombreGenerico(zona);
+    const previo = porNombre.get(nombre);
+    if (!previo) porNombre.set(nombre, { zona, poblacion: dato.poblacion, lugares: dato.lugares });
+    else {
+      if (dato.poblacion > porZona.get(previo.zona).poblacion) previo.zona = zona;
+      previo.poblacion += dato.poblacion;
+      previo.lugares += dato.lugares;
+    }
+  }
+
+  const ordenadas = [...porNombre.values()].sort((a, b) => b.poblacion - a.poblacion);
+  if (ordenadas.length === 0) return null;
+
+  const elegidas = ordenadas
+    .filter(
+      (v, i) => i === 0 || (v.lugares >= LUGARES_MINIMOS && v.poblacion >= HABITANTES_MINIMOS)
+    )
+    .map((v) => [v.zona, v.poblacion]);
+
+  return { zonas: elegidas, total, partido: elegidas.length > 1 };
+}
+
+/** Agrupa filas por una clave. */
+function agrupar(filas, clave) {
+  const grupos = new Map();
+  for (const f of filas) {
+    const k = clave(f);
+    if (!k) continue;
+    const lista = grupos.get(k);
+    if (lista) lista.push(f);
+    else grupos.set(k, [f]);
+  }
+  return grupos;
+}
+
+/**
+ * Estados, departamentos, provincias y países, cada uno con su huso.
+ *
+ * Se cuentan con TODOS los lugares poblados y no solo con las ciudades
+ * grandes: el reparto por husos de un estado se decide mejor con sus
+ * cuatro mil pueblos que con sus tres ciudades.
+ *
+ * El nombre de un país no se guarda: lo pone `Intl.DisplayNames` en el
+ * idioma de la página. Doscientos nombres por dos idiomas que no hay que
+ * descargar, y además traducidos por el navegador y no por mí.
+ */
+function construirDivisiones(lugares, regiones, alternos, idDeZona) {
+  const divisiones = [];
+  const paises = [];
+
+  for (const [codigo, filas] of agrupar(lugares, (f) => (f[10] ? `${f[8]}.${f[10]}` : null))) {
+    const region = regiones.get(codigo);
+    if (!region) continue;
+    const reparto = repartirPorZona(filas);
+    if (!reparto) continue;
+
+    const pais = codigo.slice(0, 2);
+    for (const [zona, poblacion] of reparto.zonas) {
+      divisiones.push([
+        region.nombre,
+        region.ascii && region.ascii !== region.nombre ? region.ascii : '',
+        pais,
+        idDeZona(zona),
+        traducido(alternos, region.id, 'es', region.nombre),
+        traducido(alternos, region.id, 'en', region.nombre),
+        reparto.partido ? 1 : 0,
+        poblacion,
+      ]);
+    }
+  }
+
+  for (const [pais, filas] of agrupar(lugares, (f) => f[8] || null)) {
+    const reparto = repartirPorZona(filas);
+    if (!reparto) continue;
+    for (const [zona, poblacion] of reparto.zonas) {
+      paises.push([pais, idDeZona(zona), reparto.partido ? 1 : 0, poblacion]);
+    }
+  }
+
+  // Por población, como las ciudades: quien escribe «co» quiere Colombia
+  // antes que las Islas Cocos. Se ordena aquí y se tira la cifra.
+  divisiones.sort((a, b) => b[7] - a[7]);
+  paises.sort((a, b) => b[3] - a[3]);
+
+  return {
+    divisiones: divisiones.map((d) => d.slice(0, 7)),
+    paises: paises.map((p) => p.slice(0, 3)),
+  };
 }
 
 // -------------------------------------------------------------------- ZIP
@@ -364,7 +554,10 @@ const codigosPostales = leerTsv(join(cache, 'zip', 'US.txt'));
 // El nombre y el geonameid: el nombre para enseñarlo y el identificador
 // para poder buscar cómo se dice en el otro idioma.
 const regiones = new Map(
-  leerTsv(join(cache, 'admin1CodesASCII.txt')).map((f) => [f[0], { nombre: f[1], id: f[3] }])
+  leerTsv(join(cache, 'admin1CodesASCII.txt')).map((f) => [
+    f[0],
+    { nombre: f[1], ascii: f[2], id: f[3] },
+  ])
 );
 console.log(`  ${lugares.length.toLocaleString('es')} lugares poblados`);
 console.log(`  ${codigosPostales.length.toLocaleString('es')} códigos postales`);
@@ -382,15 +575,24 @@ const {
   zonas,
   regiones: nombresRegion,
   ciudades,
+  idDeZona,
 } = construirCiudades(elegidas, regiones, alternos);
-const ciudadesJson = JSON.stringify({
+
+// Las divisiones y los países se calculan DESPUÉS y con el mismo
+// `idDeZona`, así que comparten la tabla de husos con las ciudades en vez
+// de repetirla.
+const { divisiones, paises } = construirDivisiones(lugares, regiones, alternos, idDeZona);
+
+const lugaresJson = JSON.stringify({
   generado,
   fuente: atribucion,
   zonas,
   regiones: nombresRegion,
   ciudades,
+  divisiones,
+  paises,
 });
-writeFileSync(join(salida, 'ciudades.json'), ciudadesJson);
+writeFileSync(join(salida, 'lugares.json'), lugaresJson);
 
 const { prefijos, excepciones, resumen } = construirZips(lugares, codigosPostales);
 const zipsJson = JSON.stringify({ generado, fuente: atribucion, prefijos, excepciones });
@@ -407,7 +609,17 @@ console.log(
 console.log(
   `  ${ciudades.filter((c) => c[6]).length.toLocaleString('es')} con nombre propio en inglés`
 );
-console.log(`  ${(ciudadesJson.length / 1024).toFixed(0)} KB sin comprimir`);
+console.log(`  ${(lugaresJson.length / 1024).toFixed(0)} KB sin comprimir en total`);
+
+console.log('\nEstados, departamentos y países');
+console.log(`  ${divisiones.length.toLocaleString('es')} divisiones`);
+console.log(`  ${divisiones.filter((d) => d[6]).length.toLocaleString('es')} de ellas, de sitios partidos entre husos`);
+console.log(`  ${paises.length.toLocaleString('es')} entradas de país`);
+console.log(`  ${new Set(paises.map((p) => p[0])).size} países distintos`);
+for (const pais of ['US', 'BR', 'MX', 'AU', 'ES', 'RU', 'CA', 'ID']) {
+  const suyas = paises.filter((p) => p[0] === pais);
+  if (suyas.length > 1) console.log(`    ${pais}: ${suyas.length} husos`);
+}
 
 console.log('\nCódigos postales');
 console.log(`  ${resumen.codigos.toLocaleString('es')} resueltos`);

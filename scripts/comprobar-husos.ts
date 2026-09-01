@@ -15,18 +15,18 @@ import {
   convertir,
   componerFrase,
   componerLista,
-  buscarCiudades,
+  buscarLugares,
   nombreDePais,
   zonaDeZip,
   normalizar,
   type Destino,
-  type DatosCiudades,
+  type DatosLugares,
   type DatosZips,
 } from '../src/lib/timezones.ts';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
-const ciudades: DatosCiudades = JSON.parse(
-  readFileSync(join(raiz, 'public/data/ciudades.json'), 'utf8')
+const ciudades: DatosLugares = JSON.parse(
+  readFileSync(join(raiz, 'public/data/lugares.json'), 'utf8')
 );
 const zips: DatosZips = JSON.parse(readFileSync(join(raiz, 'public/data/zips.json'), 'utf8'));
 
@@ -334,27 +334,27 @@ console.log('\n7. El buscador de ciudades');
   afirmar(normalizar('Bogotá') === 'bogota', 'las tildes se quitan para buscar');
   afirmar(normalizar('  MEDELLÍN ') === 'medellin', 'y los espacios y las mayúsculas');
 
-  const porTilde = buscarCiudades(ciudades, 'bogota', 'es');
+  const porTilde = buscarLugares(ciudades, 'bogota', 'es');
   afirmar(
     porTilde.some((c) => c.zona === 'America/Bogota'),
     `«bogota» encuentra Bogotá (${porTilde[0]?.etiqueta})`
   );
 
-  const conTilde = buscarCiudades(ciudades, 'bogotá', 'es');
+  const conTilde = buscarLugares(ciudades, 'bogotá', 'es');
   afirmar(conTilde.length > 0, '«bogotá» con tilde también');
 
-  const san = buscarCiudades(ciudades, 'san franc', 'es');
+  const san = buscarLugares(ciudades, 'san franc', 'es');
   afirmar(san[0]?.zona === 'America/Los_Angeles', `«san franc» -> ${san[0]?.etiqueta}`);
 
-  const medellin = buscarCiudades(ciudades, 'medellin', 'es');
+  const medellin = buscarLugares(ciudades, 'medellin', 'es');
   afirmar(medellin[0]?.zona === 'America/Bogota', `«medellin» -> ${medellin[0]?.etiqueta}`);
 
-  afirmar(buscarCiudades(ciudades, 'x', 'es').length === 0, 'una sola letra no busca nada');
+  afirmar(buscarLugares(ciudades, 'x', 'es').length === 0, 'una sola letra no busca nada');
   afirmar(
-    buscarCiudades(ciudades, 'qqqqzzz', 'es').length === 0,
+    buscarLugares(ciudades, 'qqqqzzz', 'es').length === 0,
     'lo que no existe no devuelve nada'
   );
-  afirmar(buscarCiudades(ciudades, 'a', 'es', 8).length === 0, 'ni una letra suelta');
+  afirmar(buscarLugares(ciudades, 'a', 'es', 8).length === 0, 'ni una letra suelta');
 }
 
 console.log('\n8. Las ciudades, en los dos idiomas');
@@ -385,7 +385,7 @@ console.log('\n8. Las ciudades, en los dos idiomas');
   ];
 
   for (const [consulta, zona, mensaje] of casos) {
-    const encontradas = buscarCiudades(ciudades, consulta, 'es');
+    const encontradas = buscarLugares(ciudades, consulta, 'es');
     afirmar(
       encontradas.some((c) => c.zona === zona),
       `${mensaje} (${encontradas[0]?.ciudad})`
@@ -393,17 +393,17 @@ console.log('\n8. Las ciudades, en los dos idiomas');
   }
 
   // Y la ficha tiene que escribirla en el idioma de la página.
-  const enEspanol = buscarCiudades(ciudades, 'london', 'es').find(
+  const enEspanol = buscarLugares(ciudades, 'london', 'es').find(
     (c) => c.zona === 'Europe/London'
   );
   afirmar(enEspanol?.ciudad === 'Londres', `en español se escribe «${enEspanol?.ciudad}»`);
 
-  const enIngles = buscarCiudades(ciudades, 'london', 'en').find((c) => c.zona === 'Europe/London');
+  const enIngles = buscarLugares(ciudades, 'london', 'en').find((c) => c.zona === 'Europe/London');
   afirmar(enIngles?.ciudad === 'London', `y en inglés «${enIngles?.ciudad}»`);
 
   // La ciudad y la región van sueltas: es lo que permite pintarlas en dos
   // renglones en vez de en una línea que se desborda.
-  const miami = buscarCiudades(ciudades, 'miami', 'es')[0];
+  const miami = buscarLugares(ciudades, 'miami', 'es')[0];
   afirmar(
     Boolean(miami?.ciudad && miami?.region && miami.etiqueta.includes(miami.ciudad)),
     `la ciudad y la región van sueltas (${miami?.ciudad} · ${miami?.region})`
@@ -429,8 +429,107 @@ console.log('\n9. Los datos llevan su atribución');
 
 console.log('\n8. Los datos llevan su atribución');
 {
-  afirmar(/GeoNames/.test(ciudades.fuente), `ciudades.json: ${ciudades.fuente}`);
+  afirmar(/GeoNames/.test(ciudades.fuente), `lugares.json: ${ciudades.fuente}`);
   afirmar(/CC BY 4\.0/.test(zips.fuente), 'zips.json declara la licencia');
+}
+
+// =====================================================================
+/*
+  Estados, departamentos y países.
+
+  Lo que hay que demostrar no es que se encuentren —eso se ve mirando—
+  sino lo otro: que un sitio partido entre husos **sale una vez por huso y
+  con su nombre puesto**. Es la decisión de fondo de esta parte: nunca
+  elegir por nadie. Si algún día el corte que decide qué husos entran se
+  vuelve más estricto y Florida pasa a salir una sola vez, esto lo dice.
+*/
+console.log('\n9. Estados, departamentos y países');
+{
+  const soloDivisiones = (q: string) =>
+    buscarLugares(ciudades, q, 'es', 12).filter((c) => c.tipo === 'division');
+  const soloPaises = (q: string) =>
+    buscarLugares(ciudades, q, 'es', 12).filter((c) => c.tipo === 'pais');
+
+  // ---------- que estén ----------
+  const antioquia = soloDivisiones('antioquia').find((c) => c.pais === 'CO');
+  afirmar(antioquia?.zona === 'America/Bogota', `Antioquia está y es de Bogotá (${antioquia?.zona})`);
+
+  const colombia = soloPaises('colombia');
+  afirmar(colombia.length === 1, 'Colombia sale una vez: no está partida');
+  afirmar(colombia[0]?.zona === 'America/Bogota', 'y con su huso');
+  afirmar(colombia[0]?.matiz === '', 'y sin matiz, porque no hace falta');
+
+  afirmar(soloPaises('japon').length === 1, 'Japón se encuentra sin tilde');
+
+  // El mismo sitio escrito en los dos idiomas encuentra lo mismo.
+  const enEspanol = soloDivisiones('carolina del norte').find((c) => c.pais === 'US');
+  const enIngles = buscarLugares(ciudades, 'north carolina', 'en', 12).find(
+    (c) => c.tipo === 'division' && c.pais === 'US'
+  );
+  afirmar(
+    !!enEspanol && !!enIngles && enEspanol.zona === enIngles.zona,
+    `«Carolina del Norte» y «North Carolina» son el mismo sitio (${enEspanol?.zona})`
+  );
+
+  // ---------- los partidos ----------
+  const floridas = soloDivisiones('florida').filter((c) => c.pais === 'US');
+  afirmar(floridas.length === 2, `Florida sale una vez por huso (${floridas.length})`);
+  afirmar(
+    new Set(floridas.map((c) => c.zona)).size === floridas.length,
+    'y son husos distintos, no el mismo repetido'
+  );
+  afirmar(
+    floridas.every((c) => c.matiz.length > 0),
+    `y cada una dice de cuál se trata (${floridas.map((c) => c.matiz).join(' · ')})`
+  );
+  afirmar(
+    new Set(floridas.map((c) => c.matiz)).size === floridas.length,
+    'y los dos nombres son distintos: dos opciones que se leen igual no son dos opciones'
+  );
+  afirmar(
+    floridas.every((c) => c.etiqueta.includes(c.matiz)),
+    'el nombre completo lleva el huso dentro, que es lo que viaja al enlace'
+  );
+
+  const eeuu = soloPaises('estados unidos');
+  afirmar(eeuu.length > 1, `Estados Unidos sale por husos (${eeuu.length})`);
+  afirmar(
+    new Set(eeuu.map((c) => c.matiz)).size === eeuu.length,
+    'y ninguno de sus husos se llama igual que otro'
+  );
+
+  // ---------- las ciudades siguen mandando ----------
+  const madrid = buscarLugares(ciudades, 'madrid', 'es', 12)[0];
+  afirmar(
+    madrid?.tipo === 'ciudad',
+    `«Madrid» sigue siendo la ciudad y no la comunidad (${madrid?.tipo})`
+  );
+
+  // ---------- los datos, enteros ----------
+  const zonasValidas = (i: number) => i >= 0 && i < ciudades.zonas.length;
+  afirmar(
+    ciudades.divisiones.every((d) => zonasValidas(d[3])),
+    `las ${ciudades.divisiones.length.toLocaleString('es')} divisiones apuntan a un huso que existe`
+  );
+  afirmar(
+    ciudades.paises.every((p) => zonasValidas(p[1])),
+    `y las ${ciudades.paises.length} entradas de país, también`
+  );
+  afirmar(
+    ciudades.divisiones.every((d) => d[0].length > 0 && d[2].length === 2),
+    'todas tienen nombre y código de país'
+  );
+
+  // Un sitio marcado como partido tiene que tener compañía: si no, el
+  // matiz aparecería en un resultado único y sobraría.
+  const cuentaDivision = new Map<string, number>();
+  for (const [nombre, , pais, , , , partido] of ciudades.divisiones) {
+    if (partido) cuentaDivision.set(`${pais}|${nombre}`, (cuentaDivision.get(`${pais}|${nombre}`) ?? 0) + 1);
+  }
+  afirmar(
+    [...cuentaDivision.values()].every((n) => n > 1),
+    `las ${cuentaDivision.size} divisiones marcadas como partidas salen más de una vez`
+  );
 }
 
 console.log(fallos === 0 ? '\nTODO CORRECTO\n' : `\n${fallos} FALLOS\n`);

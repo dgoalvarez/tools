@@ -87,6 +87,15 @@ const VISTAS = [
     clics: ['[data-hoja-abrir]'],
   },
   { nombre: 'husos', ruta: 'es/horarios', ancho: 1440, alto: 900 },
+  // Con una hora puesta: el estado al que se llega tocando cualquier
+  // hora, y en el que cada fila enseña además la de verdad en pequeño.
+  {
+    nombre: 'husos-fija',
+    ruta: 'es/horarios',
+    ancho: 1440,
+    alto: 900,
+    query: 'd=2026-09-04&h=17:00&z=America/New_York,America/Los_Angeles,Europe/Madrid',
+  },
   // Con ciudades de verdad: es donde se ve si la lista aguanta. Van por
   // la dirección, que es como se comparte un cálculo en este sitio.
   {
@@ -142,6 +151,8 @@ const VISTAS = [
   { nombre: 'reloj', ruta: 'es/reloj', ancho: 1440, alto: 1100 },
   { nombre: 'reloj-claro', ruta: 'es/reloj', ancho: 1440, alto: 1100, tema: 'light' },
   { nombre: 'reloj-esfera', ruta: 'es/reloj', ancho: 1440, alto: 1100, query: 'c=analogica' },
+  // El reloj mundial con sitios puestos: no se llega de otra forma.
+  { nombre: 'reloj-mundial', ruta: 'es/reloj', ancho: 1440, alto: 1200, query: 'w=America%2FNew_York~Carolina%20del%20Norte%20(hora%20oriental)%3BAmerica%2FLos_Angeles~Los%20%C3%81ngeles%3BAsia%2FTokyo~Tokio%3BEurope%2FMadrid~Madrid' },
   { nombre: 'reloj-estrecho', ruta: 'es/reloj', ancho: 485, alto: 900 },
   // Doce vueltas: es donde la lista deja de crecer y pasa a desplazarse
   // dentro de su caja.

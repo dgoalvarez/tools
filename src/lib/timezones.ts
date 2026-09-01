@@ -107,6 +107,15 @@ export interface Conversion {
   saltoDeDia: -1 | 0 | 1;
   /** «EDT», «PST», «GMT-5»… tal como lo nombra el propio sitio. */
   abreviatura: string;
+  /**
+   * Los minutos desde medianoche que marca el reloj allí.
+   *
+   * La hora ya viene escrita en `hora`, pero escrita en el idioma de la
+   * página: «3:00 p. m.». Para poder EDITARLA hace falta el número, y
+   * volver a sacarlo de esa cadena sería analizar un formato que cambia
+   * con el idioma.
+   */
+  minutos: number;
 }
 
 export interface Momento {
@@ -141,6 +150,73 @@ export interface Resultado {
  */
 export function localeDe(lang: string): string {
   return lang === 'es' ? 'es-CO' : 'en-US';
+}
+
+/**
+ * El reloj de pared de una zona en un instante: la fecha y la hora tal y
+ * como las lee alguien que esté allí.
+ *
+ * Sale en el formato de los campos del formulario —2026-09-04 y 17:00— y
+ * no en el del idioma: esto no se enseña, se mete en un `<input>`.
+ *
+ * Se usa `sv-SE` por una razón práctica: es el único locale común que
+ * escribe la fecha en ISO y la hora en 24 horas sin adornos, así que el
+ * resultado se parte por el espacio y ya está. La alternativa era pedir
+ * las siete partes por separado y volver a montarlas.
+ */
+export function camposEnZona(instante: Date, zona: string): { fecha: string; hora: string } {
+  const texto = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: zona,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(instante);
+
+  const [fecha, hora] = texto.split(' ');
+  return { fecha: fecha ?? '', hora: (hora ?? '').slice(0, 5) };
+}
+
+/**
+ * El desfase de una zona respecto a UTC, en minutos.
+ *
+ * Lo hay ya en este archivo, pero con `Temporal`, y `Temporal` llega por
+ * un `import()` que hay que esperar. Esto es síncrono y sirve para lo que
+ * solo necesita pintar una diferencia: el reloj mundial.
+ *
+ * Sale de `longOffset`, que da «GMT-05:00» y a veces «GMT» a secas. Los
+ * husos de media hora —India, Nepal, Chatham— salen bien porque los
+ * minutos vienen aparte.
+ */
+export function desfaseDeZona(instante: Date, zona: string): number {
+  try {
+    const texto = new Intl.DateTimeFormat('en-US', {
+      timeZone: zona,
+      timeZoneName: 'longOffset',
+    })
+      .formatToParts(instante)
+      .find((p) => p.type === 'timeZoneName')!.value;
+
+    const partes = /GMT([+-])(\d{2}):(\d{2})/.exec(texto);
+    if (!partes) return 0;
+    const signo = partes[1] === '-' ? -1 : 1;
+    return signo * (Number(partes[2]) * 60 + Number(partes[3]));
+  } catch {
+    return 0;
+  }
+}
+
+/** El día del calendario en una zona, para saber si allí es otro día. */
+export function diaDeZona(instante: Date, zona: string): string {
+  return camposEnZona(instante, zona).fecha;
+}
+
+/** Los minutos desde medianoche que marca el reloj de una zona. */
+export function minutosEnZona(instante: Date, zona: string): number {
+  const [h, m] = camposEnZona(instante, zona).hora.split(':').map(Number);
+  return (h ?? 0) * 60 + (m ?? 0);
 }
 
 function formatear(instante: Date, zona: string, lang: string) {
@@ -251,7 +327,10 @@ export function convertir(
   const desfaseOrigen = desfaseMinutos(Temporal, instante, zonaOrigen);
   const diaOrigen = diaEnZona(instante, zonaOrigen);
 
-  const enOrigen = formatear(instante, zonaOrigen, lang);
+  const enOrigen = {
+    ...formatear(instante, zonaOrigen, lang),
+    minutos: minutosEnZona(instante, zonaOrigen),
+  };
   const origen: Conversion = {
     destino: {
       id: 'origen',
@@ -275,6 +354,7 @@ export function convertir(
     return {
       destino,
       ...partes,
+      minutos: minutosEnZona(instante, destino.zona),
       diferencia: (desfase - desfaseOrigen) / 60,
       saltoDeDia: dia === diaOrigen ? 0 : dia < diaOrigen ? -1 : 1,
     };
@@ -361,7 +441,7 @@ export function componerLista(destinos: Conversion[], origen: Conversion, lang: 
 
 // ------------------------------------------------------------------ datos
 
-export interface DatosCiudades {
+export interface DatosLugares {
   generado: string;
   fuente: string;
   zonas: string[];
@@ -376,6 +456,24 @@ export interface DatosCiudades {
    * alguien descarga para nada.
    */
   ciudades: [string, string, string, number, number, string, string][];
+  /**
+   * Estados, departamentos y provincias.
+   *
+   * [nombre, sinTildes, país, índiceZona, enEspañol, enInglés, partido]
+   *
+   * Un sitio partido entre husos aparece una vez por huso, y `partido`
+   * vale 1 en todas sus filas: es lo que le dice a la interfaz que tiene
+   * que escribir de cuál se trata. Florida sale dos veces, Nunavut tres.
+   */
+  divisiones: [string, string, string, number, string, string, number][];
+  /**
+   * Países. [códigoISO, índiceZona, partido]
+   *
+   * Sin nombre: lo pone `Intl.DisplayNames` en el idioma de la página.
+   * Doscientos cuarenta nombres por dos idiomas que nadie tiene que
+   * descargar, y traducidos por el navegador y no por este proyecto.
+   */
+  paises: [string, number, number][];
 }
 
 export interface DatosZips {
@@ -394,6 +492,26 @@ export function normalizar(texto: string): string {
     .trim();
 }
 
+/**
+ * Cómo se llama un huso, sin decir si está en horario de verano.
+ *
+ * «hora oriental», «hora del Pacífico», «Eastern Time». Es lo que
+ * distingue las dos Floridas, y sale del navegador en el idioma de la
+ * página: no se guarda ni un byte de esto.
+ */
+export function nombreGenericoDeZona(zona: string, lang: string): string {
+  try {
+    const parte = new Intl.DateTimeFormat(lang, { timeZone: zona, timeZoneName: 'longGeneric' })
+      .formatToParts(new Date())
+      .find((p) => p.type === 'timeZoneName');
+    return parte?.value ?? '';
+  } catch {
+    return '';
+  }
+}
+
+export type TipoLugar = 'ciudad' | 'division' | 'pais';
+
 export interface Coincidencia {
   /** El nombre en el idioma de la página: «Londres» o «London». */
   ciudad: string;
@@ -402,6 +520,13 @@ export interface Coincidencia {
   /** El código ISO de dos letras. El nombre lo pone Intl.DisplayNames. */
   pais: string;
   zona: string;
+  /** Ciudad, estado o país. Cambia el icono y el orden, no el cálculo. */
+  tipo: TipoLugar;
+  /**
+   * De qué huso del sitio se trata, cuando el sitio está partido:
+   * «hora central». Vacío en todo lo demás, que es casi todo.
+   */
+  matiz: string;
   /**
    * «Londres, Inglaterra». Es lo que va en la frase que se copia, donde
    * una sola línea tiene que decirlo todo. En pantalla no se usa: ahí van
@@ -422,56 +547,131 @@ export function nombreDePais(codigo: string, lang: string): string {
 }
 
 /**
- * Busca ciudades por prefijo.
+ * Dónde empieza lo buscado dentro de un nombre, mirando todas sus formas.
  *
- * Las que empiezan por lo escrito van antes que las que solo lo contienen,
- * y dentro de cada grupo manda la población, porque el archivo ya viene
- * ordenado por ella. Quien escribe «san» quiere San Francisco, no San
- * Pedro de Macorís.
+ * Se busca contra los cuatro nombres a la vez y no contra el del idioma de
+ * la página: quien escribe «Londres» en la página en inglés también tiene
+ * que encontrarla. La posición que cuenta es la mejor de las cuatro, para
+ * que «lond» ponga Londres antes que Nueva Londres.
  */
-export function buscarCiudades(
-  datos: DatosCiudades,
+function dondeEmpieza(busqueda: string, candidatos: (string | undefined)[]): number {
+  let posicion = -1;
+  for (const candidato of candidatos) {
+    if (!candidato) continue;
+    const donde = normalizar(candidato).indexOf(busqueda);
+    if (donde !== -1 && (posicion === -1 || donde < posicion)) posicion = donde;
+  }
+  return posicion;
+}
+
+/** Los nombres de país en un idioma, calculados una vez. */
+const nombresDePais = new Map<string, Map<string, string>>();
+
+function tablaDePaises(codigos: string[], lang: string): Map<string, string> {
+  let tabla = nombresDePais.get(lang);
+  if (tabla) return tabla;
+  tabla = new Map();
+  for (const codigo of codigos) tabla.set(codigo, nombreDePais(codigo, lang));
+  nombresDePais.set(lang, tabla);
+  return tabla;
+}
+
+/**
+ * Busca sitios: ciudades, estados y países.
+ *
+ * Los que empiezan por lo escrito van antes que los que solo lo contienen.
+ * Dentro de cada grupo mandan dos cosas, en este orden: **primero las
+ * ciudades**, y luego la población, porque los tres archivos ya vienen
+ * ordenados por ella.
+ *
+ * Que las ciudades vayan primero es una decisión, no un descuido. «Madrid»
+ * es casi siempre la ciudad y no la Comunidad de Madrid; «Guatemala» es
+ * casi siempre la ciudad. Cuando lo que se quiere es el país o el estado,
+ * está justo debajo — y cuando la ciudad no existe con ese nombre, como
+ * «Colombia» o «Florida», el primero de la lista ya es el que se buscaba.
+ */
+export function buscarLugares(
+  datos: DatosLugares,
   consulta: string,
   lang: string,
-  limite = 8
+  limite = 10
 ): Coincidencia[] {
   const busqueda = normalizar(consulta);
   if (busqueda.length < 2) return [];
 
+  const enEspanol = lang === 'es';
   const empiezan: Coincidencia[] = [];
   const contienen: Coincidencia[] = [];
 
+  const guardar = (posicion: number, c: Coincidencia) => {
+    if (posicion === 0) empiezan.push(c);
+    else contienen.push(c);
+  };
+
+  // ---------- ciudades ----------
   for (const [nombre, ascii, pais, region, zona, es, en] of datos.ciudades) {
-    // Se busca contra los cuatro nombres a la vez, no contra el del
-    // idioma de la página: quien escribe «Londres» en la página en inglés
-    // también tiene que encontrarla. La posición que cuenta es la mejor
-    // de las cuatro, para que «lond» ponga Londres antes que Nueva
-    // Londres.
-    let posicion = -1;
-    for (const candidato of [nombre, ascii, es, en]) {
-      if (!candidato) continue;
-      const donde = normalizar(candidato).indexOf(busqueda);
-      if (donde !== -1 && (posicion === -1 || donde < posicion)) posicion = donde;
-    }
+    const posicion = dondeEmpieza(busqueda, [nombre, ascii, es, en]);
     if (posicion === -1) continue;
 
-    const enEspanol = lang === 'es';
     const ciudad = (enEspanol ? es : en) || nombre;
     const fila = datos.regiones[region];
     const nombreRegion = fila ? (enEspanol ? fila[1] : fila[2]) || fila[0] : '';
 
-    const coincidencia: Coincidencia = {
+    guardar(posicion, {
       ciudad,
       region: nombreRegion,
       pais,
       zona: datos.zonas[zona]!,
+      tipo: 'ciudad',
+      matiz: '',
       etiqueta: nombreRegion ? `${ciudad}, ${nombreRegion}` : ciudad,
-    };
-
-    if (posicion === 0) empiezan.push(coincidencia);
-    else contienen.push(coincidencia);
+    });
 
     if (empiezan.length >= limite) break;
+  }
+
+  // ---------- estados y departamentos ----------
+  for (const [nombre, ascii, pais, zona, es, en, partido] of datos.divisiones) {
+    const posicion = dondeEmpieza(busqueda, [nombre, ascii, es, en]);
+    if (posicion === -1) continue;
+
+    const division = (enEspanol ? es : en) || nombre;
+    const zonaIana = datos.zonas[zona]!;
+    const matiz = partido ? nombreGenericoDeZona(zonaIana, lang) : '';
+
+    guardar(posicion, {
+      ciudad: division,
+      region: '',
+      pais,
+      zona: zonaIana,
+      tipo: 'division',
+      matiz,
+      etiqueta: matiz ? `${division} (${matiz})` : division,
+    });
+  }
+
+  // ---------- países ----------
+  const tabla = tablaDePaises(
+    datos.paises.map((p) => p[0]),
+    lang
+  );
+  for (const [codigo, zona, partido] of datos.paises) {
+    const nombre = tabla.get(codigo) ?? codigo;
+    const posicion = dondeEmpieza(busqueda, [nombre, codigo]);
+    if (posicion === -1) continue;
+
+    const zonaIana = datos.zonas[zona]!;
+    const matiz = partido ? nombreGenericoDeZona(zonaIana, lang) : '';
+
+    guardar(posicion, {
+      ciudad: nombre,
+      region: '',
+      pais: codigo,
+      zona: zonaIana,
+      tipo: 'pais',
+      matiz,
+      etiqueta: matiz ? `${nombre} (${matiz})` : nombre,
+    });
   }
 
   return [...empiezan, ...contienen].slice(0, limite);

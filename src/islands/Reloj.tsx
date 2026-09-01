@@ -32,6 +32,7 @@ import {
   PauseIcon,
   PlayIcon,
   StopIcon,
+  XIcon,
 } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -78,6 +79,26 @@ import {
   type Temporizador,
 } from '@/lib/reloj';
 import { escribirParams, leerParams } from '@/lib/url-state';
+import BuscadorLugar from './BuscadorLugar';
+import {
+  desfaseDeZona,
+  diaDeZona,
+  nombreDeZona,
+  zonaDelNavegador,
+  type Coincidencia,
+  type DatosLugares,
+  type DatosZips,
+} from '@/lib/timezones';
+
+/** Un sitio del reloj mundial. */
+interface Sitio {
+  id: string;
+  nombre: string;
+  zona: string;
+}
+
+/** Hasta cuántos sitios caben. Con más, la tarjeta deja de leerse. */
+const TOPE_SITIOS = 12;
 
 /**
  * Atajos del temporizador, en minutos. Los ratos que se ponen de verdad.
@@ -121,6 +142,45 @@ export default function Reloj({ lang }: Props) {
   const [puesta, setPuesta] = useState<Puesta>(PUESTA_INICIAL);
   const [temporizador, setTemporizador] = useState<Temporizador>(TEMPORIZADOR_INICIAL);
 
+  /**
+   * El reloj mundial.
+   *
+   * Vive aquí y no en husos horarios porque contesta otra pregunta. Husos
+   * traduce una hora entre sitios; esto solo dice qué hora es allí, ahora,
+   * al segundo y en grande. Es una pantalla para mirar, no una
+   * calculadora — por eso está debajo del reloj y no en otra herramienta.
+   */
+  const [sitios, setSitios] = useState<Sitio[]>([]);
+
+  const lugares = useRef<DatosLugares | null>(null);
+  const zips = useRef<DatosZips | null>(null);
+
+  const pedirLugares = async () => {
+    if (!lugares.current) {
+      lugares.current = (await (await fetch('/data/lugares.json')).json()) as DatosLugares;
+    }
+    return lugares.current;
+  };
+
+  const pedirZips = async () => {
+    if (!zips.current) {
+      zips.current = (await (await fetch('/data/zips.json')).json()) as DatosZips;
+    }
+    return zips.current;
+  };
+
+  function anadirSitio(c: Coincidencia) {
+    setSitios((previos) =>
+      previos.length >= TOPE_SITIOS ||
+      previos.some((s) => s.zona === c.zona && s.nombre === c.etiqueta)
+        ? previos
+        : [...previos, { id: `${c.zona}|${c.etiqueta}`, nombre: c.etiqueta, zona: c.zona }]
+    );
+  }
+
+  /** La zona de quien mira, para la diferencia del reloj mundial. */
+  const zonaAqui = zonaDelNavegador();
+
   const [conSonido, setConSonido] = useState(true);
   const [permiso, setPermiso] = useState<Permiso>('default');
 
@@ -157,6 +217,34 @@ export default function Reloj({ lang }: Props) {
       });
     }
 
+    /*
+      Los sitios viajan como `zona~nombre`, separados por punto y coma, lo
+      mismo que en husos horarios y por lo mismo: sin el nombre, «Florida
+      (hora central)» vuelve como «Chicago», que es otro sitio.
+    */
+    const w = p.get('w');
+    if (w) {
+      setSitios(
+        w
+          .split(';')
+          .slice(0, TOPE_SITIOS)
+          .map((trozo) => {
+            const corte = trozo.indexOf('~');
+            const zona = corte === -1 ? trozo : trozo.slice(0, corte);
+            const nombre = corte === -1 ? nombreDeZona(zona) : trozo.slice(corte + 1);
+            return { id: `${zona}|${nombre}`, nombre, zona };
+          })
+          .filter((s) => {
+            try {
+              new Intl.DateTimeFormat('en', { timeZone: s.zona }).format(new Date());
+              return true;
+            } catch {
+              return false;
+            }
+          })
+      );
+    }
+
     setPermiso(permisoActual());
     setListo(true);
   }, []);
@@ -173,8 +261,13 @@ export default function Reloj({ lang }: Props) {
         puestaMs(puesta) === puestaMs(PUESTA_INICIAL)
           ? null
           : `${puesta.horas}:${puesta.minutos}:${puesta.segundos}`,
+      w: sitios.length
+        ? sitios
+            .map((s) => (s.nombre === nombreDeZona(s.zona) ? s.zona : `${s.zona}~${s.nombre}`))
+            .join(';')
+        : null,
     });
-  }, [listo, cara, alarma.hora, puesta]);
+  }, [listo, cara, alarma.hora, puesta, sitios]);
 
   // ---------- el latido ----------
 
@@ -199,7 +292,14 @@ export default function Reloj({ lang }: Props) {
      *     minuto basta y la pestaña deja de despertar al procesador.
      */
     const cada =
-      crono.estado === 'andando' ? 50 : cara.segundos || corriendo || alarmaSuena ? 250 : 30_000;
+      crono.estado === 'andando'
+        ? 50
+        : // El reloj mundial enseña segundos, así que mientras haya un
+          // sitio puesto la pestaña tiene que latir aunque no haya nada
+          // contando.
+          cara.segundos || corriendo || alarmaSuena || sitios.length > 0
+          ? 250
+          : 30_000;
 
     const id = setInterval(() => {
       setAhora(Date.now());
@@ -207,7 +307,10 @@ export default function Reloj({ lang }: Props) {
     }, cada);
 
     return () => clearInterval(id);
-  }, [crono.estado, cara.segundos, corriendo, alarmaSuena]);
+  }, [crono.estado, cara.segundos, corriendo, alarmaSuena, sitios.length]);
+
+  /** El día que es aquí, para saber si allí es otro. */
+  const diaAqui = diaDeZona(new Date(ahora), zonaAqui);
 
   // ---------- la alarma ----------
 
@@ -507,6 +610,98 @@ export default function Reloj({ lang }: Props) {
         cosa es el caso normal de una herramienta así, y era justo el que
         las pestañas hacían incómodo.
       */}
+      {/* ---------------- Reloj mundial ----------------
+
+        Va pegado al reloj grande y a todo lo ancho, no dentro de la fila
+        de tres. Dos razones:
+
+          · Es lo mismo que el reloj de arriba —una hora que se lee— y no
+            algo que se pone en marcha, que es lo que son las otras tres.
+          · En una columna de 19 rem, «Carolina del Norte (hora oriental)»
+            se cortaba a la mitad. Un nombre truncado en un reloj mundial
+            se carga justamente lo que distingue una fila de otra.
+      */}
+      <section className="tarjeta-modo tarjeta-mundial" data-tour="mundial">
+        <p className="titulo">{tr('mundial')}</p>
+
+        <div className="buscador-mundial">
+          <BuscadorLugar
+            id="mundial"
+            lang={lang}
+            textos={{
+              etiqueta: tr('mundialBuscar'),
+              ayuda: '',
+              cargando: tr('cargandoSitios'),
+              sinResultados: tr('sinSitios'),
+              zipDesconocido: tr('zipSinSitio'),
+            }}
+            pedirLugares={pedirLugares}
+            pedirZips={pedirZips}
+            onElegir={anadirSitio}
+          />
+        </div>
+
+        {sitios.length === 0 ? (
+          <p className="pista-mundial">{tr('mundialVacio')}</p>
+        ) : (
+          <ul className="lista-mundial">
+            {sitios.map((s) => {
+              const cuando = new Date(ahora);
+              const diferencia =
+                (desfaseDeZona(cuando, s.zona) - desfaseDeZona(cuando, zonaAqui)) / 60;
+              const diaAlla = diaDeZona(cuando, s.zona);
+              const salto = diaAlla === diaAqui ? 0 : diaAlla > diaAqui ? 1 : -1;
+
+              return (
+                <li key={s.id} className="fila-mundial">
+                  <span className="sitio truncate" title={s.nombre}>
+                    {s.nombre}
+                  </span>
+
+                  <span className="hora-mundial">
+                    {new Intl.DateTimeFormat(locale, {
+                      timeZone: s.zona,
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      hour12: cara.formato === 'auto' ? undefined : cara.formato === '12',
+                    }).format(cuando)}
+                  </span>
+
+                  <span className="dif-mundial">
+                    {diferencia === 0
+                      ? tr('mundialIgual')
+                      : `${diferencia > 0 ? '+' : '−'}${Math.abs(diferencia).toLocaleString(
+                          locale,
+                          { maximumFractionDigits: 1 }
+                        )} h`}
+                    {salto !== 0 && (
+                      <>
+                        {' · '}
+                        <span className="otro-dia">
+                          {salto > 0 ? tr('mundialManana') : tr('mundialAyer')}
+                        </span>
+                      </>
+                    )}
+                  </span>
+
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => setSitios((p) => p.filter((x) => x.id !== s.id))}
+                    aria-label={`${tr('quitarSitio')} ${s.nombre}`}
+                    title={tr('quitarSitio')}
+                    className="quitar"
+                  >
+                    <XIcon aria-hidden="true" />
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
       <div className="modos-reloj">
         {/* ---------------- Alarma ---------------- */}
         <section className="tarjeta-modo" data-tour="alarma">

@@ -47,8 +47,8 @@ export const TOOLS: Record<ToolKey, Tool> = {
       en: 'What time it is somewhere else when it is three o’clock here.',
     },
     description: {
-      es: 'Pon una hora y mira en qué hora se convierte en los sitios que te interesen. Busca por ciudad —en español o en inglés— o por código ZIP, que es lo que distingue los siete estados de Estados Unidos partidos entre dos husos. Avisa en rojo cuando allí ya es otro día, y te da la frase escrita en su hora, lista para pegar.',
-      en: 'Set a time and see what time it becomes in the places you care about. Search by city — in English or Spanish — or by ZIP code, which is what tells apart the seven US states split across two zones. It warns in red when it is already another day there, and hands you the sentence written in their time, ready to paste.',
+      es: 'Abre en vivo: pones los sitios que te interesen y ves qué hora es allí ahora mismo. Tocas una hora —la tuya o la de cualquier sitio— y se queda quieta, traducida a todas las demás, sin perder de vista la de verdad. Busca por ciudad, estado o departamento, país o código ZIP, y los sitios partidos entre dos husos salen uno por huso en vez de elegir por ti. Avisa en rojo cuando allí ya es otro día.',
+      en: 'It opens live: add the places you care about and see what time it is there right now. Touch a time — yours or any other — and it holds still, translated into all the rest, without losing sight of the real one. Search by city, state or province, country or ZIP code, and places split between two zones come up once per zone instead of choosing for you. It warns in red when it is already another day there.',
     },
     listo: true,
     // Sale bajo Productividad, que es donde se busca; la atención al
@@ -66,12 +66,12 @@ export const TOOLS: Record<ToolKey, Tool> = {
     // tres cosas que se necesitan CON la hora delante y que en un
     // ordenador están cada una en un sitio distinto.
     summary: {
-      es: 'La hora, una alarma, un cronómetro y un temporizador, en la misma pantalla.',
-      en: 'The time, an alarm, a stopwatch and a timer, all on one screen.',
+      es: 'La hora de aquí y la de medio mundo, con alarma, cronómetro y temporizador.',
+      en: 'The time here and half the world’s, with an alarm, a stopwatch and a timer.',
     },
     description: {
-      es: 'Un reloj de pantalla completa —digital o analógico, con la fecha si la quieres y en 12 o 24 horas— con una alarma, un cronómetro con vueltas y un temporizador debajo. Los tres pueden correr a la vez y avisan con sonido y notificación. La alarma solo suena con la pestaña abierta: no hay servidor detrás.',
-      en: 'A full-screen clock — digital or analogue, with the date if you want it, in 12 or 24 hours — with an alarm, a stopwatch with laps and a timer underneath. All three can run at once and warn you with a sound and a notification. The alarm only rings while the tab is open: there is no server behind it.',
+      es: 'Un reloj de pantalla completa —digital o analógico, con la fecha si la quieres y en 12 o 24 horas—, un reloj mundial con los sitios que le pongas, y debajo una alarma, un cronómetro con vueltas y un temporizador. Todos pueden correr a la vez y avisan con sonido y notificación. La alarma solo suena con la pestaña abierta: no hay servidor detrás.',
+      en: 'A full-screen clock — digital or analogue, with the date if you want it, in 12 or 24 hours — a world clock with the places you add, and below it an alarm, a stopwatch with laps and a timer. They can all run at once and warn you with a sound and a notification. The alarm only rings while the tab is open: there is no server behind it.',
     },
     listo: true,
     etiquetas: { ambito: ['productividad'], materia: 'tiempo', tarea: 'cronometrar' },

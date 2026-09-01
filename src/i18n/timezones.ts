@@ -47,6 +47,9 @@ export const HUSOS = {
   cambiarEstaHora: { es: 'Cambiar esta hora', en: 'Change this time' },
   fecha: { es: 'Fecha', en: 'Date' },
   hora: { es: 'Hora', en: 'Time' },
+  /** Los rótulos de las dos columnas del selector de hora. */
+  columnaHora: { es: 'Hora', en: 'Hour' },
+  columnaMinuto: { es: 'Minuto', en: 'Minute' },
   zonaOrigen: { es: 'Hora de', en: 'Time in' },
   cambiarOrigen: { es: 'Cambiar de dónde es esa hora', en: 'Change where that time is from' },
   cambiar: { es: 'cambiar', en: 'change' },

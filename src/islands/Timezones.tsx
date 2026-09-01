@@ -74,11 +74,12 @@ import {
 } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { t, type Lang } from '@/i18n/config';
 import { HUSOS as H } from '@/i18n/timezones';
 import BuscadorLugar, { type TextosBuscador } from './BuscadorLugar';
+import CampoFecha from './CampoFecha';
+import CampoHora, { type TextosHora } from './CampoHora';
 import {
   componerLista,
   convertir,
@@ -309,6 +310,13 @@ export default function Timezones({ lang }: Props) {
       zipDesconocido: tr('zipDesconocido'),
     }),
     // Los textos solo dependen del idioma, que no cambia sin recargar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lang]
+  );
+
+  const textosHora: TextosHora = useMemo(
+    () => ({ columnaHora: tr('columnaHora'), columnaMinuto: tr('columnaMinuto') }),
+    // Solo dependen del idioma, que no cambia sin recargar.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [lang]
   );
@@ -705,26 +713,27 @@ export default function Timezones({ lang }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label htmlFor="fecha">{tr('fecha')}</Label>
-              <Input
+              <CampoFecha
                 id="fecha"
-                type="date"
-                value={fechaMostrada}
-                onFocus={congelar}
-                onChange={(e) => {
-                  setFecha(e.target.value);
+                valor={fechaMostrada}
+                lang={lang}
+                onAbrir={congelar}
+                onCambio={(v) => {
+                  setFecha(v);
                   if (enVivo) setHora(vivos.hora);
                 }}
               />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="hora">{tr('hora')}</Label>
-              <Input
+              <CampoHora
                 id="hora"
-                type="time"
-                value={horaMostrada}
-                onFocus={congelar}
-                onChange={(e) => {
-                  setHora(e.target.value);
+                valor={horaMostrada}
+                lang={lang}
+                textos={textosHora}
+                onAbrir={congelar}
+                onCambio={(v) => {
+                  setHora(v);
                   if (enVivo) setFecha(vivos.fecha);
                 }}
               />
@@ -968,7 +977,18 @@ export default function Timezones({ lang }: Props) {
                     onClick={() => quitar(c.destino.id)}
                     aria-label={`${tr('quitar')} ${c.destino.ciudad}`}
                     title={tr('quitar')}
-                    className="quitar"
+                    /*
+                      `size-4` en vez de los 24 px de `icon-xs`. La caja baja
+                      a 16 para no engordar el renglón donde vive, que es el
+                      de la letra pequeña; el icono sigue midiendo 12, así
+                      que se ve igual. El área de toque vuelve a 32 px con un
+                      pseudoelemento — ver `.fila-hora .quitar` en global.css.
+
+                      Va aquí y no en la hoja porque una utilidad de Tailwind
+                      le gana a `@layer components`: en la hoja, `size-6`
+                      seguiría mandando.
+                    */
+                    className="quitar size-4"
                   >
                     <XIcon aria-hidden="true" />
                   </Button>

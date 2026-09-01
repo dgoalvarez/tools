@@ -145,6 +145,37 @@ const VISTAS = [
     query:
       'd=2026-09-04&h=21:00&v=America%2FNew_York~Carolina%20del%20Norte&z=America/Los_Angeles,Pacific/Honolulu,America/Chicago',
   },
+  // El calendario abierto. Va con guion y no con `clics` porque llega
+  // por carga diferida: hay que esperar a que el trozo se descargue, o la
+  // captura sale con el hueco reservado y sin calendario dentro.
+  {
+    nombre: 'husos-calendario',
+    ruta: 'es/horarios',
+    ancho: 1440,
+    alto: 1000,
+    guion: `
+      const boton = await esperar(() => document.querySelector('#fecha'));
+      boton.click();
+      await esperar(() => document.querySelector('.rdp-month_grid, table'));
+      await new Promise((r) => setTimeout(r, 400));
+    `,
+  },
+  // El selector de hora abierto, con las dos columnas puestas donde ya
+  // está la hora: es lo que hay que mirar para saber si el desplazamiento
+  // automatico acerto.
+  {
+    nombre: 'husos-selector-hora',
+    ruta: 'es/horarios',
+    ancho: 1440,
+    alto: 1000,
+    query: 'd=2026-09-04&h=17:35',
+    guion: `
+      const boton = await esperar(() => document.querySelector('#hora'));
+      boton.click();
+      await esperar(() => document.querySelector('.selector-hora'));
+      await new Promise((r) => setTimeout(r, 400));
+    `,
+  },
   { nombre: 'paleta', ruta: 'es/paleta', ancho: 1440, alto: 1200 },
   { nombre: 'paleta-claro', ruta: 'es/paleta', ancho: 1440, alto: 1200, tema: 'light' },
   { nombre: 'paleta-estrecho', ruta: 'es/paleta', ancho: 485, alto: 900 },

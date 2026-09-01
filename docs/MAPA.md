@@ -142,7 +142,7 @@ Sin React ni DOM: se corre con `node`, y por eso se puede comprobar.
 - tipos · `Ajustes`, `Esquema`, `Paso`, `Cruce`
 
 **`timezones.ts`**
-- funciones · `obtenerTemporal`, `zonaDelNavegador`, `nombreDeZona`, `localeDe`, `camposEnZona`, `desfaseDeZona`, `diaDeZona`, `minutosEnZona`, `convertir`, `relojEnVivo`, `componerFrase`, `componerLista`, `normalizar`, `nombreGenericoDeZona`, `nombreDePais`, `buscarLugares`, `zonaDeZip`
+- funciones · `obtenerTemporal`, `zonaDelNavegador`, `nombreDeZona`, `localeDe`, `camposEnZona`, `desfaseDeZona`, `diaDeZona`, `minutosEnZona`, `convertir`, `abreviaturaDeZona`, `relojEnVivo`, `componerFrase`, `componerLista`, `normalizar`, `nombreGenericoDeZona`, `nombreDePais`, `buscarLugares`, `zonaDeZip`
 - tipos · `FuenteDestino`, `Destino`, `Conversion`, `Momento`, `Ambiguedad`, `Resultado`, `RelojVivo`, `DatosLugares`, `DatosZips`, `TipoLugar`, `Coincidencia`
 
 **`url-state.ts`**

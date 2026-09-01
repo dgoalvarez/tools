@@ -81,6 +81,7 @@ import {
 import { escribirParams, leerParams } from '@/lib/url-state';
 import BuscadorLugar from './BuscadorLugar';
 import {
+  abreviaturaDeZona,
   desfaseDeZona,
   diaDeZona,
   nombreDeZona,
@@ -610,6 +611,7 @@ export default function Reloj({ lang }: Props) {
         cosa es el caso normal de una herramienta así, y era justo el que
         las pestañas hacían incómodo.
       */}
+      <div className="modos-reloj">
       {/* ---------------- Reloj mundial ----------------
 
         Va pegado al reloj grande y a todo lo ancho, no dentro de la fila
@@ -644,65 +646,88 @@ export default function Reloj({ lang }: Props) {
         {sitios.length === 0 ? (
           <p className="pista-mundial">{tr('mundialVacio')}</p>
         ) : (
-          <ul className="lista-mundial">
-            {sitios.map((s) => {
-              const cuando = new Date(ahora);
-              const diferencia =
-                (desfaseDeZona(cuando, s.zona) - desfaseDeZona(cuando, zonaAqui)) / 60;
-              const diaAlla = diaDeZona(cuando, s.zona);
-              const salto = diaAlla === diaAqui ? 0 : diaAlla > diaAqui ? 1 : -1;
+          /*
+            La lista no estira la tarjeta.
 
-              return (
-                <li key={s.id} className="fila-mundial">
-                  <span className="sitio truncate" title={s.nombre}>
-                    {s.nombre}
-                  </span>
+            Es el mismo trato que las vueltas del cronómetro y por el mismo
+            motivo: las cuatro tarjetas de la fila están a la misma altura,
+            así que una lista sin tope arrastraba a las otras tres. Seis
+            sitios caben; a partir de ahí se desplaza dentro de su caja.
+          */
+          <div className="caja-mundial">
+            {/*
+              Las clases son las de husos horarios a propósito. Es la misma
+              información —un sitio y su hora— y antes se pintaba con un
+              juego de clases propio que se parecía pero no era igual: la
+              hora en otro cuerpo, la diferencia en otro sitio. Compartirlas
+              hace que las dos herramientas se lean como el mismo sitio y
+              que un arreglo en una llegue a la otra.
+            */}
+            <ul className="lista-horas">
+              {sitios.map((s) => {
+                const cuando = new Date(ahora);
+                const diferencia =
+                  (desfaseDeZona(cuando, s.zona) - desfaseDeZona(cuando, zonaAqui)) / 60;
+                const diaAlla = diaDeZona(cuando, s.zona);
+                const salto = diaAlla === diaAqui ? 0 : diaAlla > diaAqui ? 1 : -1;
 
-                  <span className="hora-mundial">
-                    {new Intl.DateTimeFormat(locale, {
-                      timeZone: s.zona,
-                      hour: 'numeric',
-                      minute: '2-digit',
-                      second: '2-digit',
-                      hour12: cara.formato === 'auto' ? undefined : cara.formato === '12',
-                    }).format(cuando)}
-                  </span>
+                return (
+                  <li key={s.id} className="fila-hora">
+                    <span className="lugar truncate" title={s.nombre}>
+                      {s.nombre}
+                    </span>
+                    <span className="meta truncate" title={s.zona}>
+                      {abreviaturaDeZona(cuando, s.zona, lang)}
+                    </span>
 
-                  <span className="dif-mundial">
-                    {diferencia === 0
-                      ? tr('mundialIgual')
-                      : `${diferencia > 0 ? '+' : '−'}${Math.abs(diferencia).toLocaleString(
-                          locale,
-                          { maximumFractionDigits: 1 }
-                        )} h`}
-                    {salto !== 0 && (
-                      <>
-                        {' · '}
-                        <span className="otro-dia">
-                          {salto > 0 ? tr('mundialManana') : tr('mundialAyer')}
-                        </span>
-                      </>
-                    )}
-                  </span>
+                    <span className="hora">
+                      {new Intl.DateTimeFormat(locale, {
+                        timeZone: s.zona,
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: cara.formato === 'auto' ? undefined : cara.formato === '12',
+                      }).format(cuando)}
+                    </span>
 
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() => setSitios((p) => p.filter((x) => x.id !== s.id))}
-                    aria-label={`${tr('quitarSitio')} ${s.nombre}`}
-                    title={tr('quitarSitio')}
-                    className="quitar"
-                  >
-                    <XIcon aria-hidden="true" />
-                  </Button>
-                </li>
-              );
-            })}
-          </ul>
+                    <span className="cuando">
+                      {diferencia === 0
+                        ? tr('mundialIgual')
+                        : `${diferencia > 0 ? '+' : '−'}${Math.abs(diferencia).toLocaleString(
+                            locale,
+                            { maximumFractionDigits: 1 }
+                          )} h`}
+                      {salto !== 0 && (
+                        <>
+                          {' · '}
+                          {/* En acento y no en rojo: aquí que allí sea otro
+                              día es un dato, no el error que se intenta
+                              evitar. En husos sí es lo segundo. */}
+                          <span className="otro-dia">
+                            {salto > 0 ? tr('mundialManana') : tr('mundialAyer')}
+                          </span>
+                        </>
+                      )}
+                    </span>
+
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => setSitios((p) => p.filter((x) => x.id !== s.id))}
+                      aria-label={`${tr('quitarSitio')} ${s.nombre}`}
+                      title={tr('quitarSitio')}
+                      className="quitar size-4"
+                    >
+                      <XIcon aria-hidden="true" />
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         )}
       </section>
 
-      <div className="modos-reloj">
         {/* ---------------- Alarma ---------------- */}
         <section className="tarjeta-modo" data-tour="alarma">
           <p className="titulo">{tr('alarma')}</p>

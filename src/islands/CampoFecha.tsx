@@ -102,7 +102,7 @@ export default function CampoFecha({ id, valor, lang, onCambio, onAbrir }: Props
       }}
     >
       <PopoverTrigger asChild>
-        <Button id={id} variant="outline" className="campo-disparador">
+        <Button id={id} variant="outline" className="campo-disparador h-9 w-full justify-start px-2.5 font-normal">
           <CalendarBlankIcon aria-hidden="true" />
           <span className="min-w-0 truncate">{rotulo}</span>
         </Button>

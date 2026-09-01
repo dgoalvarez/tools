@@ -372,6 +372,29 @@ export function convertir(
   return { instante, ambiguedad, horaCorregida, origen, destinos: convertidos };
 }
 
+/**
+ * «EDT», «GMT-5»… tal como el propio sitio nombra su huso.
+ *
+ * Lo calcula ya `formatear`, pero ese es interno y devuelve otras cuatro
+ * cosas de paso. Esto se exporta aparte porque el reloj mundial lo quiere
+ * suelto: enseña la hora con segundos, que no sale de aquí, y de aquí solo
+ * necesita la abreviatura para el renglón pequeño de la fila.
+ *
+ * Es lo que la gente reconoce y lo que se escribe en los correos, y hace
+ * que una fila del reloj mundial se lea igual que una de husos.
+ */
+export function abreviaturaDeZona(instante: Date, zona: string, lang: string): string {
+  try {
+    const conZona = new Intl.DateTimeFormat(localeDe(lang), {
+      timeZone: zona,
+      timeZoneName: 'short',
+    }).format(instante);
+    return conZona.split(', ').pop() ?? '';
+  } catch {
+    return '';
+  }
+}
+
 // ------------------------------------------------------------- reloj vivo
 
 export interface RelojVivo {

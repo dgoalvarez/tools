@@ -116,7 +116,7 @@ export default function CampoHora({ id, valor, lang, textos, onCambio, onAbrir }
       }}
     >
       <PopoverTrigger asChild>
-        <Button id={id} variant="outline" className="campo-disparador">
+        <Button id={id} variant="outline" className="campo-disparador h-9 w-full justify-start px-2.5 font-normal">
           <ClockIcon aria-hidden="true" />
           <span className="min-w-0 truncate">{hay ? comoTexto(hora24, min, lang) : ''}</span>
         </Button>

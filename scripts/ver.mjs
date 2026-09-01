@@ -215,6 +215,16 @@ const VISTAS = [
     query:
       'w=America%2FNew_York~Carolina%20del%20Norte%20(hora%20oriental)%3BAmerica%2FLos_Angeles~Los%20%C3%81ngeles%3BAsia%2FTokyo~Tokio%3BEurope%2FMadrid~Madrid',
   },
+  // Ocho sitios: es donde la lista pasa del tope y aparece la barra de
+  // desplazamiento. Hay que mirar que las horas NO se muevan al salir.
+  {
+    nombre: 'reloj-mundial-lleno',
+    ruta: 'es/reloj',
+    ancho: 1440,
+    alto: 1400,
+    query:
+      'w=America%2FNew_York~Carolina%20del%20Norte%3BAmerica%2FLos_Angeles~Los%20%C3%81ngeles%3BAsia%2FTokyo~Tokio%3BEurope%2FMadrid~Madrid%3BAsia%2FKathmandu~Katmand%C3%BA%3BPacific%2FAuckland~Auckland%3BAmerica%2FSao_Paulo~S%C3%A3o%20Paulo%3BEurope%2FLondon~Londres',
+  },
   { nombre: 'reloj-estrecho', ruta: 'es/reloj', ancho: 485, alto: 900 },
   // Doce vueltas: es donde la lista deja de crecer y pasa a desplazarse
   // dentro de su caja.

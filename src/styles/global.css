@@ -141,9 +141,17 @@
    en OKLCH y pasa AA sobre las tres superficies; la derivación vive en
    `design/paleta-final.ts` y se puede volver a correr.
 
-   Los tres acentos por materia vienen de la dirección elegida: cada
+   Los acentos por materia vienen de la dirección elegida: cada
    herramienta se pinta con el suyo. El de tipografía es el teal de la
-   marca, así que hace además de acento del sitio. */
+   marca, así que hace además de acento del sitio.
+
+   El de «texto» se derivó aparte, en `design/acento-texto.ts`, y su tono
+   no se eligió a ojo: el hueco que parecía libre —el frambuesa, entre el
+   morado y el ámbar— resultó estar ocupado por `--danger`, que vive en el
+   tono 30. Un acento a 15° y un color de error a 30° son el mismo rojo, y
+   el acento pinta la herramienta entera. El hueco de verdad estaba entre
+   el teal (189) y el morado (304): 115 grados sin nadie. El azul del 255
+   queda a 66 del teal y a 49 del morado. */
 
 :root {
   --l-bg: #f3f6f7;
@@ -159,6 +167,7 @@
   --l-tiempo: #946000;
   --l-color: #884fc4;
   --l-tipografia: #007872;
+  --l-texto: #0169cd;
 
   --d-bg: #10191b;
   --d-surface: #182123;
@@ -173,6 +182,7 @@
   --d-tiempo: #e8a33d;
   --d-color: #b47cf5;
   --d-tipografia: #31c5bc;
+  --d-texto: #2c8efe;
 
   /* ---------- El relleno de los botones principales ----------
      Un acento está derivado para ser TEXTO sobre el fondo de la página.
@@ -183,6 +193,7 @@
        tinta oscura sobre el ámbar claro   Lc  60 → pediría 18 px
        tinta oscura sobre el morado claro  Lc  47 → pediría 26 px
        tinta oscura sobre el teal claro    Lc  61 → pediría 18 px
+       tinta oscura sobre el azul claro    Lc  27 → solo decorativo
 
      Así que el relleno es el acento OSCURO —el mismo en los dos temas, no
      se cambia con el tema— y la letra encima es blanca:
@@ -190,6 +201,7 @@
        blanco sobre ámbar oscuro   Lc −82 → 14,81 px  pasa
        blanco sobre morado oscuro  Lc −81 → 14,81 px  pasa
        blanco sobre teal oscuro    Lc −81 → 14,81 px  pasa
+       blanco sobre azul oscuro    Lc −81 → 14,81 px  pasa
 
      Y el botón se separa de la página oscura 3,34:1, por encima del 3:1
      que WCAG pide a un componente. Un botón oscuro sobre fondo oscuro era
@@ -197,6 +209,7 @@
   --solido-tiempo: var(--l-tiempo);
   --solido-color: var(--l-color);
   --solido-tipografia: var(--l-tipografia);
+  --solido-texto: var(--l-texto);
   --solido-ink: #ffffff;
 
   /* Radio más corto que el de fábrica (0.625rem): controles de
@@ -245,6 +258,7 @@
   --acento-tiempo: var(--l-tiempo);
   --acento-color: var(--l-color);
   --acento-tipografia: var(--l-tipografia);
+  --acento-texto: var(--l-texto);
 }
 
 /* Sin elección explícita, manda el sistema. Esto es lo que hace que el
@@ -265,6 +279,7 @@
     --acento-tiempo: var(--d-tiempo);
     --acento-color: var(--d-color);
     --acento-tipografia: var(--d-tipografia);
+    --acento-texto: var(--d-texto);
   }
 }
 
@@ -284,6 +299,7 @@
   --acento-tiempo: var(--d-tiempo);
   --acento-color: var(--d-color);
   --acento-tipografia: var(--d-tipografia);
+  --acento-texto: var(--d-texto);
 }
 
 /* ---------- El acento de la página ----------
@@ -3278,5 +3294,279 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
+  }
+}
+
+/* ============================================================
+   La libreta
+
+   Dos tarjetas del mismo peso: la lista a la izquierda, que es la parte
+   que se usa, y la nota a la derecha. En estrecho se apilan con la lista
+   primero.
+
+   ---------------------------------------------------------------------
+   El alto mínimo no es estético
+
+   El HTML sale del servidor vacío —la isla no puede leer el
+   almacenamiento de la pestaña hasta hidratarse— y entonces rellena. Sin
+   un alto reservado, restaurar doce líneas empujaría todo lo de debajo
+   hacia abajo en cada carga: el mismo tirón que se quitó de la barra
+   lateral, pero dentro de la página.
+
+   Y el cuerpo se desplaza en vez de estirarse, como la lista de vueltas
+   del cronómetro: una lista de cuarenta cosas no puede convertir la
+   página en un rollo de tres pantallas.
+   ============================================================ */
+
+@layer components {
+  .aviso-sesion {
+    max-width: var(--measure);
+    margin-block: 0 clamp(1.25rem, 2vw, 1.75rem);
+    font-size: var(--fs-small);
+    color: var(--ink-muted);
+  }
+
+  .libreta {
+    display: grid;
+    gap: 1rem;
+    align-items: start;
+
+    /*
+      El alto reservado, dicho una sola vez.
+
+      De aquí salen los dos: la lista lo usa tal cual y la nota le suma la
+      fila de añadir más su hueco, que es lo que la lista tiene de más. Así
+      las dos tarjetas acaban en la misma línea sin que ninguna dependa del
+      contenido de la otra — y siguen sin moverse al restaurar, que es lo
+      que de verdad importa.
+    */
+    --alto-libreta: clamp(17rem, 38vh, 28rem);
+    --fila-nueva: 2.25rem;
+  }
+
+  @media (width >= 64rem) {
+    .libreta {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* ---------- Añadir ---------- */
+  .fila-nueva {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .campo-nuevo {
+    flex: 1;
+    min-width: 0;
+    height: 2.25rem;
+    padding-inline: 0.6875rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--bg);
+    font: inherit;
+    font-size: var(--fs-small);
+    color: var(--ink);
+  }
+
+  .campo-nuevo::placeholder {
+    color: var(--ink-soft);
+  }
+
+  .campo-nuevo:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 1px;
+  }
+
+  /* ---------- El cuerpo, con su alto reservado ---------- */
+  /*
+    Alto FIJO, no un mínimo.
+
+    Con `min-height` la caja crecía al restaurar: la sonda midió doce
+    líneas empujando 184 px hacia abajo lo que tenían debajo, en cada
+    carga. Un mínimo no reserva sitio, solo pone un suelo.
+
+    Fijo y con desplazamiento dentro, la caja mide lo mismo con cero
+    líneas que con cuarenta, y lo de debajo no se entera. El `clamp`
+    depende del alto de la ventana, que no cambia al hidratar, así que
+    sigue siendo fijo para cada pantalla: caben unas ocho líneas en un
+    portátil y unas doce en un monitor.
+  */
+  .lista-cuerpo {
+    height: var(--alto-libreta);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .lista-vacia {
+    padding-block: 1.5rem;
+    font-size: var(--fs-small);
+    color: var(--ink-soft);
+  }
+
+  .lista-tareas {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* ---------- Una línea ---------- */
+  .fila-tarea {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.125rem 0.25rem;
+    border-radius: var(--radius);
+  }
+
+  .fila-tarea:hover,
+  .fila-tarea:focus-within {
+    background: var(--surface-2);
+  }
+
+  .fila-tarea .casilla {
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--acento);
+    cursor: pointer;
+  }
+
+  /*
+     El texto es un campo de verdad, sin marco: se corrige donde está. Una
+     tarea se corrige mucho más de lo que se crea, y meter un botón de
+     editar entre «lo veo mal» y «lo arreglo» hace que se quede mal.
+  */
+  .fila-tarea .texto-tarea {
+    flex: 1;
+    min-width: 0;
+    padding: 0.375rem 0.25rem;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: var(--fs-small);
+    color: var(--ink);
+  }
+
+  .fila-tarea .texto-tarea:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 0;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Tachada y apagada, las dos cosas: el tachado solo no se ve en una
+     pantalla pequeña, y el gris solo se confunde con un texto secundario. */
+  .fila-tarea .texto-tarea.hecha {
+    color: var(--ink-soft);
+    text-decoration: line-through;
+  }
+
+  /*
+     Los tres botones se ven siempre en pantalla táctil —donde no hay
+     puntero que pasar por encima— y se apagan hasta el hover en las
+     demás. «any-hover» pregunta por el aparato, no por el ancho: un
+     portátil con pantalla táctil tiene las dos cosas.
+  */
+  .acciones-tarea {
+    display: flex;
+    flex: none;
+    gap: 0.125rem;
+  }
+
+  .acciones-tarea button {
+    display: grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+
+  .acciones-tarea button:hover:not(:disabled) {
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  .acciones-tarea button:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 1px;
+  }
+
+  .acciones-tarea button:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  @media (any-hover: hover) {
+    .acciones-tarea {
+      opacity: 0;
+    }
+
+    .fila-tarea:hover .acciones-tarea,
+    .fila-tarea:focus-within .acciones-tarea {
+      opacity: 1;
+    }
+  }
+
+  /* ---------- El pie ---------- */
+  /*
+    El alto mínimo es por lo mismo: los botones de copiar y de borrar las
+    hechas solo existen cuando hay algo que copiar o que borrar, y al
+    aparecer estiraban el pie ocho píxeles. Reservado, no se mueve.
+  */
+  .pie-lista {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    padding-block-start: 0.5rem;
+    border-block-start: 1px solid var(--line);
+  }
+
+  .pie-lista .contador {
+    font-size: var(--fs-small);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-muted);
+  }
+
+  /* En la nota no hay contador de tareas: a la izquierda va el recuento
+     de palabras, que llena el sitio reservado con algo que sirve en vez de
+     dejar una banda vacía. */
+  .pie-lista .mandos-pie {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  /* ---------- La nota ---------- */
+  .campo-nota {
+    width: 100%;
+    height: calc(var(--alto-libreta) + var(--fila-nueva) + 0.8125rem);
+    padding: 0.6875rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--bg);
+    font: inherit;
+    font-size: var(--fs-small);
+    line-height: 1.6;
+    color: var(--ink);
+    resize: vertical;
+  }
+
+  .campo-nota::placeholder {
+    color: var(--ink-soft);
+  }
+
+  .campo-nota:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 1px;
   }
 }

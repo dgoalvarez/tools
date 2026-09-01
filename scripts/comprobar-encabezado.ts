@@ -24,7 +24,7 @@ const CLARO = {
   surface: '#ffffff',
   line: '#dadfe0',
   inkMuted: '#494f51',
-  acentos: { tiempo: '#946000', color: '#884fc4', tipografia: '#007872' },
+  acentos: { tiempo: '#946000', color: '#884fc4', tipografia: '#007872', texto: '#0169cd' },
 };
 
 const OSCURO = {
@@ -32,7 +32,7 @@ const OSCURO = {
   surface: '#182123',
   line: '#262c2d',
   inkMuted: '#b3b9b9',
-  acentos: { tiempo: '#e8a33d', color: '#b47cf5', tipografia: '#31c5bc' },
+  acentos: { tiempo: '#e8a33d', color: '#b47cf5', tipografia: '#31c5bc', texto: '#2c8efe' },
 };
 
 /** El rótulo va a 11,2 px y peso 500: texto normal, así que AA son 4,5:1. */

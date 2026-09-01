@@ -44,6 +44,10 @@ export const MATERIAS = {
   tiempo: { es: 'Tiempo', en: 'Time' },
   color: { es: 'Color', en: 'Colour' },
   tipografia: { es: 'Tipografía', en: 'Type' },
+  // No es lo mismo que `tipografia`: aquella es de letras y escalas, esta
+  // es de palabras que alguien escribe. Le servirá también a las
+  // utilidades que vengan (expresiones regulares, JSON, códigos).
+  texto: { es: 'Texto', en: 'Text' },
   lugares: { es: 'Lugares', en: 'Places' },
 } satisfies Record<string, T>;
 
@@ -64,6 +68,7 @@ export const ACENTO_POR_MATERIA: Record<MateriaKey, string> = {
   tiempo: 'var(--acento-tiempo)',
   color: 'var(--acento-color)',
   tipografia: 'var(--acento-tipografia)',
+  texto: 'var(--acento-texto)',
   lugares: 'var(--brand)',
 };
 
@@ -78,6 +83,7 @@ export const SOLIDO_POR_MATERIA: Record<MateriaKey, string> = {
   tiempo: 'var(--solido-tiempo)',
   color: 'var(--solido-color)',
   tipografia: 'var(--solido-tipografia)',
+  texto: 'var(--solido-texto)',
   lugares: 'var(--l-brand)',
 };
 
@@ -89,6 +95,7 @@ export const TAREAS = {
   generar: { es: 'Generar', en: 'Generate' },
   buscar: { es: 'Buscar', en: 'Find' },
   cronometrar: { es: 'Cronometrar', en: 'Time it' },
+  anotar: { es: 'Anotar', en: 'Jot down' },
 } satisfies Record<string, T>;
 
 export type TareaKey = keyof typeof TAREAS;

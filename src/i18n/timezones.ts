@@ -5,15 +5,15 @@ import type { T } from './config';
 
 export const HUSOS = {
   // ---------- El origen ----------
-  origenTitulo: { es: 'La cita', en: 'The appointment' },
+  origenTitulo: { es: 'La hora', en: 'The time' },
   fecha: { es: 'Fecha', en: 'Date' },
   hora: { es: 'Hora', en: 'Time' },
   zonaOrigen: { es: 'Hora de', en: 'Time in' },
-  cambiarOrigen: { es: 'Cambiar de dónde es esa hora', en: 'Change whose time that is' },
+  cambiarOrigen: { es: 'Cambiar de dónde es esa hora', en: 'Change where that time is from' },
   cambiar: { es: 'cambiar', en: 'change' },
 
   // ---------- Añadir destinos ----------
-  destinosTitulo: { es: 'Para quién', en: 'Who for' },
+  destinosTitulo: { es: 'En qué sitios', en: 'Where' },
   buscar: { es: 'Ciudad o código ZIP de Estados Unidos', en: 'City or US ZIP code' },
   buscarAyuda: {
     es: 'Escribe el nombre de una ciudad o cinco dígitos de un código postal estadounidense.',
@@ -29,12 +29,12 @@ export const HUSOS = {
   quitar: { es: 'Quitar', en: 'Remove' },
   quitarTodas: { es: 'Quitar todas', en: 'Remove all' },
   vacio: {
-    es: 'Añade a quien tenga que estar en la cita y verás su hora aquí.',
-    en: 'Add whoever has to be at the appointment and you will see their time here.',
+    es: 'Añade los sitios que te interesen y verás su hora aquí.',
+    en: 'Add the places you care about and you will see their time here.',
   },
 
   // ---------- Resultados ----------
-  resultados: { es: 'A qué hora les toca', en: 'What time it is for them' },
+  resultados: { es: 'Qué hora es allí', en: 'What time it is there' },
   mismoDia: { es: 'el mismo día', en: 'same day' },
   diaSiguiente: { es: 'Allí ya es el día siguiente', en: 'That is the next day there' },
   diaAnterior: {
@@ -85,8 +85,8 @@ export const HUSOS = {
   },
   saltosTitulo: { es: 'Los dos domingos raros del año', en: 'The two odd Sundays of the year' },
   saltosCuerpo: {
-    es: 'En los sitios que cambian la hora hay un domingo en que una hora no existe y otro en que ocurre dos veces. Cuando la cita cae ahí, la herramienta lo dice en vez de elegir en silencio.',
-    en: 'Where clocks change there is one Sunday when an hour does not exist and another when it happens twice. When the appointment lands there, the tool says so instead of choosing silently.',
+    es: 'En los sitios que cambian la hora hay un domingo en que una hora no existe y otro en que ocurre dos veces. Cuando la hora que has puesto cae ahí, la herramienta lo dice en vez de elegir en silencio.',
+    en: 'Where clocks change there is one Sunday when an hour does not exist and another when it happens twice. When the time you set lands there, the tool says so instead of choosing silently.',
   },
   datosTitulo: { es: 'De dónde salen los datos', en: 'Where the data comes from' },
   datosCuerpo: {

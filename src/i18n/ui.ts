@@ -28,8 +28,8 @@ export const UI = {
   /** El <title> de la portada. El de cada herramienta es su nombre + la marca. */
   homeTitle: { es: 'Herramientas · DGO', en: 'Tools · DGO' },
   siteDescription: {
-    es: 'Herramientas gratuitas: husos horarios, contraste de color y escalas tipográficas. Calculan en tu navegador y no guardan ningún dato de nadie.',
-    en: 'Free tools: time zones, colour contrast and type scales. They run in your browser and store nobody’s data.',
+    es: 'Herramientas gratuitas: husos horarios, reloj, pomodoro, notas, contraste de color, paletas y escalas tipográficas. Calculan en tu navegador y no guardan ningún dato de nadie.',
+    en: 'Free tools: time zones, a clock, a pomodoro, notes, colour contrast, palettes and type scales. They run in your browser and store nobody’s data.',
   },
 
   // ---------- Navegación ----------

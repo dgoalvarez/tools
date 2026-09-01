@@ -233,7 +233,7 @@ console.log('\n4b. El mensaje con todas las horas');
   afirmar(!lineaMiami.includes('día siguiente'), 'y no se cuela en las que no lo tienen');
 
   const enIngles = componerLista(r.destinos, r.origen, 'en');
-  afirmar(enIngles.startsWith('Your appointment:'), 'y existe en inglés');
+  afirmar(enIngles.startsWith('The time in each place:'), 'y existe en inglés');
   afirmar(enIngles.includes('(your time)'), 'con su marca de «tu hora»');
 
   // La fecha corta es la de la lista. Tiene que decir el mismo día que la
@@ -308,13 +308,13 @@ console.log('\n6. La frase que se copia');
   console.log('        ' + frase);
   afirmar(frase.includes('Miami') && frase.includes('Bogotá'), 'nombra los dos lugares');
   afirmar(
-    frase.includes(r.destinos[0]!.hora),
-    'la hora que va primero es la del destino, que es a quien se le escribe'
+    frase.includes(r.destinos[0]!.hora) && frase.includes(r.origen.hora),
+    'trae las dos horas: de la de aquí a la de allí'
   );
 
   const enIngles = componerFrase(r.destinos[0]!, r.origen, 'en');
   console.log('        ' + enIngles);
-  afirmar(/^Your appointment/.test(enIngles), 'y existe en inglés');
+  afirmar(/^When it is /.test(enIngles), 'y existe en inglés');
 
   const tarde = convertir(
     Temporal,

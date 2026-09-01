@@ -22,7 +22,7 @@
  * paso que apunta a algo que ya no está tumba la compilación.
  *
  * `opcional: true` es para lo que solo aparece a veces —el aviso de que
- * la cita cae en otro día, el color que sí pasaría—. Esos no se
+ * allí ya es otro día, el color que sí pasaría—. Esos no se
  * comprueban, y si no están, el paso se enseña centrado sin señalar nada.
  */
 import type { T } from './config';
@@ -38,27 +38,72 @@ export interface PasoTour {
 }
 
 export const TOUR: Record<ToolKey, PasoTour[]> = {
+  // ------------------------------------------------------------ notas
+  notes: [
+    {
+      ancla: 'aviso',
+      titulo: { es: 'Dura lo que dura la pestaña', en: 'It lasts as long as the tab' },
+      cuerpo: {
+        es: 'Lo que escribas aquí aguanta una recarga, un despiste y saltar a otra herramienta y volver. Al cerrar la pestaña se va, y esa es la razón por la que no hay cuenta ni servidor: no hay nada que guardar en ninguna parte.',
+        en: 'What you write here survives a reload, a slip, and a trip to another tool and back. Close the tab and it is gone — and that is exactly why there is no account and no server: there is nothing to keep anywhere.',
+      },
+    },
+    {
+      ancla: 'anadir',
+      titulo: { es: 'Escribe y pulsa Intro', en: 'Type and press Enter' },
+      cuerpo: {
+        es: 'El campo no pierde el foco al añadir, así que se escriben cinco cosas seguidas sin tocar el ratón. Que es como se usa esto de verdad: de un tirón, al empezar.',
+        en: 'The field keeps the focus after adding, so you can type five things in a row without touching the mouse. Which is how this actually gets used: in one go, at the start.',
+      },
+    },
+    {
+      ancla: 'linea',
+      titulo: { es: 'Se corrige en su sitio', en: 'Fix it where it is' },
+      cuerpo: {
+        es: 'El texto se edita directamente, sin botón de editar: una tarea se corrige mucho más de lo que se crea. Y se reordena con las flechas, que funcionan con el teclado — arrastrar dejaría fuera a quien no usa ratón.',
+        en: 'The text edits in place, with no edit button: a task gets corrected far more often than it gets created. Reorder with the arrows, which work from the keyboard — dragging would leave out anyone without a mouse.',
+      },
+      opcional: true,
+    },
+    {
+      ancla: 'salida',
+      titulo: { es: 'La salida', en: 'The way out' },
+      cuerpo: {
+        es: 'La lista se copia en Markdown, con sus casillas: «- [x] revisar el contraste». Lo entienden GitHub, Linear, Notion y cualquier editor de texto. Es la forma de que algo de aquí dure más que la pestaña.',
+        en: 'The list copies out as Markdown, checkboxes and all: “- [x] check the contrast”. GitHub, Linear, Notion and any text editor understand it. It is how something here outlives the tab.',
+      },
+    },
+    {
+      ancla: 'nota',
+      titulo: { es: 'Lo que no es una tarea', en: 'What is not a task' },
+      cuerpo: {
+        es: 'Un enlace, un número de pedido, el nombre de la rama, tres frases que no quieres volver a pensar. No tiene formato ni barra de herramientas a propósito: es un papel, no un editor.',
+        en: 'A link, an order number, the branch name, three sentences you would rather not think through twice. It has no formatting and no toolbar on purpose: it is a scrap of paper, not an editor.',
+      },
+    },
+  ],
+
   // ------------------------------------------------------------ husos
   timezones: [
     {
-      ancla: 'cita',
-      titulo: { es: 'La hora que quieres decir', en: 'The time you want to say' },
+      ancla: 'hora',
+      titulo: { es: 'La hora de la que partes', en: 'The time you start from' },
       cuerpo: {
-        es: 'Escribe el día y la hora de la cita tal y como la tienes tú en la cabeza. Todo lo demás sale de aquí.',
-        en: 'Type the day and time of the meeting exactly as you have it in your head. Everything else follows from this.',
+        es: 'Escribe el día y la hora tal y como los tienes tú en la cabeza. Todo lo demás sale de aquí.',
+        en: 'Type the day and the time exactly as you have them in your head. Everything else follows from this.',
       },
     },
     {
       ancla: 'origen',
       titulo: { es: 'De dónde es esa hora', en: 'Where that time is from' },
       cuerpo: {
-        es: 'Va plegado porque casi nunca cambia: quien agenda lo hace desde su propia zona un día tras otro. Ábrelo para cambiarla, o pulsa «Mi ubicación» y la coge del navegador.',
-        en: 'It stays folded because it rarely changes: whoever schedules does it from their own zone day after day. Open it to change it, or press “My location” and it takes it from the browser.',
+        es: 'Va plegado porque casi nunca cambia: casi siempre es la tuya, un día tras otro. Ábrelo para cambiarla, o pulsa «Mi ubicación» y la coge del navegador.',
+        en: 'It stays folded because it rarely changes: it is almost always your own, day after day. Open it to change it, or press “My location” and it takes it from the browser.',
       },
     },
     {
       ancla: 'destinos',
-      titulo: { es: 'A quién se la vas a decir', en: 'Who you are saying it to' },
+      titulo: { es: 'En qué sitios la quieres saber', en: 'Where you want to know it' },
       cuerpo: {
         es: 'Busca por ciudad —en español o en inglés— o por código postal de Estados Unidos. El código postal está porque siete estados están partidos entre dos husos: en Florida o en Tennessee, saber el estado no basta.',
         en: 'Search by city — in English or Spanish — or by US ZIP code. The ZIP code is there because seven states are split between two zones: in Florida or Tennessee, knowing the state is not enough.',
@@ -76,8 +121,8 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
       ancla: 'salto',
       titulo: { es: 'El aviso que importa', en: 'The warning that matters' },
       cuerpo: {
-        es: 'Cuando allí ya es otro día, la fila se marca en rojo por el lado y lo dice al final. Es el error que de verdad se comete al agendar: acertar la hora y equivocarse el día.',
-        en: 'When it is already another day there, the row is marked red down its edge and says so at the end. It is the mistake people actually make when scheduling: getting the time right and the day wrong.',
+        es: 'Cuando allí ya es otro día, la fila se marca en rojo por el lado y lo dice al final. Es el error que de verdad se comete: acertar la hora y equivocarse el día.',
+        en: 'When it is already another day there, the row is marked red down its edge and says so at the end. It is the mistake people actually make: getting the time right and the day wrong.',
       },
       opcional: true,
     },
@@ -85,8 +130,8 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
       ancla: 'frase',
       titulo: { es: 'Un mensaje con todas', en: 'One message with all of them' },
       cuerpo: {
-        es: 'Copia las horas de todos en un solo mensaje, con el aviso de otro día dentro de la línea que le toca. Uno y no cinco: cuando se agenda con varias personas lo que se manda es un mensaje al grupo.',
-        en: 'Copies everyone’s time as a single message, with the other-day warning inside the line it belongs to. One and not five: when you schedule with several people, what you send is one message to the group.',
+        es: 'Copia todas las horas en un solo mensaje, con el aviso de otro día dentro de la línea que le toca. Uno y no cinco: si son varios sitios, lo que se manda es un mensaje con todos.',
+        en: 'Copies every time as a single message, with the other-day warning inside the line it belongs to. One and not five: if there are several places, what you send is one message with all of them.',
       },
       opcional: true,
     },

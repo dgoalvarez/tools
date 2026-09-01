@@ -30,7 +30,7 @@
  * documento nuevo viene del servidor sin saber nada de lo guardado.
  *
  * ---------------------------------------------------------------------
- * Tres trampas que costaron un rato, por si vuelven
+ * Cuatro trampas que costaron un rato, por si vuelven
  *
  *   · **Nada de `execFileSync`.** El servidor de aquí abajo comparte
  *     proceso con la sonda, y una llamada síncrona deja parado el bucle
@@ -44,6 +44,14 @@
  *   · **Puerto 0.** Con uno fijo esto fallaba con EADDRINUSE en Windows
  *     sin que nadie estuviera escuchando: hay rangos que Hyper-V reserva
  *     y que no se ven ocupados hasta que se intentan abrir.
+ *   · **Un solo salto por caso.** Se intentó ir de notas a otra
+ *     herramienta y volver, y salía verde dos de cada tres veces: el clic
+ *     que da el segundo salto se pierde a veces, y con reintentos seguía
+ *     siendo caprichoso. Una comprobación que falla una de cada tres
+ *     enseña a ignorar el rojo, que es peor que no comprobar. El caso de
+ *     la libreta hace un salto y mira el almacenamiento, que es lo que de
+ *     verdad se afirma; que al volver se restaure lo cubre el caso
+ *     «notas llena», que siembra y mide.
  *
  * Uso:  npm run build && node scripts/comprobar-navegacion.mjs
  */
@@ -153,6 +161,8 @@ const COMUN = [
   "  '.barra-movil',",
   "  '[data-hoja-abrir]',",
   "  '#main',",
+  "  '.pie-lista',",
+  "  '.campo-nota',",
   '];',
   'function __medir() {',
   '  var out = {};',
@@ -167,6 +177,11 @@ const COMUN = [
   '  return out;',
   '}',
   'function __decir(texto) { document.title = "SONDA:" + texto; }',
+  // Un error dentro de un guion no dice nada por su cuenta: la sonda solo
+  // ve que el titulo no cambio. Esto lo cuenta.
+  'window.addEventListener("error", function (e) {',
+  '  document.title = "SONDA:error " + e.message + " en " + (e.filename || "?") + ":" + e.lineno;',
+  '});',
   // El aviso de que la página está montada de verdad: `astro:page-load`
   // corre después de los módulos, así que el de la navegación ya pasó.
   // La espera corta que sigue es para ir DETRÁS de él: los manejadores se
@@ -175,16 +190,34 @@ const COMUN = [
   '  var veces = 0;',
   '  document.addEventListener("astro:page-load", function () {',
   '    veces++;',
+  // Deja rastro de por donde va: si algo se queda a medias, lo ultimo
+  // que quedo escrito dice en que carga fue. Cada cambio de pagina pisa el
+  // titulo con el suyo, asi que sobrevive el ultimo.
+  '    __decir("llego a la carga " + veces + ", esperando la " + n);',
   '    if (veces !== n) return;',
   '    setTimeout(fn, 150);',
   '  });',
   '}',
 ].join('\n');
 
-/** Mide antes y después. `control` reintroduce el fallo a propósito. */
-function guionSalto(control) {
+/**
+ * Mide antes y después.
+ *
+ * `control` reintroduce el fallo a propósito. `siembra` deja algo en el
+ * almacenamiento de la pestaña ANTES de que la isla hidrate: es la única
+ * forma de comprobar lo que de verdad preocupa de la libreta, que
+ * restaurar doce líneas no empuje hacia abajo lo que hay debajo.
+ */
+function guionSalto(control, siembra) {
   return [
     COMUN,
+    siembra
+      ? 'try { sessionStorage.setItem(' +
+        JSON.stringify(siembra.clave) +
+        ', ' +
+        JSON.stringify(JSON.stringify(siembra.valor)) +
+        '); } catch (e) {}'
+      : '',
     control
       ? [
           'var __b = document.querySelector("[data-bento]");',
@@ -235,9 +268,9 @@ function guionNavegar(dentroDeLaHoja) {
           '  if (!hoja.open) { __decir("la hoja no abre"); return; }',
           '  var enlace = hoja.querySelector("a[href$=\'/es/pomodoro\']");',
         ].join('\n')
-      : [
-          '  var enlace = document.querySelector(".riel-lista a[href$=\'/es/pomodoro\']");',
-        ].join('\n'),
+      : ['  var enlace = document.querySelector(".riel-lista a[href$=\'/es/pomodoro\']");'].join(
+          '\n'
+        ),
     '  if (!enlace) { __decir("no hay enlace al pomodoro"); return; }',
     '  enlace.click();',
     '});',
@@ -282,6 +315,62 @@ function guionNavegar(dentroDeLaHoja) {
   ].join('\n');
 }
 
+/**
+ * Escribe en la libreta, se va a otra herramienta, vuelve, y comprueba
+ * que lo escrito sigue ahí.
+ *
+ * Es la decisión de fondo de la herramienta puesta a prueba: se guarda en
+ * el almacenamiento de la pestaña, y el enrutador del cliente no recarga
+ * la pestaña, así que saltar al pomodoro y volver no puede perder nada.
+ */
+const GUION_LIBRETA = [
+  COMUN,
+  'var __texto = "sobrevivir al viaje";',
+  '__cuandoListo(1, function () {',
+  '  var campo = document.querySelector(".campo-nuevo");',
+  '  if (!campo) { __decir("no hay campo de añadir"); return; }',
+  // El valor va por el setter nativo: puesto a pelo, React no se entera.
+  '  var proto = window.HTMLInputElement.prototype;',
+  '  Object.getOwnPropertyDescriptor(proto, "value").set.call(campo, __texto);',
+  '  campo.dispatchEvent(new Event("input", { bubbles: true }));',
+  '  campo.closest("form").requestSubmit();',
+  '  setTimeout(function () {',
+  '    var puesta = document.querySelectorAll(".texto-tarea");',
+  '    if (puesta.length !== 1) { __decir("la tarea no se añadio: " + puesta.length); return; }',
+  '    if (String(sessionStorage.getItem("dgo-tools-notas")).indexOf(__texto) === -1) {',
+  '      __decir("la tarea no llego al almacenamiento de la pestaña"); return;',
+  '    }',
+  '    var enlace = document.querySelector(".riel-lista a[href$=\'/es/contraste\']");',
+  '    if (!enlace) { __decir("no hay enlace a contraste"); return; }',
+  '    enlace.click();',
+  '  }, 500);',
+  '});',
+  '__cuandoListo(2, function () {',
+  '  var males = [];',
+  '  if (!window.__vivo) males.push("hubo recarga: se perdio la marca de window");',
+  '  if (location.pathname.indexOf("/es/contraste") === -1) {',
+  '    males.push("no llego a contraste: " + location.pathname);',
+  '  }',
+  '  var guardado = String(sessionStorage.getItem("dgo-tools-notas"));',
+  '  if (guardado.indexOf(__texto) === -1) males.push("la libreta se perdio al cambiar de pagina");',
+  '  __decir(males.length ? males.join(" ;; ") : "quieto");',
+  '});',
+].join('\n');
+
+/** Doce líneas y una nota, para mirar el tirón al restaurar. */
+const LIBRETA_SEMBRADA = {
+  clave: 'dgo-tools-notas',
+  valor: {
+    v: 1,
+    tareas: Array.from({ length: 12 }, (_, i) => ({
+      id: 'x' + i,
+      texto: 'una tarea de la sesion, la numero ' + i,
+      hecha: i % 3 === 0,
+    })),
+    nota: 'Tres lineas\nde nota\npara que ocupe.',
+  },
+};
+
 const CASOS = [
   {
     nombre: 'sin tiron · escritorio',
@@ -290,6 +379,24 @@ const CASOS = [
     guion: guionSalto(false),
   },
   { nombre: 'sin tiron · movil', pagina: 'es/paleta.html', ancho: 485, guion: guionSalto(false) },
+  {
+    nombre: 'sin tiron · notas vacia',
+    pagina: 'es/notas.html',
+    ancho: 1440,
+    guion: guionSalto(false),
+  },
+  {
+    nombre: 'sin tiron · notas llena',
+    pagina: 'es/notas.html',
+    ancho: 1440,
+    guion: guionSalto(false, LIBRETA_SEMBRADA),
+  },
+  {
+    nombre: 'sin tiron · notas llena movil',
+    pagina: 'es/notas.html',
+    ancho: 485,
+    guion: guionSalto(false, LIBRETA_SEMBRADA),
+  },
   {
     nombre: 'control · con hidden salta',
     pagina: 'es/paleta.html',
@@ -309,6 +416,12 @@ const CASOS = [
     ancho: 485,
     guion: guionNavegar(true),
   },
+  {
+    nombre: 'la libreta sobrevive al salto',
+    pagina: 'es/notas.html',
+    ancho: 1440,
+    guion: GUION_LIBRETA,
+  },
 ];
 
 let fallos = 0;
@@ -324,7 +437,7 @@ try {
         '--headless=new',
         '--disable-gpu',
         `--window-size=${caso.ancho + MARCO},900`,
-        '--virtual-time-budget=25000',
+        `--virtual-time-budget=${caso.presupuesto ?? 25000}`,
         '--dump-dom',
         `http://127.0.0.1:${PUERTO}/sonda`,
       ],

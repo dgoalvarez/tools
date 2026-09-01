@@ -27,6 +27,10 @@ import cerrar from '@phosphor-icons/core/regular/x.svg?raw';
 import casa from '@phosphor-icons/core/regular/house.svg?raw';
 import mas from '@phosphor-icons/core/regular/dots-three.svg?raw';
 import barras from '@phosphor-icons/core/regular/list.svg?raw';
+// El de la lista con marcas sería el obvio para Notas, pero es casi el
+// mismo dibujo que `list`, que ya usa la hamburguesa: en el riel plegado
+// se verían dos iconos iguales con destinos distintos.
+import notas from '@phosphor-icons/core/regular/note-pencil.svg?raw';
 
 /**
  * Se queda solo lo de dentro del `<svg>`: la envoltura la pone
@@ -46,6 +50,7 @@ export const ICONOS = {
   contraste: interior(contraste),
   paleta: interior(paleta),
   tipografia: interior(tipografia),
+  notas: interior(notas),
 
   // --- de la propia interfaz ---
   rejilla: interior(rejilla),

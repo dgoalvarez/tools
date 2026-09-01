@@ -83,6 +83,7 @@ const PAIRS = [
   { en: '/en/timezones', es: '/es/horarios' },
   { en: '/en/clock', es: '/es/reloj' },
   { en: '/en/pomodoro', es: '/es/pomodoro' },
+  { en: '/en/notes', es: '/es/notas' },
   { en: '/en/contrast', es: '/es/contraste' },
   { en: '/en/palette', es: '/es/paleta' },
   { en: '/en/type-scale', es: '/es/escala' },

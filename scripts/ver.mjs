@@ -210,10 +210,8 @@ const VISTAS = [
     ancho: 1440,
     alto: 1000,
     siembra: {
-      estado: 'andando',
-      fase: 'trabajo',
-      hechos: 2,
-      terminaEn: Date.now() + 9 * 60_000,
+      clave: 'dgo-pomodoro',
+      valor: { estado: 'andando', fase: 'trabajo', hechos: 2, terminaEn: Date.now() + 9 * 60_000 },
     },
   },
   // El margen entre fases, que no se alcanza de ninguna otra forma: hay
@@ -223,7 +221,134 @@ const VISTAS = [
     ruta: 'es/pomodoro',
     ancho: 1440,
     alto: 1000,
-    siembra: { estado: 'margen', fase: 'corto', hechos: 3, empiezaEn: Date.now() + 300_000 },
+    siembra: {
+      clave: 'dgo-pomodoro',
+      valor: { estado: 'margen', fase: 'corto', hechos: 3, empiezaEn: Date.now() + 300_000 },
+    },
+  },
+  // La libreta: vacía, que es como se llega, y con cosas dentro, que es
+  // el estado al que no se llega de otra forma que sembrándolo.
+  { nombre: 'notas', ruta: 'es/notas', ancho: 1440, alto: 900 },
+  {
+    nombre: 'notas-llena',
+    ruta: 'es/notas',
+    ancho: 1440,
+    alto: 900,
+    siembra: {
+      clave: 'dgo-tools-notas',
+      valor: {
+        v: 1,
+        tareas: [
+          {
+            id: 'a',
+            texto: 'derivar el acento y medirlo con la propia herramienta',
+            hecha: true,
+          },
+          {
+            id: 'b',
+            texto: 'reencuadrar los copys de husos',
+            hecha: true,
+          },
+          {
+            id: 'c',
+            texto: 'comprobar que no da tirón al restaurar',
+            hecha: false,
+          },
+          {
+            id: 'd',
+            texto: 'capturas en claro y en oscuro',
+            hecha: false,
+          },
+          {
+            id: 'e',
+            texto: 'subir y mirar en producción',
+            hecha: false,
+          },
+        ],
+        nota: 'Rama: notas\nAcento: #0169cd claro / #2c8efe oscuro\n\nEl frambuesa del plan chocaba con --danger (tono 30).',
+      },
+    },
+  },
+  {
+    nombre: 'notas-llena-claro',
+    ruta: 'es/notas',
+    ancho: 1440,
+    alto: 900,
+    tema: 'light',
+    siembra: {
+      clave: 'dgo-tools-notas',
+      valor: {
+        v: 1,
+        tareas: [
+          {
+            id: 'a',
+            texto: 'derivar el acento y medirlo con la propia herramienta',
+            hecha: true,
+          },
+          {
+            id: 'b',
+            texto: 'reencuadrar los copys de husos',
+            hecha: true,
+          },
+          {
+            id: 'c',
+            texto: 'comprobar que no da tirón al restaurar',
+            hecha: false,
+          },
+          {
+            id: 'd',
+            texto: 'capturas en claro y en oscuro',
+            hecha: false,
+          },
+          {
+            id: 'e',
+            texto: 'subir y mirar en producción',
+            hecha: false,
+          },
+        ],
+        nota: 'Rama: notas\nAcento: #0169cd claro / #2c8efe oscuro\n\nEl frambuesa del plan chocaba con --danger (tono 30).',
+      },
+    },
+  },
+  {
+    nombre: 'notas-estrecho',
+    ruta: 'es/notas',
+    ancho: 485,
+    alto: 900,
+    siembra: {
+      clave: 'dgo-tools-notas',
+      valor: {
+        v: 1,
+        tareas: [
+          {
+            id: 'a',
+            texto: 'derivar el acento y medirlo con la propia herramienta',
+            hecha: true,
+          },
+          {
+            id: 'b',
+            texto: 'reencuadrar los copys de husos',
+            hecha: true,
+          },
+          {
+            id: 'c',
+            texto: 'comprobar que no da tirón al restaurar',
+            hecha: false,
+          },
+          {
+            id: 'd',
+            texto: 'capturas en claro y en oscuro',
+            hecha: false,
+          },
+          {
+            id: 'e',
+            texto: 'subir y mirar en producción',
+            hecha: false,
+          },
+        ],
+        nota: 'Rama: notas\nAcento: #0169cd claro / #2c8efe oscuro\n\nEl frambuesa del plan chocaba con --danger (tono 30).',
+      },
+    },
   },
   { nombre: 'husos-ventana-baja', ruta: 'es/horarios', ancho: 1280, alto: 420 },
   { nombre: 'escala-estrecho', ruta: 'es/escala', ancho: 485, alto: 760 },
@@ -311,9 +436,24 @@ window.addEventListener('load', () => {
 });
 </script>`;
 
-/** Siembra `sessionStorage` antes de que hidrate la isla. */
-const sembrar = (cuenta) => `<script>
-  try { sessionStorage.setItem('dgo-pomodoro', '${JSON.stringify(cuenta)}'); } catch (e) {}
+/**
+ * Siembra `sessionStorage` antes de que hidrate la isla.
+ *
+ * Era solo del pomodoro y ahora la usan dos herramientas, así que la
+ * clave viaja con el valor. Es la única forma de mirar un estado al que
+ * no se llega pulsando: una cuenta a medias o una libreta con doce cosas
+ * apuntadas.
+ *
+ * El valor se mete con `JSON.stringify` DOS veces, y no es un descuido.
+ * La primera hace el JSON que se guarda; la segunda lo convierte en un
+ * literal de JavaScript bien escapado. Sin la segunda, un salto de línea
+ * dentro de la nota salía como \n dentro de una cadena de JavaScript, que
+ * al ejecutarse volvía a ser un salto de verdad, y ese salto dentro de una
+ * cadena de JSON la invalida. La libreta se leía rota y la captura salía
+ * vacía — en verde, sin decir nada.
+ */
+const sembrar = ({ clave, valor }) => `<script>
+  try { sessionStorage.setItem(${JSON.stringify(clave)}, ${JSON.stringify(JSON.stringify(valor))}); } catch (e) {}
 </script>`;
 
 /**
@@ -322,16 +462,39 @@ const sembrar = (cuenta) => `<script>
  * paso, que solo aparece si alguien pulsa el botón.
  */
 function preparar(ruta, { tema, tour, siembra, clics, guion }) {
-  const marca = [tema ?? '', tour === undefined ? '' : `t${tour}`, siembra ? 's' : '', clics ? 'c' : '', guion ? 'g' : '']
+  const marca = [
+    tema ?? '',
+    tour === undefined ? '' : `t${tour}`,
+    siembra ? 's' : '',
+    clics ? 'c' : '',
+    guion ? 'g' : '',
+  ]
     .filter(Boolean)
     .join('_');
   const copia = join(dist, `_ver_${marca}_${ruta.replace(/\//g, '_')}.html`);
 
   let html = readFileSync(join(dist, `${ruta}.html`), 'utf8');
-  if (tema) html = html.replace('<html ', `<html data-theme="${tema}" `);
-  // La siembra va en el <head>: tiene que estar puesta antes de que la
-  // isla lea `sessionStorage` al montarse.
-  if (siembra) html = html.replace('</head>', sembrar(siembra) + '</head>');
+
+  /*
+    Todo lo que hay que dejar puesto ANTES de que la página se monte, y va
+    nada más abrir el <head> por un motivo concreto.
+
+    El tema se pedía escribiendo `data-theme` en el <html>. Dejó de
+    funcionar el día que el script en línea de la maqueta pasó a BORRAR ese
+    atributo cuando nadie ha elegido tema — que es lo correcto, porque si
+    no, al cambiar de página con el enrutador se quedaría pegado el tema de
+    la anterior. La captura «clara» salía oscura, sin decir nada.
+
+    Ahora se pide como lo pediría una persona: dejando la elección en
+    `localStorage`. Y por eso esto tiene que ir ANTES del script de la
+    maqueta, no al final del <head>, que es donde iba la siembra.
+  */
+  const preludio =
+    (tema
+      ? `<script>try { localStorage.setItem('dgo-tools-theme', '${tema}'); } catch (e) {}</script>`
+      : '') + (siembra ? sembrar(siembra) : '');
+
+  if (preludio) html = html.replace('<head>', '<head>' + preludio);
   if (tour !== undefined) html = html.replace('</body>', abrirTour(tour) + '</body>');
   if (clics) html = html.replace('</body>', pulsar(clics) + '</body>');
   if (guion) html = html.replace('</body>', guionLibre(guion) + '</body>');
@@ -363,7 +526,10 @@ try {
         guion: vista.guion,
       });
       temporales.push(copia);
-      ruta = copia.slice(dist.length + 1).replace(/\\/g, '/').replace(/\.html$/, '');
+      ruta = copia
+        .slice(dist.length + 1)
+        .replace(/\\/g, '/')
+        .replace(/\.html$/, '');
     }
 
     const archivo = join(salida, `${vista.nombre}.png`);

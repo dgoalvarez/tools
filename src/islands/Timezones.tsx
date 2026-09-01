@@ -1,12 +1,14 @@
 /**
  * La herramienta de husos horarios.
  *
- * El problema real: tienes una cita a las tres de la tarde hora de Colombia
- * y necesitas decírsela en *su* hora a alguien que vive en Estados Unidos,
- * donde hay seis husos y donde varios estados están partidos por la mitad.
+ * El problema real: son las tres de la tarde aquí y hace falta saber qué
+ * hora es en otro sitio — para llamar, para no escribir a las cuatro de la
+ * madrugada de alguien, para saber si una tienda está abierta. Y si ese
+ * sitio es Estados Unidos, hay seis husos y varios estados partidos por la
+ * mitad.
  *
  * Por eso lo que de verdad entrega la herramienta no es una tabla, es una
- * frase que se pega en WhatsApp. La tabla es el camino, no el destino.
+ * línea que se pega en WhatsApp. La tabla es el camino, no el destino.
  *
  * La aritmética vive en src/lib/timezones.ts. Los datos de ciudades y
  * códigos postales se descargan solo cuando alguien los usa.
@@ -38,7 +40,7 @@ import { escribirParams, leerParams } from '@/lib/url-state';
 
 /**
  * El origen por defecto. Sale del problema que dio origen a la herramienta:
- * agendar desde Colombia para gente repartida por Estados Unidos.
+ * mirar desde Colombia las horas de Estados Unidos.
  */
 const ORIGEN_INICIAL = { zona: 'America/Bogota', etiqueta: 'Bogotá' };
 
@@ -145,9 +147,10 @@ export default function Timezones({ lang }: Props) {
   /**
    * El origen sale del navegador.
    *
-   * Estaba en «para quién» y añadía un destino, que es justo lo contrario
-   * de lo que dice el botón: «mi ubicación» es de dónde escribo la hora,
-   * no a quién se la digo. Ahora vive en «mi cita» y fija el origen.
+   * Estaba en «en qué sitios» y añadía un destino, que es justo lo
+   * contrario de lo que dice el botón: «mi ubicación» es de dónde parte la
+   * hora, no uno de los sitios que se consultan. Ahora vive arriba, en la
+   * tarjeta de la hora, y fija el origen.
    */
   function origenDeMiUbicacion() {
     const zona = zonaDelNavegador();
@@ -269,7 +272,7 @@ export default function Timezones({ lang }: Props) {
     <div className="grid gap-8 lg:grid-cols-[minmax(0,var(--col-controles))_minmax(0,1fr)] lg:items-start">
       {/* ---------------- Controles ---------------- */}
       <div className="columna-herramienta gap-4">
-        <section className="tarjeta-control" data-tour="cita">
+        <section className="tarjeta-control" data-tour="hora">
           <h2 className="titulo">{tr('origenTitulo')}</h2>
 
           <div className="grid grid-cols-2 gap-3">
@@ -289,15 +292,15 @@ export default function Timezones({ lang }: Props) {
           </div>
 
           {/*
-            De dónde es esa hora casi nunca se cambia: quien agenda lo hace
-            desde su propia zona un día tras otro. Plegado, el resumen dice
-            cuál es —que es el 99 % de las veces lo único que hace falta
-            saber— y abrirlo cuesta una pulsación las pocas veces que no.
+            De dónde es esa hora casi nunca se cambia: casi siempre es la
+            de uno, un día tras otro. Plegado, el resumen dice cuál es —que
+            es el 99 % de las veces lo único que hace falta saber— y abrirlo
+            cuesta una pulsación las pocas veces que no.
 
-            «Mi ubicación» vive aquí dentro y no en «para quién». Ahí abajo
-            añadía un destino, que es lo contrario de lo que dice el botón:
-            mi ubicación es desde dónde escribo la hora, no a quién se la
-            digo.
+            «Mi ubicación» vive aquí dentro y no abajo, entre los sitios.
+            Ahí abajo añadía un destino, que es lo contrario de lo que dice
+            el botón: mi ubicación es de dónde parte la hora, no uno de los
+            sitios que se consultan.
           */}
           <details className="rounded-lg border border-line" data-tour="origen">
             <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2.5 text-[length:var(--fs-small)] marker:content-none">
@@ -378,9 +381,9 @@ export default function Timezones({ lang }: Props) {
             </h2>
 
             <div className="flex items-center gap-2">
-              {/* Un mensaje con todas, no una frase por ciudad. Cuando se
-                  agenda con cinco personas se manda un mensaje al grupo,
-                  no cinco frases iguales seguidas. */}
+              {/* Un mensaje con todas, no una línea por ciudad. Si son
+                  cinco sitios se manda un mensaje con los cinco, no cinco
+                  frases iguales seguidas. */}
               {destinos.length > 0 && resultado && (
                 <Button
                   variant="outline"

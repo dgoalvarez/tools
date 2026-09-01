@@ -1,6 +1,6 @@
 /**
  * El buscador de lugares que usa la herramienta de husos horarios, tanto
- * para el origen de la cita como para cada destino.
+ * para el sitio del que parte la hora como para cada sitio que se consulta.
  *
  * Decide solo qué archivo de datos necesita: cinco dígitos son un código
  * postal de Estados Unidos y cualquier otra cosa es el nombre de una

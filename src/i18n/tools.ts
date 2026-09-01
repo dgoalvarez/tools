@@ -43,16 +43,16 @@ export const TOOLS: Record<ToolKey, Tool> = {
     // cualquiera; lo que se agradece a las once de la noche es que alguien
     // te avise de que allí ya es mañana.
     summary: {
-      es: 'Di tu hora en la hora del otro, sin equivocarte de día.',
-      en: 'Say your time in their time, without getting the day wrong.',
+      es: 'Qué hora es en otro sitio cuando aquí son las tres.',
+      en: 'What time it is somewhere else when it is three o’clock here.',
     },
     description: {
-      es: 'Escribe la hora de la cita en tu zona y léela en la de cada persona que tenga que estar. Busca por ciudad —en español o en inglés— o por código ZIP, que es lo que distingue los siete estados de Estados Unidos partidos entre dos husos. Avisa en rojo cuando allí ya es otro día, y te da la frase escrita en su hora, lista para pegar.',
-      en: 'Type the meeting time in your zone and read it in everyone else’s. Search by city — in English or Spanish — or by ZIP code, which is what tells apart the seven US states split across two zones. It warns in red when it is already another day there, and hands you the sentence written in their time, ready to paste.',
+      es: 'Pon una hora y mira en qué hora se convierte en los sitios que te interesen. Busca por ciudad —en español o en inglés— o por código ZIP, que es lo que distingue los siete estados de Estados Unidos partidos entre dos husos. Avisa en rojo cuando allí ya es otro día, y te da la frase escrita en su hora, lista para pegar.',
+      en: 'Set a time and see what time it becomes in the places you care about. Search by city — in English or Spanish — or by ZIP code, which is what tells apart the seven US states split across two zones. It warns in red when it is already another day there, and hands you the sentence written in their time, ready to paste.',
     },
     listo: true,
-    // Sale bajo Productividad, que es donde la busca quien agenda; la
-    // atención al cliente es su otro uso y aparece en la ficha.
+    // Sale bajo Productividad, que es donde se busca; la atención al
+    // cliente es su otro uso y aparece en la ficha.
     etiquetas: {
       ambito: ['productividad', 'atencionCliente'],
       materia: 'tiempo',
@@ -94,6 +94,23 @@ export const TOOLS: Record<ToolKey, Tool> = {
     listo: true,
     etiquetas: { ambito: ['productividad'], materia: 'tiempo', tarea: 'cronometrar' },
     icono: 'cronometro',
+  },
+  notes: {
+    name: { es: 'Notas', en: 'Notes' },
+    // Dice lo que es y para cuándo es. «Para lo que estás haciendo ahora»
+    // hace el trabajo de explicar por qué se borra al cerrar: no es una
+    // agenda, es el papel que se tiene al lado mientras dura el rato.
+    summary: {
+      es: 'Una lista y un papel para lo que estás haciendo ahora.',
+      en: 'A list and a scrap of paper for what you are doing right now.',
+    },
+    description: {
+      es: 'Apunta lo que tienes que hacer en este rato y ve marcándolo, con un papel al lado para lo que no es una tarea: un enlace, un número, tres frases. Se queda mientras la pestaña siga abierta —aguanta recargas y saltar a otra herramienta y volver— y desaparece al cerrarla. No hay cuenta ni servidor, y nada de lo que escribas sale de tu aparato. La lista se copia en Markdown para llevártela a donde haga falta.',
+      en: 'Jot down what you have to do in this stretch and tick it off as you go, with a scrap of paper beside it for what is not a task: a link, a number, three sentences. It stays as long as the tab is open — it survives reloads and a trip to another tool and back — and goes when you close it. There is no account and no server, and nothing you write leaves your device. The list copies out as Markdown so you can take it wherever you need.',
+    },
+    listo: true,
+    etiquetas: { ambito: ['productividad'], materia: 'texto', tarea: 'anotar' },
+    icono: 'notas',
   },
   contrast: {
     name: { es: 'Contraste', en: 'Contrast' },

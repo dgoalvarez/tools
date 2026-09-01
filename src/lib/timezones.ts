@@ -101,7 +101,8 @@ export interface Conversion {
   diferencia: number;
   /**
    * −1 si allí es el día anterior, +1 si es el siguiente, 0 si es el mismo.
-   * Este es el error que de verdad se comete al agendar.
+   * Este es el error que de verdad se comete: acertar la hora y
+   * equivocarse el día.
    */
   saltoDeDia: -1 | 0 | 1;
   /** «EDT», «PST», «GMT-5»… tal como lo nombra el propio sitio. */
@@ -297,9 +298,12 @@ export function convertir(
  * La frase lista para pegar en WhatsApp o en un correo.
  *
  * Es lo que hace que la herramienta sirva de algo: nadie quiere una tabla
- * de conversiones, quiere poder decirle a alguien a qué hora es la cita en
- * *su* hora. Por eso la hora del destino va primero y la del origen entre
- * paréntesis: la frase se escribe para quien la va a recibir.
+ * de conversiones, quiere una línea que se pega y se entiende sola.
+ *
+ * La forma es «cuando aquí son las X, allí son las Y», que es la pregunta
+ * tal y como se hace. Antes decía «tu cita es…», y eso obligaba a que
+ * siempre hubiera una cita: la herramienta sirve igual para saber cuándo
+ * abre una tienda, cuándo sale un vuelo o a qué hora emiten algo.
  */
 export function componerFrase(conversion: Conversion, origen: Conversion, lang: string): string {
   const lugar = conversion.destino.etiqueta;
@@ -307,25 +311,25 @@ export function componerFrase(conversion: Conversion, origen: Conversion, lang: 
   if (lang === 'es') {
     const dia =
       conversion.saltoDeDia === 0
-        ? `el ${conversion.fecha}`
-        : `el ${conversion.fecha} (ojo: allí ya es ${conversion.saltoDeDia > 0 ? 'el día siguiente' : 'el día anterior'})`;
+        ? `(${conversion.fecha})`
+        : `(${conversion.fecha} — ojo: allí ya es ${conversion.saltoDeDia > 0 ? 'el día siguiente' : 'el día anterior'})`;
 
-    return `Tu cita es ${dia} a las ${conversion.hora}, hora de ${lugar} (${origen.hora} en ${origen.destino.etiqueta}).`;
+    return `Cuando en ${origen.destino.etiqueta} son las ${origen.hora}, en ${lugar} son las ${conversion.hora} ${dia}.`;
   }
 
   const dia =
     conversion.saltoDeDia === 0
-      ? `on ${conversion.fecha}`
-      : `on ${conversion.fecha} (note: that is the ${conversion.saltoDeDia > 0 ? 'next' : 'previous'} day where you are)`;
+      ? `(${conversion.fecha})`
+      : `(${conversion.fecha} — note: that is the ${conversion.saltoDeDia > 0 ? 'next' : 'previous'} day there)`;
 
-  return `Your appointment is ${dia} at ${conversion.hora}, ${lugar} time (${origen.hora} in ${origen.destino.etiqueta}).`;
+  return `When it is ${origen.hora} in ${origen.destino.etiqueta}, it is ${conversion.hora} in ${lugar} ${dia}.`;
 }
 
 /**
  * Todas las horas en un solo mensaje.
  *
  * Sustituye a las frases sueltas que había bajo cada ficha, y no solo por
- * espacio: cuando se agenda con cinco personas lo que se manda es UN
+ * espacio: cuando son cinco sitios lo que se manda es UN
  * mensaje al grupo, no cinco frases iguales una detrás de otra. El aviso
  * de que allí es otro día viaja dentro de la línea que le toca, que es
  * donde hace falta.
@@ -350,7 +354,7 @@ export function componerLista(destinos: Conversion[], origen: Conversion, lang: 
     return `· ${quien} — ${c.fecha}, ${c.hora}${aviso}`;
   };
 
-  const cabecera = es ? 'Tu cita:' : 'Your appointment:';
+  const cabecera = es ? 'La hora en cada sitio:' : 'The time in each place:';
 
   return [cabecera, linea(origen, true), ...destinos.map((c) => linea(c, false))].join('\n');
 }

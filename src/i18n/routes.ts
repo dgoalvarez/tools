@@ -16,6 +16,7 @@ export type PageKey =
   | 'timezones'
   | 'clock'
   | 'pomodoro'
+  | 'notes'
   | 'contrast'
   | 'palette'
   | 'scale';
@@ -28,6 +29,7 @@ export const ROUTES: Record<PageKey, Record<Lang, string>> = {
   // nadie busca.
   clock: { en: '/en/clock', es: '/es/reloj' },
   pomodoro: { en: '/en/pomodoro', es: '/es/pomodoro' },
+  notes: { en: '/en/notes', es: '/es/notas' },
   contrast: { en: '/en/contrast', es: '/es/contraste' },
   palette: { en: '/en/palette', es: '/es/paleta' },
   scale: { en: '/en/type-scale', es: '/es/escala' },
@@ -41,6 +43,9 @@ export const TOOL_KEYS = [
   'timezones',
   'clock',
   'pomodoro',
+  // Va detrás del pomodoro a propósito: es su pareja. Se apuntan las
+  // tres cosas de la sesión, se pone el temporizador, y se vuelve.
+  'notes',
   'contrast',
   'palette',
   'scale',

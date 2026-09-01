@@ -147,7 +147,10 @@ window.__romperse = function () {
 /** Escribe en un campo de React: el valor va por el setter nativo. */
 const ESCRIBIR = `
 function __escribir(el, valor) {
-  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  var proto = el.tagName === 'TEXTAREA'
+    ? window.HTMLTextAreaElement.prototype
+    : window.HTMLInputElement.prototype;
+  const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
   setter.call(el, valor);
   el.dispatchEvent(new Event('input', { bubbles: true }));
 }
@@ -176,7 +179,6 @@ const ORIGEN_LARGO = `
   d.open = false;
 })()
 `;
-
 
 /**
  * El pomodoro en marcha y con varios tramos hechos: es cuando aparece
@@ -225,6 +227,35 @@ const RELOJ_CUMPLIDO = `
   const botones = document.querySelectorAll('[data-tour="temporizador"] button');
   botones[botones.length - 1].click();
   await new Promise((r) => setTimeout(r, 2500));
+})()
+`;
+
+/** Cuarenta líneas con texto largo, y una nota de un párrafo. */
+const NOTAS_LLENA = `
+(async () => {
+  const campo = await __esperar(() => document.querySelector('.campo-nuevo'));
+  const formulario = campo.closest('form');
+  for (let i = 0; i < 40; i++) {
+    __escribir(campo, 'tarea numero ' + i + ' con un texto bastante largo para apretar la fila');
+    formulario.requestSubmit();
+    await new Promise((r) => setTimeout(r, 15));
+  }
+  const nota = document.querySelector('.campo-nota');
+  __escribir(nota, 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(30));
+  await new Promise((r) => setTimeout(r, 500));
+})()
+`;
+
+/** Una línea de trescientos caracteres sin un solo espacio. */
+const NOTAS_SIN_ESPACIOS = `
+(async () => {
+  const campo = await __esperar(() => document.querySelector('.campo-nuevo'));
+  const formulario = campo.closest('form');
+  __escribir(campo, 'x'.repeat(300));
+  formulario.requestSubmit();
+  await new Promise((r) => setTimeout(r, 100));
+  __escribir(document.querySelector('.campo-nota'), 'y'.repeat(300));
+  await new Promise((r) => setTimeout(r, 500));
 })()
 `;
 
@@ -285,6 +316,10 @@ const CASOS = [
   { nombre: 'paleta · quince pasos', ruta: 'es/paleta', query: 'n=15' },
   { nombre: 'paleta · semilla casi blanca', ruta: 'es/paleta', query: 't=casi:fbfbfa' },
   { nombre: 'paleta · con las tintas', ruta: 'es/paleta' },
+  { nombre: 'notas · vacía', ruta: 'es/notas' },
+  { nombre: 'notas · cuarenta líneas', ruta: 'es/notas', hacer: NOTAS_LLENA },
+  { nombre: 'notas · sin un espacio', ruta: 'es/notas', hacer: NOTAS_SIN_ESPACIOS },
+  { nombre: 'notas · en inglés', ruta: 'en/notes' },
   { nombre: 'portada', ruta: 'es' },
   { nombre: 'portada en inglés', ruta: 'en' },
 ];

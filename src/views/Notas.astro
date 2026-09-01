@@ -1,0 +1,35 @@
+---
+/**
+ * La página de notas.
+ *
+ * El aviso de que esto se va al cerrar la pestaña va AQUÍ y no dentro de
+ * la isla: es texto fijo, no depende de nada que se escriba, y así sale
+ * del servidor en el primer pintado. Quien llega tiene que leerlo antes
+ * de escribir, no después.
+ */
+import Tool from '../layouts/Tool.astro';
+import Notas from '../islands/Notas';
+import { NOTAS } from '../i18n/notas';
+import { UI } from '../i18n/ui';
+import { t, type Lang } from '../i18n/config';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<Tool lang={lang} tool="notes">
+  <p class="aviso-sesion" data-tour="aviso">{t(NOTAS.aviso, lang)}</p>
+
+  <Notas client:load lang={lang} />
+
+  <noscript>
+    <p
+      class="mt-6 max-w-[var(--measure)] rounded-lg border border-line bg-surface-2 p-4 text-[length:var(--fs-small)] text-ink-muted"
+    >
+      {t(UI.sinJs, lang)}
+    </p>
+  </noscript>
+</Tool>

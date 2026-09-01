@@ -29,6 +29,10 @@ npm-debug.log*
 # Maquetas de las propuestas de diseño (el entregable es el lienzo publicado)
 design/
 
+# …pero las derivaciones de color sí: son el origen medido de los tokens
+# que están en global.css, y sin ellas los valores parecen elegidos a ojo.
+!design/*.ts
+
 # El lienzo de propuestas se publica, no se versiona (3 MB)
 home-y-navegacion-cuatro-direcciones.html
 dgo-tools-editorial-oscuro.html

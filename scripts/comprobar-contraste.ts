@@ -210,6 +210,7 @@ console.log('\n10. Los botones principales del propio sitio');
     ['--solido-tiempo', '#946000'],
     ['--solido-color', '#884fc4'],
     ['--solido-tipografia', '#007872'],
+    ['--solido-texto', '#0169cd'],
   ];
   /** --solido-ink. */
   const TINTA = '#ffffff';
@@ -243,6 +244,7 @@ console.log('\n10. Los botones principales del propio sitio');
     ['--d-tiempo', '#e8a33d'],
     ['--d-color', '#b47cf5'],
     ['--d-tipografia', '#31c5bc'],
+    ['--d-texto', '#2c8efe'],
   ] as [string, string][]) {
     const a = medirApca('#10191b', acento, BOTON);
     afirmar(

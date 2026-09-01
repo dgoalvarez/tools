@@ -308,6 +308,7 @@ export default function Timezones({ lang }: Props) {
       cargando: tr('cargando'),
       sinResultados: tr('sinResultados'),
       zipDesconocido: tr('zipDesconocido'),
+      fallo: tr('falloDatos'),
     }),
     // Los textos solo dependen del idioma, que no cambia sin recargar.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -870,7 +871,7 @@ export default function Timezones({ lang }: Props) {
                   Aparece a partir de la segunda, que es cuando empieza a
                   hacer falta. */}
               {destinos.length > 1 && (
-                <Button variant="ghost" size="sm" onClick={() => setDestinos([])}>
+                <Button variant="outline" size="sm" onClick={() => setDestinos([])}>
                   <TrashIcon aria-hidden="true" />
                   {tr('quitarTodas')}
                 </Button>

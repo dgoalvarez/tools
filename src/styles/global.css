@@ -2448,7 +2448,7 @@
 
   .caja-mundial {
     width: 100%;
-    max-height: var(--alto-lista-modo, 16rem);
+    max-height: var(--alto-lista-modo);
     overflow-y: auto;
     overscroll-behavior: contain;
     /*
@@ -3053,13 +3053,25 @@
     pestaña para avisar de que algo corría donde no se estaba mirando, que
     es un parche para un problema que con tarjetas no existe.
 
-    `auto-fit` con un mínimo de 19rem: tres en fila en pantalla ancha, dos
-    y una cuando no caben, y una debajo de otra en el móvil. Sin puntos de
-    corte escritos a mano, que envejecen mal.
+    Hay DOS repartos y por eso hay un punto de corte escrito a mano, que
+    es justo lo que este archivo evita casi siempre:
+
+      · Por debajo de 64rem, `auto-fit` con un suelo de 19rem. Se ajusta
+        solo —dos y dos, o una debajo de otra— y ninguna columna baja de
+        los 19rem, que es el ancho por debajo del cual «Carolina del Norte
+        (hora oriental)» se corta a la mitad.
+      · A partir de 64rem, tres columnas colocadas a mano: las dos listas
+        juntas y las dos cortas apiladas. Eso no lo sabe hacer `auto-fit`,
+        porque no es un reparto por ancho sino por comportamiento.
   */
   .modos-reloj {
     display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
     gap: 1rem;
+    /* El tope de alto de las dos listas, escrito UNA vez. Estaban en 15rem
+       y 17rem, cada una por su lado, y esa clase de diferencia no se ve
+       mirando una tarjeta: solo mirando las dos a la vez. */
+    --alto-lista-modo: 16rem;
     /* A la misma altura. Con `start` cada una medía lo que medía su
        contenido y la fila quedaba dentada; cajas de altos distintos se
        leen como cosas sueltas y no como un juego. */
@@ -3078,11 +3090,15 @@
     La alarma y el temporizador ocupan poco y sobraba medio metro de
     tarjeta vacía debajo de cada una. Apiladas suman lo que mide una lista.
 
-    El ORDEN DEL DOM no es este: es mundial, alarma, cronómetro,
-    temporizador, que es el orden en que se apilan en un teléfono —el
-    mundial primero, pegado al reloj grande, y lo que se pone en marcha
-    detrás—. Aquí solo se recolocan, así que el móvil no depende de un
-    equilibrio de altos que allí no significa nada.
+    El orden del DOM es el MISMO que se lee aquí: mundial, cronómetro,
+    alarma, temporizador —columna uno, columna dos, y la tres de arriba
+    abajo—. No es casualidad: si el DOM fuera otro, el tabulador saltaría
+    de la primera columna a la tercera, volvería a la segunda y bajaría
+    otra vez a la derecha. Quien navega con teclado perdería el hilo.
+
+    Eso ata también el móvil, donde se apilan en ese mismo orden. El
+    mundial sigue primero, que era lo que importaba: va pegado al reloj
+    grande al que acompaña, y detrás lo que se pone en marcha a propósito.
   */
   @media (width >= 64rem) {
     .modos-reloj {
@@ -3110,63 +3126,31 @@
     }
 
     /*
-      Las dos listas se estiran hasta el fondo de su tarjeta.
+      NO se les quita el tope aquí, y eso costó medirlo.
 
-      Con el tope fijo de 16rem, la columna apilada —alarma más
-      temporizador— salía bastante más alta que las listas y debajo de
-      cada una quedaba medio metro de tarjeta vacía. Ridículo: sobraba
-      sitio y la lista se cortaba igual.
+      Lo intenté: la última fila de estas dos tarjetas a `1fr` y la caja a
+      `height: 100%`, para que una lista larga usara todo el alto en vez de
+      dejar tarjeta vacía debajo. No funciona. Medido a 1440:
+      `.caja-mundial` quedaba en `max-height: none`, alto 476, contenido
+      476, `desplaza=false`. Un porcentaje contra una fila de alto
+      indefinido se resuelve como `auto` mientras se dimensiona la rejilla,
+      así que la caja crecía con el contenido y arrastraba a la fila
+      entera: la lista dejaba de desplazarse justo en pantalla ancha, que
+      es donde más sitios caben.
 
-      Aquí la última fila de estas dos tarjetas se queda con lo que sobre,
-      y la caja de dentro la ocupa entera. El tope deja de ser un número
-      escrito a mano y pasa a ser «lo que dé la tarjeta», que es el mismo
-      para las dos porque las dos ocupan las mismas filas. Cuando la lista
-      es corta no pasa nada; cuando es larga, aprovecha todo.
+      Y de paso destapó otra: el `max-height: none` le llegaba a
+      `.caja-mundial` —declarada antes— pero NO a `.caja-vueltas`, que se
+      declara cien líneas más abajo. Misma especificidad, misma capa, manda
+      el orden. Las dos listas acababan comportándose distinto, que es
+      exactamente lo que este reparto venía a arreglar.
 
-      Los `auto` de delante son los renglones fijos de cada una: la
-      cabecera y el buscador en el mundial; el título, la cifra y los
-      mandos en el cronómetro.
+      Se queda el tope de `--alto-lista-modo` en todas las anchuras: cuesta
+      algo de tarjeta vacía cuando la lista es corta, y a cambio las dos se
+      comportan igual siempre.
     */
-    .tarjeta-mundial {
-      grid-template-rows: auto auto 1fr;
-    }
-
-    .tarjeta-cronometro {
-      grid-template-rows: auto auto auto 1fr;
-    }
-
-    /* `min-height: 0` es lo que permite que una caja con desplazamiento
-       encoja dentro de su fila. Sin él la fila crece con el contenido y
-       el desplazamiento no llega a aparecer nunca. */
-    .caja-mundial,
-    .caja-vueltas {
-      max-height: none;
-      min-height: 0;
-      height: 100%;
-    }
-  }
-
-  /* Entre el móvil y las tres columnas, dos y dos. */
-  @media (width >= 40rem) and (width < 64rem) {
-    .modos-reloj {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
   }
 
   /* El título de la tarjeta comparte renglón con lo que la gobierna. */
-  /*
-    El tope de alto de las dos listas, en un solo sitio.
-
-    El reloj mundial y las vueltas del cronómetro son tarjetas del mismo
-    nivel y tienen que comportarse igual: el mismo alto máximo y, por
-    tanto, el mismo momento en que aparece el desplazamiento. Estaban en
-    15rem y 17rem, cada una escrita por su lado, y esa clase de diferencia
-    no se ve mirando una tarjeta — solo mirando las dos a la vez.
-  */
-  .modos-reloj {
-    --alto-lista-modo: 16rem;
-  }
-
   .cabecera-modo {
     display: flex;
     align-items: center;
@@ -3295,7 +3279,7 @@
   */
   .caja-vueltas {
     width: 100%;
-    max-height: var(--alto-lista-modo, 16rem);
+    max-height: var(--alto-lista-modo);
     overflow-y: auto;
     overscroll-behavior: contain;
   }

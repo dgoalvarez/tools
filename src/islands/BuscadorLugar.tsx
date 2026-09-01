@@ -55,6 +55,8 @@ export interface TextosBuscador {
   cargando: string;
   sinResultados: string;
   zipDesconocido: string;
+  /** Cuando la descarga de los datos falla. */
+  fallo: string;
 }
 
 interface Props {
@@ -150,6 +152,15 @@ export default function BuscadorLugar({
           setSugerencias(encontradas);
           if (encontradas.length === 0) setAviso(textos.sinResultados);
         }
+      } catch {
+        /*
+          Si la descarga falla —sin red, un 404, un JSON roto— hay que
+          decirlo. Sin este `catch` la promesa se rechazaba dentro de un
+          `setTimeout` sin nadie que la recogiera: el aviso se quedaba
+          vacío, la línea de ayuda desaparecía, y quien buscaba se
+          encontraba un campo que no contesta y no explica por qué.
+        */
+        if (!cancelado) setAviso(textos.fallo);
       } finally {
         clearTimeout(indicador);
         if (!cancelado) setBuscando(false);
@@ -161,7 +172,7 @@ export default function BuscadorLugar({
       clearTimeout(temporizador);
       clearTimeout(indicador);
     };
-  }, [consulta, lang, pedirLugares, pedirZips, textos.sinResultados, textos.zipDesconocido]);
+  }, [consulta, lang, pedirLugares, pedirZips, textos.sinResultados, textos.zipDesconocido, textos.fallo]);
 
   function elegir(coincidencia: Coincidencia) {
     onElegir(coincidencia);

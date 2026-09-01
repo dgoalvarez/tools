@@ -23,7 +23,7 @@
  *     corriendo y los segundos están apagados, el reloj repinta cada
  *     medio minuto en vez de cuatro veces por segundo.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowCounterClockwiseIcon,
   BellIcon,
@@ -157,19 +157,41 @@ export default function Reloj({ lang }: Props) {
   const lugares = useRef<DatosLugares | null>(null);
   const zips = useRef<DatosZips | null>(null);
 
-  const pedirLugares = async () => {
+  /*
+    Las dos van con `useCallback`, y aquí NO es una optimización: es lo que
+    hace que el buscador funcione.
+
+    Esta isla se repinta cada 250 ms —el reloj mundial enseña segundos, así
+    que la pestaña late aunque no haya nada contando—. Sin memorizarlas,
+    cada repintado creaba funciones nuevas; están en las dependencias del
+    efecto del buscador, así que el efecto se desmontaba y se rearmaba
+    cuatro veces por segundo. Tres consecuencias, y ninguna se ve leyendo
+    el buscador:
+
+      · «Cargando…» necesita 180 ms de respiro más 250 de margen seguidos,
+        y nunca los tenía: en la única página donde de verdad hace falta
+        —la primera búsqueda descarga 750 KB— no llegaba a salir.
+      · Cada rearme volvía a llamar a `fetch`, porque la caché de abajo
+        solo se rellena DESPUÉS del await. Una descarga de tres segundos
+        se convertía en una docena de peticiones del mismo archivo.
+      · El aviso de «sin resultados» se borraba en cada rearme y volvía
+        180 ms después: parpadeaba cuatro veces por segundo.
+
+    En la herramienta de husos ya iban memorizadas; aquí se quedaron sin.
+  */
+  const pedirLugares = useCallback(async () => {
     if (!lugares.current) {
       lugares.current = (await (await fetch('/data/lugares.json')).json()) as DatosLugares;
     }
     return lugares.current;
-  };
+  }, []);
 
-  const pedirZips = async () => {
+  const pedirZips = useCallback(async () => {
     if (!zips.current) {
       zips.current = (await (await fetch('/data/zips.json')).json()) as DatosZips;
     }
     return zips.current;
-  };
+  }, []);
 
   function anadirSitio(c: Coincidencia) {
     setSitios((previos) =>
@@ -615,14 +637,17 @@ export default function Reloj({ lang }: Props) {
       <div className="modos-reloj">
       {/* ---------------- Reloj mundial ----------------
 
-        Va pegado al reloj grande y a todo lo ancho, no dentro de la fila
-        de tres. Dos razones:
+        La primera del juego y en la primera columna, pegada al reloj
+        grande: es lo mismo que él —una hora que se lee— y no algo que se
+        pone en marcha, que es lo que son las otras tres.
 
-          · Es lo mismo que el reloj de arriba —una hora que se lee— y no
-            algo que se pone en marcha, que es lo que son las otras tres.
-          · En una columna de 19 rem, «Carolina del Norte (hora oriental)»
-            se cortaba a la mitad. Un nombre truncado en un reloj mundial
-            se carga justamente lo que distingue una fila de otra.
+        Estuvo a todo lo ancho, ella sola, porque en una columna de 19rem
+        «Carolina del Norte (hora oriental)» se corta a la mitad. Se
+        deshizo: una tarjeta ancha entre otras tres normales se leía como
+        una sección aparte, y con las filas a lo ancho de la pantalla el
+        nombre y su hora quedaban a un palmo de distancia. El nombre
+        truncado se acepta a cambio, y lleva su `title` para quien pase el
+        puntero. El suelo de 19rem por columna sigue puesto en la hoja.
       */}
       <section className="tarjeta-modo tarjeta-mundial" data-tour="mundial">
         {/* El título comparte renglón con «quitar todos», que aparece a
@@ -631,7 +656,7 @@ export default function Reloj({ lang }: Props) {
         <div className="cabecera-modo">
           <p className="titulo">{tr('mundial')}</p>
           {sitios.length > 1 && (
-            <Button variant="ghost" size="xs" onClick={() => setSitios([])}>
+            <Button variant="outline" size="xs" onClick={() => setSitios([])}>
               <TrashIcon aria-hidden="true" />
               {tr('quitarSitios')}
             </Button>
@@ -648,6 +673,7 @@ export default function Reloj({ lang }: Props) {
               cargando: tr('cargandoSitios'),
               sinResultados: tr('sinSitios'),
               zipDesconocido: tr('zipSinSitio'),
+              fallo: tr('falloDatos'),
             }}
             pedirLugares={pedirLugares}
             pedirZips={pedirZips}
@@ -661,10 +687,11 @@ export default function Reloj({ lang }: Props) {
           /*
             La lista no estira la tarjeta.
 
-            Es el mismo trato que las vueltas del cronómetro y por el mismo
-            motivo: las cuatro tarjetas de la fila están a la misma altura,
-            así que una lista sin tope arrastraba a las otras tres. Seis
-            sitios caben; a partir de ahí se desplaza dentro de su caja.
+            Es el mismo trato que las vueltas del cronómetro y con el mismo
+            número —`--alto-lista-modo`, escrito una sola vez en la hoja—,
+            porque son tarjetas del mismo nivel y tienen que empezar a
+            desplazarse en el mismo sitio. Sin tope, la lista arrastraba a
+            las tarjetas vecinas, que van a la misma altura.
           */
           <div className="caja-mundial">
             {/*
@@ -740,74 +767,6 @@ export default function Reloj({ lang }: Props) {
         )}
       </section>
 
-        {/* ---------------- Alarma ---------------- */}
-        <section className="tarjeta-modo tarjeta-alarma" data-tour="alarma">
-          <p className="titulo">{tr('alarma')}</p>
-
-          {alarmaSuena ? (
-            <div className="sonando">
-              <p className="titular">{tr('alarmaSonando')}</p>
-              <p className="cuando">{horaEscrita(fechaAhora, cara, locale)}</p>
-              <Button onClick={() => setAlarmaSuena(false)} className={BOTON}>
-                <BellSlashIcon aria-hidden="true" weight="fill" />
-                {tr('callar')}
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="fila-alarma">
-                <Label htmlFor="alarma-hora" className="sr-only">
-                  {tr('aQueHora')}
-                </Label>
-                <Input
-                  id="alarma-hora"
-                  type="time"
-                  value={alarma.hora}
-                  onChange={(e) => setAlarma((a) => ({ ...a, hora: e.target.value }))}
-                  className="hora-alarma"
-                />
-              </div>
-
-              <Button
-                onClick={() => conGesto(() => setAlarma((a) => ({ ...a, activa: !a.activa })))}
-                variant={alarma.activa ? 'outline' : 'default'}
-                className={alarma.activa ? undefined : BOTON}
-                disabled={!horaValida(alarma.hora)}
-              >
-                {alarma.activa ? (
-                  <>
-                    <BellSlashIcon aria-hidden="true" />
-                    {tr('quitarAlarma')}
-                  </>
-                ) : (
-                  <>
-                    <BellIcon aria-hidden="true" weight="fill" />
-                    {tr('ponerAlarma')}
-                  </>
-                )}
-              </Button>
-
-              {proxima && faltaAlarma !== null ? (
-                <p className="cuenta-alarma" aria-live="polite">
-                  {tr('suenaEn')} <strong>{comoCuenta(faltaAlarma)}</strong>
-                  <br />
-                  {tr('sueneA')}{' '}
-                  <strong>
-                    {new Intl.DateTimeFormat(locale, {
-                      weekday: 'long',
-                      hour: 'numeric',
-                      minute: '2-digit',
-                      ...(cara.formato !== 'auto' ? { hour12: cara.formato === '12' } : {}),
-                    }).format(proxima)}
-                  </strong>
-                </p>
-              ) : (
-                <p className="nota-limite">{tr('alarmaAviso')}</p>
-              )}
-            </>
-          )}
-        </section>
-
         {/* ---------------- Cronómetro ---------------- */}
         <section className="tarjeta-modo tarjeta-cronometro" data-tour="cronometro">
           <p className="titulo">{tr('cronometro')}</p>
@@ -877,6 +836,74 @@ export default function Reloj({ lang }: Props) {
                 </tbody>
               </table>
             </div>
+          )}
+        </section>
+
+        {/* ---------------- Alarma ---------------- */}
+        <section className="tarjeta-modo tarjeta-alarma" data-tour="alarma">
+          <p className="titulo">{tr('alarma')}</p>
+
+          {alarmaSuena ? (
+            <div className="sonando">
+              <p className="titular">{tr('alarmaSonando')}</p>
+              <p className="cuando">{horaEscrita(fechaAhora, cara, locale)}</p>
+              <Button onClick={() => setAlarmaSuena(false)} className={BOTON}>
+                <BellSlashIcon aria-hidden="true" weight="fill" />
+                {tr('callar')}
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="fila-alarma">
+                <Label htmlFor="alarma-hora" className="sr-only">
+                  {tr('aQueHora')}
+                </Label>
+                <Input
+                  id="alarma-hora"
+                  type="time"
+                  value={alarma.hora}
+                  onChange={(e) => setAlarma((a) => ({ ...a, hora: e.target.value }))}
+                  className="hora-alarma"
+                />
+              </div>
+
+              <Button
+                onClick={() => conGesto(() => setAlarma((a) => ({ ...a, activa: !a.activa })))}
+                variant={alarma.activa ? 'outline' : 'default'}
+                className={alarma.activa ? undefined : BOTON}
+                disabled={!horaValida(alarma.hora)}
+              >
+                {alarma.activa ? (
+                  <>
+                    <BellSlashIcon aria-hidden="true" />
+                    {tr('quitarAlarma')}
+                  </>
+                ) : (
+                  <>
+                    <BellIcon aria-hidden="true" weight="fill" />
+                    {tr('ponerAlarma')}
+                  </>
+                )}
+              </Button>
+
+              {proxima && faltaAlarma !== null ? (
+                <p className="cuenta-alarma" aria-live="polite">
+                  {tr('suenaEn')} <strong>{comoCuenta(faltaAlarma)}</strong>
+                  <br />
+                  {tr('sueneA')}{' '}
+                  <strong>
+                    {new Intl.DateTimeFormat(locale, {
+                      weekday: 'long',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      ...(cara.formato !== 'auto' ? { hour12: cara.formato === '12' } : {}),
+                    }).format(proxima)}
+                  </strong>
+                </p>
+              ) : (
+                <p className="nota-limite">{tr('alarmaAviso')}</p>
+              )}
+            </>
           )}
         </section>
 

@@ -29,6 +29,11 @@ export const RELOJ = {
     es: 'Ese código postal no está en los datos',
     en: 'That ZIP code is not in the data',
   },
+  /* Cuando la descarga de los datos falla. */
+  falloDatos: {
+    es: 'No se han podido cargar los datos. Comprueba la conexión.',
+    en: 'The data could not be loaded. Check your connection.',
+  },
   // ---------- Las pestañas ----------
   alarma: { es: 'Alarma', en: 'Alarm' },
   cronometro: { es: 'Cronómetro', en: 'Stopwatch' },

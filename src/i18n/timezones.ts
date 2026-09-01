@@ -68,6 +68,12 @@ export const HUSOS = {
     es: 'Ese código postal no está en los datos',
     en: 'That ZIP code is not in the data',
   },
+  /* Cuando la descarga de los datos falla. Sin esto, el campo se quedaba
+     mudo: ni resultados ni explicación. */
+  falloDatos: {
+    es: 'No se han podido cargar los datos. Comprueba la conexión.',
+    en: 'The data could not be loaded. Check your connection.',
+  },
   quitar: { es: 'Quitar', en: 'Remove' },
   quitarTodas: { es: 'Quitar todas', en: 'Remove all' },
   vacio: {

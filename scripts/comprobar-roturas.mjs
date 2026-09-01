@@ -420,7 +420,18 @@ const CASOS = [
 ];
 
 /** Los anchos donde la maqueta cambia de forma. */
-const ANCHOS = [1440, 869, 485];
+/*
+  Los tres de siempre, más los dos extremos apretados que se colaban entre
+  ellos. Un punto de corte se comprueba en su lado MALO, no en el cómodo:
+
+    · 1024 es donde arranca el reparto de tres columnas del reloj, así que
+      es donde cada una es más estrecha.
+    ·  700 es donde `auto-fit` acaba de meter dos columnas, así que es
+      donde cada una está más justa antes de rendirse a una sola.
+
+  Con 1440, 869 y 485 los dos quedaban dentro de una banda sin visitar.
+*/
+const ANCHOS = [1440, 1024, 869, 700, 485];
 
 /** Chrome descuenta el marco de la ventana y tiene un mínimo por abajo. */
 const MARCO = 31;

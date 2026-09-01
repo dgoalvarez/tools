@@ -133,6 +133,18 @@ const VISTAS = [
     alto: 900,
     query: 'v=America%2FNew_York~Miami%2C%20Florida&z=Asia/Tokyo,Asia/Kolkata',
   },
+  // En un teléfono y con una hora puesta, que es cuando las horas de las
+  // filas dejan de ser texto y pasan a ser campos. Es donde se vio que el
+  // campo reservaba más ancho del que usa y la cifra se despegaba del
+  // borde derecho, rompiendo la columna que hace la lista comparable.
+  {
+    nombre: 'husos-estrecho-fija',
+    ruta: 'es/horarios',
+    ancho: 485,
+    alto: 1500,
+    query:
+      'd=2026-09-04&h=21:00&v=America%2FNew_York~Carolina%20del%20Norte&z=America/Los_Angeles,Pacific/Honolulu,America/Chicago',
+  },
   { nombre: 'paleta', ruta: 'es/paleta', ancho: 1440, alto: 1200 },
   { nombre: 'paleta-claro', ruta: 'es/paleta', ancho: 1440, alto: 1200, tema: 'light' },
   { nombre: 'paleta-estrecho', ruta: 'es/paleta', ancho: 485, alto: 900 },

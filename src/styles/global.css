@@ -1039,9 +1039,9 @@
    `class="tarjeta-control"` y ya está dentro de la pauta, sin tener que
    copiar seis clases de utilidad y sin poder equivocarse en una.
 
-   En un móvil la tarjeta se desmonta. El borde y el relleno cuestan
-   ancho, y ahí el ancho es lo que falta; lo que separa los grupos pasa a
-   ser una línea, que cuesta un píxel.
+   En un teléfono la tarjeta se mantiene y solo adelgaza el relleno. La
+   pauta vale de poco si se cae justo donde más cuesta saber dónde acaba
+   un grupo; el porqué, con los números, está en la consulta de medios.
    ============================================================ */
 
 @layer components {
@@ -1084,17 +1084,24 @@
     color: var(--ink);
   }
 
+  /*
+    En un teléfono la tarjeta se queda, con menos relleno.
+
+    Estuvo desmontada —sin borde, sin fondo, y los grupos separados por
+    una línea— con el argumento de que el borde y el relleno cuestan
+    ancho y ahí el ancho es lo que falta. Cuestan 34 px de 485, y a
+    cambio la herramienta dejaba de parecerse a sí misma: lo que en el
+    escritorio son grupos con su caja, en el teléfono era una columna de
+    cosas sueltas y había que leer los títulos para saber dónde acababa
+    uno y empezaba el siguiente.
+
+    Así que se queda la caja y se recorta el relleno, que es de donde se
+    puede sacar ancho sin perder el contorno: 28 px en vez de 34.
+  */
   @media (width < 48rem) {
     .tarjeta-control {
-      padding: 0;
-      border: 0;
-      border-radius: 0;
-      background: none;
-    }
-
-    .tarjeta-control + .tarjeta-control {
-      padding-block-start: 1.25rem;
-      border-block-start: 1px solid var(--line);
+      gap: 0.75rem;
+      padding: 0.875rem;
     }
   }
 }
@@ -1466,6 +1473,22 @@
      las horas se alineen entre sí y no bailen al cambiar de minuto. */
   .fila-hora .hora {
     grid-area: 1 / 2;
+    /*
+      `justify-self` además de `text-align`, y hacen falta los dos.
+
+      `text-align` coloca la cifra dentro de la caja; `justify-self`
+      coloca la caja dentro de su celda. Mientras el campo se estiraba
+      hasta llenar la celda daba igual, pero en cuanto se ciñe a su
+      contenido deja de estirarse, y un elemento de rejilla que no se
+      estira se va al PRINCIPIO de su celda. La cifra se despegaba del
+      borde derecho, y como el ancho de la columna lo manda la línea de
+      abajo —que dice cosas de largos distintos: «−2 h» en una fila y «la
+      misma hora» en otra— cada fila lo hacía en un sitio distinto.
+
+      Y eso rompe lo único que hace útil a esta lista: que todas las
+      horas caigan en la misma vertical y comparar sea mirar hacia abajo.
+    */
+    justify-self: end;
     text-align: end;
     font-size: 1.375rem;
     font-weight: 600;
@@ -1514,8 +1537,33 @@
     cursor: pointer;
   }
 
+  /*
+    El campo se encoge a su contenido.
+
+    Un `input[type=time]` nace con un ancho intrínseco bastante mayor que
+    la hora que enseña: reserva sitio para el icono del selector y para el
+    formato más largo que pueda tocarle. En la columna `auto` de la fila
+    eso salía como un hueco a la derecha de la cifra, y la hora dejaba de
+    estar pegada al borde como las demás. Y eso no es un detalle: que
+    todas las horas caigan en la MISMA vertical es lo único que hace que
+    la lista se pueda comparar de un vistazo en vez de leerla entera.
+
+    Se veía sobre todo en un teléfono, donde el ancho que sobra es poco y
+    el hueco se lleva una parte grande de la fila.
+
+    `field-sizing` lo resuelve de raíz. Donde todavía no exista, el
+    respaldo es alinear al final las piezas internas del campo: la caja
+    sigue siendo ancha, pero la cifra al menos acaba donde acaba la caja.
+  */
   .fila-hora input.hora {
     cursor: text;
+    field-sizing: content;
+  }
+
+  .fila-hora input.hora::-webkit-datetime-edit,
+  .reloj-vivo .convertida input.hora::-webkit-datetime-edit {
+    width: 100%;
+    text-align: end;
   }
 
   .fila-hora button.hora:hover,
@@ -1706,6 +1754,7 @@
     color: var(--ink);
     cursor: text;
     flex: none;
+    field-sizing: content;
   }
 
   /* El aviso de otro día no se encoge nunca: si algo tiene que ceder

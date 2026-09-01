@@ -24,9 +24,20 @@
  * Necesita un navegador, y la compilación tiene que funcionar en una
  * máquina que no lo tenga. Se ejecuta a mano, como `npm run comprobar`.
  *
- * Se ha comprobado que la sonda sirve para algo de las dos maneras: sobre
- * la versión con el fallo dice «se sale 263px», y sobre la arreglada dice
- * «nada roto». Una alarma que nunca suena no es una alarma.
+ * La sonda hace TRES preguntas distintas, y cada una entró por un fallo
+ * que las anteriores daban por bueno: ¿se sale algo de su caja a lo ancho?
+ * ¿le caben a una caja sus hijos a lo alto? ¿y reserva algún campo más
+ * ancho del que usa?
+ *
+ * Las tres se han probado en los dos sentidos, que es la única forma de
+ * saber que una alarma es una alarma: con el fallo puesto dicen «se sale
+ * 263px», «le faltan px de alto» y «reserva 132px de más», y con el
+ * arreglo se callan.
+ *
+ * La tercera avisa de algo que no es desbordar: la cifra de un campo de
+ * hora despegada del borde derecho. Se coló porque los bordes de las
+ * cajas SÍ coincidían —lo que no coincidía era el número de dentro— y
+ * ninguna de las dos primeras preguntas mira dentro de un campo.
  */
 import { spawn, execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
@@ -61,6 +72,11 @@ if (!existsSync(dist)) {
  * La sonda. Compara cada elemento con su padre y se salta los padres que
  * recortan o desplazan a propósito: ahí salirse es lo que se ha pedido,
  * que es exactamente cómo funciona `truncate`.
+ *
+ * OJO al escribir aquí dentro: esto es una plantilla, así que una comilla
+ * invertida en un comentario la corta por la mitad y el archivo entero
+ * deja de compilar. El error que sale —«Unexpected identifier»— señala a
+ * la línea del comentario y no dice nada de comillas.
  */
 const SONDA = `
 window.__romperse = function () {
@@ -133,6 +149,48 @@ window.__romperse = function () {
       rotos.push({
         el,
         que: 'no le caben sus hijos, le faltan ' + Math.round(sobra) + 'px de alto',
+      });
+    }
+  }
+
+  /*
+   * Tercera pregunta, y no es ninguna de las dos anteriores: cada campo,
+   * ¿reserva más ancho del que usa?
+   *
+   * Un campo de hora nace mas ancho que la hora que enseña, y dentro
+   * de una rejilla se estira ademas hasta llenar su celda. Queda una caja
+   * ancha con la cifra pegada a la IZQUIERDA y un hueco a la derecha. Y
+   * como el ancho de esa columna lo manda la linea de abajo, que dice
+   * cosas de largos distintos -«-2 h» en una fila, «la misma hora» en
+   * otra-, cada fila deja la cifra en un sitio distinto.
+   *
+   * Eso rompe lo unico que hace util a la lista: que todas las horas
+   * caigan en la misma vertical y comparar sea mirar hacia abajo. Y lo
+   * rompe sin que nada se salga de su caja ni le falte alto, asi que las
+   * dos preguntas de arriba lo daban por bueno. Los bordes derechos de
+   * los campos coincidian; lo que no coincidia era la cifra de dentro.
+   *
+   * Se mide clonando el campo DENTRO de su propia fila, fuera del flujo y
+   * a max-content: asi le siguen aplicando sus reglas y se ve cuanto
+   * ancho necesita de verdad.
+   */
+  for (const campo of document.querySelectorAll('.lista-horas input.hora, .reloj-vivo input.hora')) {
+    const r = campo.getBoundingClientRect();
+    if (r.width === 0) continue;
+
+    const copia = campo.cloneNode(true);
+    copia.style.position = 'absolute';
+    copia.style.visibility = 'hidden';
+    copia.style.width = 'max-content';
+    campo.parentElement.append(copia);
+    const cenido = copia.getBoundingClientRect().width;
+    copia.remove();
+
+    // Ocho pixeles de margen: el redondeo del subpixel y poco mas.
+    if (cenido > 0 && r.width - cenido > 8) {
+      rotos.push({
+        el: campo,
+        que: 'reserva ' + Math.round(r.width - cenido) + 'px de mas: la hora se despega del borde',
       });
     }
   }
@@ -432,7 +490,7 @@ try {
 
 console.log(
   fallos === 0
-    ? `\n✓ nada se sale de su caja (${mirados} comprobaciones)\n`
-    : `\n✗ ${fallos} de ${mirados} se salen de su caja\n`
+    ? `\n✓ nada se sale de su caja ni se despega de su borde (${mirados} comprobaciones)\n`
+    : `\n✗ ${fallos} de ${mirados} tienen algo fuera de sitio\n`
 );
 process.exit(fallos === 0 ? 0 : 1);

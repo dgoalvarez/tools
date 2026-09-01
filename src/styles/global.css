@@ -2448,7 +2448,7 @@
 
   .caja-mundial {
     width: 100%;
-    max-height: 17rem;
+    max-height: var(--alto-lista-modo, 16rem);
     overflow-y: auto;
     overscroll-behavior: contain;
     /*
@@ -2476,6 +2476,32 @@
     border: 0;
     border-radius: 0;
     background: none;
+  }
+
+  /*
+    Sin relleno lateral propio.
+
+    En husos la lista se apoya sobre el fondo de la página y necesita el
+    suyo. Aquí ya está dentro de una tarjeta que tiene el suyo, y sumar
+    los dos metía los nombres y la ✕ catorce píxeles hacia dentro: la ✕
+    parecía descolgada del borde y nada de la tarjeta arrancaba en la
+    misma vertical que el buscador de arriba.
+  */
+  .caja-mundial .fila-hora {
+    padding-inline: 0;
+  }
+
+  /*
+    La hora, más pequeña que en husos.
+
+    Allí la hora ES el resultado y manda en la pantalla. Aquí es una lista
+    de referencia que se mira de reojo, lleva segundos —«11:14:14» ocupa
+    tres caracteres más— y vive en una tarjeta de un tercio de ancho. Al
+    cuerpo de husos se comía la fila y empujaba el nombre a truncarse
+    antes de tiempo.
+  */
+  .caja-mundial .fila-hora .hora {
+    font-size: 1.125rem;
   }
 
   .buscador-mundial {
@@ -3033,12 +3059,120 @@
   */
   .modos-reloj {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
     gap: 1rem;
-    /* A la misma altura las tres. Con `start` cada una medía lo que medía
-       su contenido y la fila quedaba dentada; tres cajas de altos
-       distintos se leen como tres cosas sueltas y no como un juego. */
+    /* A la misma altura. Con `start` cada una medía lo que medía su
+       contenido y la fila quedaba dentada; cajas de altos distintos se
+       leen como cosas sueltas y no como un juego. */
     align-items: stretch;
+  }
+
+  /*
+    Tres columnas: las dos listas juntas y las dos cortas apiladas.
+
+    El reparto no es estético, es de comportamiento. El reloj mundial y el
+    cronómetro son las dos que llevan lista, tienen el mismo tope de alto y
+    empiezan a desplazarse en el mismo sitio; ponerlas una al lado de la
+    otra hace que eso se compruebe de un vistazo en vez de tener que
+    recordar cómo era la del otro extremo.
+
+    La alarma y el temporizador ocupan poco y sobraba medio metro de
+    tarjeta vacía debajo de cada una. Apiladas suman lo que mide una lista.
+
+    El ORDEN DEL DOM no es este: es mundial, alarma, cronómetro,
+    temporizador, que es el orden en que se apilan en un teléfono —el
+    mundial primero, pegado al reloj grande, y lo que se pone en marcha
+    detrás—. Aquí solo se recolocan, así que el móvil no depende de un
+    equilibrio de altos que allí no significa nada.
+  */
+  @media (width >= 64rem) {
+    .modos-reloj {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .tarjeta-mundial {
+      grid-column: 1;
+      grid-row: 1 / span 2;
+    }
+
+    .tarjeta-cronometro {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+    }
+
+    .tarjeta-alarma {
+      grid-column: 3;
+      grid-row: 1;
+    }
+
+    .tarjeta-temporizador {
+      grid-column: 3;
+      grid-row: 2;
+    }
+
+    /*
+      Las dos listas se estiran hasta el fondo de su tarjeta.
+
+      Con el tope fijo de 16rem, la columna apilada —alarma más
+      temporizador— salía bastante más alta que las listas y debajo de
+      cada una quedaba medio metro de tarjeta vacía. Ridículo: sobraba
+      sitio y la lista se cortaba igual.
+
+      Aquí la última fila de estas dos tarjetas se queda con lo que sobre,
+      y la caja de dentro la ocupa entera. El tope deja de ser un número
+      escrito a mano y pasa a ser «lo que dé la tarjeta», que es el mismo
+      para las dos porque las dos ocupan las mismas filas. Cuando la lista
+      es corta no pasa nada; cuando es larga, aprovecha todo.
+
+      Los `auto` de delante son los renglones fijos de cada una: la
+      cabecera y el buscador en el mundial; el título, la cifra y los
+      mandos en el cronómetro.
+    */
+    .tarjeta-mundial {
+      grid-template-rows: auto auto 1fr;
+    }
+
+    .tarjeta-cronometro {
+      grid-template-rows: auto auto auto 1fr;
+    }
+
+    /* `min-height: 0` es lo que permite que una caja con desplazamiento
+       encoja dentro de su fila. Sin él la fila crece con el contenido y
+       el desplazamiento no llega a aparecer nunca. */
+    .caja-mundial,
+    .caja-vueltas {
+      max-height: none;
+      min-height: 0;
+      height: 100%;
+    }
+  }
+
+  /* Entre el móvil y las tres columnas, dos y dos. */
+  @media (width >= 40rem) and (width < 64rem) {
+    .modos-reloj {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* El título de la tarjeta comparte renglón con lo que la gobierna. */
+  /*
+    El tope de alto de las dos listas, en un solo sitio.
+
+    El reloj mundial y las vueltas del cronómetro son tarjetas del mismo
+    nivel y tienen que comportarse igual: el mismo alto máximo y, por
+    tanto, el mismo momento en que aparece el desplazamiento. Estaban en
+    15rem y 17rem, cada una escrita por su lado, y esa clase de diferencia
+    no se ve mirando una tarjeta — solo mirando las dos a la vez.
+  */
+  .modos-reloj {
+    --alto-lista-modo: 16rem;
+  }
+
+  .cabecera-modo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
   }
 
   .tarjeta-modo {
@@ -3161,7 +3295,7 @@
   */
   .caja-vueltas {
     width: 100%;
-    max-height: 15rem;
+    max-height: var(--alto-lista-modo, 16rem);
     overflow-y: auto;
     overscroll-behavior: contain;
   }

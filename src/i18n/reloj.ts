@@ -15,6 +15,9 @@ export const RELOJ = {
     en: 'City, state, country or ZIP code',
   },
   quitarSitio: { es: 'Quitar', en: 'Remove' },
+  /* Aparece a partir del segundo sitio, que es cuando empieza a hacer
+     falta: quitar de uno en uno está bien para dos, para nueve no. */
+  quitarSitios: { es: 'Quitar todos', en: 'Remove all' },
   /** Cuando allí es otro día. */
   mundialManana: { es: 'mañana', en: 'tomorrow' },
   mundialAyer: { es: 'ayer', en: 'yesterday' },

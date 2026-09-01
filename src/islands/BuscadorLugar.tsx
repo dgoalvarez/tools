@@ -90,11 +90,29 @@ export default function BuscadorLugar({
     }
 
     let cancelado = false;
-    setBuscando(true);
+    let indicador: ReturnType<typeof setTimeout> | undefined;
 
     // Un respiro antes de buscar: mientras se teclea «medellín» no hace
     // falta rehacer la búsqueda ocho veces.
     const temporizador = setTimeout(async () => {
+      /*
+        «Cargando…» solo aparece si la búsqueda de verdad tarda.
+
+        Estaba encendiéndose en cada tecla, antes incluso de este respiro,
+        y apagándose al instante: la primera búsqueda descarga 750 KB de
+        ciudades, pero a partir de ahí los datos viven en memoria y la
+        respuesta es inmediata. El resultado era un parpadeo por cada
+        letra escrita.
+
+        Un cuarto de segundo de margen lo arregla sin mentir: cuando de
+        verdad hay que descargar algo, el aviso sale y se queda; cuando no,
+        no llega a salir. Un indicador que aparece y desaparece en 15 ms no
+        informa de nada, solo hace ruido.
+      */
+      indicador = setTimeout(() => {
+        if (!cancelado) setBuscando(true);
+      }, 250);
+
       try {
         if (/^\d{5}$/.test(texto)) {
           const datos = await pedirZips();
@@ -133,6 +151,7 @@ export default function BuscadorLugar({
           if (encontradas.length === 0) setAviso(textos.sinResultados);
         }
       } finally {
+        clearTimeout(indicador);
         if (!cancelado) setBuscando(false);
       }
     }, 180);
@@ -140,6 +159,7 @@ export default function BuscadorLugar({
     return () => {
       cancelado = true;
       clearTimeout(temporizador);
+      clearTimeout(indicador);
     };
   }, [consulta, lang, pedirLugares, pedirZips, textos.sinResultados, textos.zipDesconocido]);
 

@@ -32,6 +32,7 @@ import {
   PauseIcon,
   PlayIcon,
   StopIcon,
+  TrashIcon,
   XIcon,
 } from '@phosphor-icons/react';
 
@@ -624,7 +625,18 @@ export default function Reloj({ lang }: Props) {
             se carga justamente lo que distingue una fila de otra.
       */}
       <section className="tarjeta-modo tarjeta-mundial" data-tour="mundial">
-        <p className="titulo">{tr('mundial')}</p>
+        {/* El título comparte renglón con «quitar todos», que aparece a
+            partir del segundo sitio: de uno en uno está bien para dos,
+            para nueve no. Es el mismo trato que en husos horarios. */}
+        <div className="cabecera-modo">
+          <p className="titulo">{tr('mundial')}</p>
+          {sitios.length > 1 && (
+            <Button variant="ghost" size="xs" onClick={() => setSitios([])}>
+              <TrashIcon aria-hidden="true" />
+              {tr('quitarSitios')}
+            </Button>
+          )}
+        </div>
 
         <div className="buscador-mundial">
           <BuscadorLugar
@@ -729,7 +741,7 @@ export default function Reloj({ lang }: Props) {
       </section>
 
         {/* ---------------- Alarma ---------------- */}
-        <section className="tarjeta-modo" data-tour="alarma">
+        <section className="tarjeta-modo tarjeta-alarma" data-tour="alarma">
           <p className="titulo">{tr('alarma')}</p>
 
           {alarmaSuena ? (
@@ -797,7 +809,7 @@ export default function Reloj({ lang }: Props) {
         </section>
 
         {/* ---------------- Cronómetro ---------------- */}
-        <section className="tarjeta-modo" data-tour="cronometro">
+        <section className="tarjeta-modo tarjeta-cronometro" data-tour="cronometro">
           <p className="titulo">{tr('cronometro')}</p>
 
           <p className="numero-grande">{comoCronometro(cronoMs)}</p>
@@ -884,7 +896,7 @@ export default function Reloj({ lang }: Props) {
             volver a teclear la cuenta. Al arroz le faltan dos minutos más
             bastante a menudo.
           */}
-        <section className="tarjeta-modo" data-tour="temporizador">
+        <section className="tarjeta-modo tarjeta-temporizador" data-tour="temporizador">
           <p className="titulo">{tr('temporizador')}</p>
 
           {temporizador.estado === 'sonando' ? (

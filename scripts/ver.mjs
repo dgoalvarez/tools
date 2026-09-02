@@ -312,6 +312,42 @@ const VISTAS = [
   // La libreta: vacía, que es como se llega, y con cosas dentro, que es
   // el estado al que no se llega de otra forma que sembrándolo.
   { nombre: 'notas', ruta: 'es/notas', ancho: 1440, alto: 900 },
+  // La nota con formato y el lienzo con algo dibujado: los dos estados a
+  // los que no se llega por la dirección, y los únicos que enseñan si las
+  // dos cosas nuevas se ven como se tienen que ver.
+  {
+    nombre: 'notas-formato',
+    ruta: 'es/notas',
+    ancho: 1440,
+    alto: 1400,
+    guion: `
+      const campo = await esperar(() => document.querySelector('.campo-nota'));
+      campo.focus();
+      campo.innerHTML = '<b>Llamar a Marta</b> el jueves<br><u>antes</u> de las cinco<ul><li>pedir el presupuesto</li><li>confirmar la <i>hora</i></li></ul><ol><li>revisar el <s>contrato</s></li><li>firmar</li></ol>';
+      campo.dispatchEvent(new Event('input', { bubbles: true }));
+      const lienzo = await esperar(() => document.querySelector('.lienzo'));
+      const caja = lienzo.getBoundingClientRect();
+      const trazo = (puntos) => {
+        let id = 1;
+        for (let i = 0; i < puntos.length; i++) {
+          const [x, y] = puntos[i];
+          const tipo = i === 0 ? 'pointerdown' : i === puntos.length - 1 ? 'pointerup' : 'pointermove';
+          lienzo.dispatchEvent(new PointerEvent(tipo, {
+            bubbles: true, pointerId: id, pressure: 0.6,
+            clientX: caja.left + x, clientY: caja.top + y,
+          }));
+        }
+      };
+      const onda = [];
+      for (let x = 30; x < 260; x += 6) onda.push([x, 90 + Math.sin(x / 22) * 34]);
+      trazo(onda);
+      await new Promise((r) => setTimeout(r, 60));
+      trazo([[300, 60], [380, 60], [380, 130], [300, 130], [300, 60]]);
+      await new Promise((r) => setTimeout(r, 60));
+      trazo([[420, 120], [470, 60], [520, 120], [420, 120]]);
+      await new Promise((r) => setTimeout(r, 300));
+    `,
+  },
   {
     nombre: 'notas-llena',
     ruta: 'es/notas',

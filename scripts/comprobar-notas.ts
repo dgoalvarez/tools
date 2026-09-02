@@ -29,7 +29,10 @@ import {
   limpiarLinea,
   marcar,
   mover,
+  notaAMarkdown,
   nuevaTarea,
+  sanearNota,
+  textoDeNota,
   type Tarea,
 } from '../src/lib/notas.ts';
 
@@ -268,6 +271,73 @@ console.log('\n9. La clave del almacenamiento');
   // Va con el prefijo del sitio, como el tema y el riel: en un dominio
   // compartido, una clave llamada «notas» a secas se pisa con cualquiera.
   afirmar(CLAVE.startsWith('dgo-tools-'), `la clave lleva el prefijo del sitio (${CLAVE})`);
+}
+
+// =====================================================================
+console.log('\n10. El saneador de la nota');
+{
+  /*
+    Esto es lo que se pinta con `dangerouslySetInnerHTML`, así que la
+    pregunta no es si funciona con lo normal —eso se ve mirando— sino si
+    aguanta lo que no lo es. Las cargas de aquí abajo son las de siempre:
+    las que trae una nota pegada desde una página cualquiera.
+  */
+  const venenos: [string, string][] = [
+    ['<script>alert(1)</script>', 'un script entero'],
+    ['<scr' + 'ipt>alert(1)', 'un script sin cerrar'],
+    ['<img src=x onerror=alert(1)>', 'un manejador en un atributo'],
+    ['<b onclick="robar()">hola</b>', 'un manejador en una etiqueta permitida'],
+    ['<a href="javascript:alert(1)">clic</a>', 'un enlace con javascript:'],
+    ['<div style="position:fixed;inset:0">tapa</div>', 'un style que tapa la página'],
+    ['<iframe src="//malo"></iframe>', 'un marco'],
+    ['<svg><script>alert(1)</script></svg>', 'un script dentro de un svg'],
+    ['<b class="x" id="y" data-z="1">hola</b>', 'atributos inocentes'],
+  ];
+
+  for (const [entrada, que] of venenos) {
+    const salida = sanearNota(entrada);
+    const limpio =
+      !/on\w+\s*=/i.test(salida) &&
+      !/javascript:/i.test(salida) &&
+      !/<script|<iframe|<img|<a\b|<svg|style=|class=|id=|href=/i.test(salida);
+    afirmar(limpio, `${que} no sobrevive  →  ${JSON.stringify(salida)}`);
+  }
+
+  // Y lo que SÍ tiene que sobrevivir, que es la otra mitad: un saneador
+  // que se lo come todo es igual de inútil que uno que no filtra nada.
+  const bueno = '<b>hola</b> <i>que</i> <u>tal</u> <s>ya</s><ul><li>uno</li></ul>';
+  afirmar(sanearNota(bueno) === bueno, 'los seis formatos de la barra pasan enteros');
+  afirmar(sanearNota('<B>hola</B>') === '<b>hola</b>', 'las etiquetas en mayúsculas se normalizan');
+
+  afirmar(textoDeNota('<p><br></p>') === '', 'un contenteditable vacío no cuenta como texto');
+  afirmar(
+    textoDeNota('<b>uno</b><br><i>dos</i>') === 'uno\ndos',
+    'el texto pelado conserva los saltos'
+  );
+}
+
+// =====================================================================
+console.log('\n11. La nota, en Markdown');
+{
+  afirmar(
+    notaAMarkdown('<b>negrita</b> y <i>cursiva</i>') === '**negrita** y *cursiva*',
+    'negrita y cursiva viajan'
+  );
+  afirmar(notaAMarkdown('<s>tachado</s>') === '~~tachado~~', 'el tachado viaja');
+  // El subrayado se pierde y es a propósito: Markdown no lo tiene, y una
+  // marca inventada se veria como dos guiones sueltos en el destino.
+  afirmar(
+    notaAMarkdown('<u>subrayado</u>') === 'subrayado',
+    'el subrayado se queda en texto, no inventa marca'
+  );
+
+  const conListas = '<ul><li>uno</li><li>dos</li></ul><ol><li>a</li><li>b</li></ol>';
+  const md = notaAMarkdown(conListas);
+  afirmar(
+    md.includes('- uno') && md.includes('- dos'),
+    `las viñetas salen con guion (${JSON.stringify(md)})`
+  );
+  afirmar(md.includes('1. a') && md.includes('2. b'), 'la lista numerada se numera de verdad');
 }
 
 console.log(fallos === 0 ? '\nTODO CORRECTO\n' : `\n${fallos} FALLOS\n`);

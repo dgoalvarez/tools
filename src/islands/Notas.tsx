@@ -34,6 +34,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowDownIcon, ArrowUpIcon, XIcon } from '@phosphor-icons/react';
 
 import BotonCopiar from '../components/BotonCopiar';
+import Dibujo from './Dibujo';
+import NotaConFormato from './NotaConFormato';
 import { Button } from '@/components/ui/button';
 import { NOTAS } from '../i18n/notas';
 import { t, type Lang } from '../i18n/config';
@@ -50,6 +52,8 @@ import {
   leer,
   marcar,
   mover,
+  notaAMarkdown,
+  textoDeNota,
   type Cuaderno,
 } from '../lib/notas';
 
@@ -136,7 +140,10 @@ export default function Notas({ lang }: Props) {
 
   // Palabras y no caracteres: es la unidad en la que la gente piensa
   // cuando escribe. Y llena el hueco que el pie tiene reservado.
-  const palabras = cuaderno.nota.trim() ? cuaderno.nota.trim().split(/\s+/).length : 0;
+  // Se cuenta el texto pelado, no el HTML: con etiquetas dentro, «<b>hola</b>»
+  // habrían sido tres palabras.
+  const textoNota = textoDeNota(cuaderno.nota);
+  const palabras = textoNota ? textoNota.split(/\s+/).length : 0;
   const recuento =
     palabras === 1
       ? t(NOTAS.unaPalabra, lang)
@@ -265,27 +272,51 @@ export default function Notas({ lang }: Props) {
           {t(NOTAS.laNota, lang)}
         </p>
 
-        <textarea
-          className="campo-nota"
-          value={cuaderno.nota}
-          onChange={(e) => setCuaderno((c) => ({ ...c, nota: e.target.value }))}
-          placeholder={t(NOTAS.notaVacia, lang)}
-          aria-label={t(NOTAS.laNota, lang)}
-          spellCheck
+        <NotaConFormato
+          valor={cuaderno.nota}
+          textos={{
+            negrita: t(NOTAS.negrita, lang),
+            cursiva: t(NOTAS.cursiva, lang),
+            subrayado: t(NOTAS.subrayado, lang),
+            tachado: t(NOTAS.tachado, lang),
+            vinetas: t(NOTAS.vinetas, lang),
+            numeros: t(NOTAS.numeros, lang),
+            vacia: t(NOTAS.notaVacia, lang),
+            etiqueta: t(NOTAS.laNota, lang),
+          }}
+          onCambio={(html) => setCuaderno((c) => ({ ...c, nota: html }))}
         />
 
         <div className="pie-lista">
           <p className="contador">{recuento}</p>
 
-          {cuaderno.nota.trim().length > 0 && (
+          {/* Se copia en Markdown y no el HTML crudo: lo que se pega fuera
+              tiene que leerse, no traer etiquetas. El subrayado se pierde
+              por el camino porque Markdown no lo tiene — ver
+              `notaAMarkdown`. */}
+          {textoDeNota(cuaderno.nota).length > 0 && (
             <BotonCopiar
-              texto={() => cuaderno.nota}
+              texto={() => notaAMarkdown(cuaderno.nota)}
               etiqueta={t(NOTAS.copiarNota, lang)}
               etiquetaCopiado={t(NOTAS.copiado, lang)}
             />
           )}
         </div>
       </section>
+
+      {/* ---------------------------------------------- el dibujo ---- */}
+      <Dibujo
+        textos={{
+          etiqueta: t(NOTAS.elDibujo, lang),
+          deshacer: t(NOTAS.deshacerTrazo, lang),
+          borrar: t(NOTAS.borrarDibujo, lang),
+          descargar: t(NOTAS.descargarDibujo, lang),
+          vacio: t(NOTAS.dibujoVacio, lang),
+          efimero: t(NOTAS.dibujoEfimero, lang),
+          tinta: t(NOTAS.tinta, lang),
+          grosor: t(NOTAS.grosor, lang),
+        }}
+      />
     </div>
   );
 }

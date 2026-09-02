@@ -15,7 +15,7 @@ Existe para no volver a averiguar lo mismo cada sesión.
 | **Husos horarios** | `/es/horarios` | `/en/timezones` | tiempo | convertir | productividad | 8 |
 | **Reloj** | `/es/reloj` | `/en/clock` | tiempo | cronometrar | productividad | 7 |
 | **Pomodoro** | `/es/pomodoro` | `/en/pomodoro` | tiempo | cronometrar | productividad | 4 |
-| **Notas** | `/es/notas` | `/en/notes` | texto | anotar | productividad | 5 |
+| **Notas** | `/es/notas` | `/en/notes` | texto | anotar | productividad | 6 |
 | **Contraste** | `/es/contraste` | `/en/contrast` | color | comprobar | diseno | 9 |
 | **Paleta** | `/es/paleta` | `/en/palette` | color | generar | diseno | 6 |
 | **Escala tipográfica** | `/es/escala` | `/en/type-scale` | tipografia | generar | diseno | 10 |
@@ -117,7 +117,7 @@ Sin React ni DOM: se corre con `node`, y por eso se puede comprobar.
 - tipos · `Color`, `Texto`, `ResultadoWcag`, `EstadoApca`, `ResultadoApca`, `Sugerencia`, `Espacio`, `Canal`, `Visual`
 
 **`notas.ts`**
-- funciones · `limpiarLinea`, `nuevaTarea`, `anadir`, `marcar`, `escribir`, `mover`, `borrar`, `borrarHechas`, `cuantasHechas`, `aMarkdown`, `guardar`, `leer`
+- funciones · `limpiarLinea`, `nuevaTarea`, `anadir`, `marcar`, `escribir`, `mover`, `borrar`, `borrarHechas`, `cuantasHechas`, `aMarkdown`, `sanearNota`, `textoDeNota`, `notaAMarkdown`, `guardar`, `leer`
 - constantes · `VACIO`, `VERSION`, `CLAVE`, `LIMITE_TAREAS`, `LIMITE_LINEA`, `LIMITE_NOTA`
 - tipos · `Tarea`, `Cuaderno`
 

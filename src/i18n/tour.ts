@@ -77,8 +77,16 @@ export const TOUR: Record<ToolKey, PasoTour[]> = {
       ancla: 'nota',
       titulo: { es: 'Lo que no es una tarea', en: 'What is not a task' },
       cuerpo: {
-        es: 'Un enlace, un número de pedido, el nombre de la rama, tres frases que no quieres volver a pensar. No tiene formato ni barra de herramientas a propósito: es un papel, no un editor.',
-        en: 'A link, an order number, the branch name, three sentences you would rather not think through twice. It has no formatting and no toolbar on purpose: it is a scrap of paper, not an editor.',
+        es: 'Un enlace, un número de pedido, el nombre de la rama, tres frases que no quieres volver a pensar. Con lo justo para ordenarlo: negrita, cursiva, subrayado, tachado y las dos listas. Al copiarla sale en Markdown, para que se pegue leíble en cualquier sitio — el subrayado se pierde por el camino porque Markdown no lo tiene.',
+        en: 'A link, an order number, the branch name, three sentences you would rather not think through twice. With just enough to tidy it up: bold, italic, underline, strikethrough and the two kinds of list. Copying it gives you Markdown, so it pastes readably anywhere — the underline is lost on the way, because Markdown has no such thing.',
+      },
+    },
+    {
+      ancla: 'dibujo',
+      titulo: { es: 'Lo que no se puede escribir', en: 'What you cannot write down' },
+      cuerpo: {
+        es: 'Un croquis, una flecha, rodear algo. Va con el dedo, con el ratón o con un lápiz, y si el lápiz dice cuánta presión hace, el trazo lo nota. Este es el único de los tres que NO aguanta una recarga: se queda en memoria y se va con ella, así que si te sirve para algo, descárgalo.',
+        en: 'A sketch, an arrow, a circle around something. Finger, mouse or pen — and if the pen reports pressure, the stroke shows it. This is the only one of the three that does NOT survive a reload: it lives in memory and goes with it, so if it is worth anything, download it.',
       },
     },
   ],

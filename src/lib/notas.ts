@@ -150,6 +150,150 @@ export function aMarkdown(tareas: Tarea[]): string {
 }
 
 /** Lo que se guarda, en texto. */
+/* ============================================================
+   La nota con formato
+   ============================================================ */
+
+/**
+ * Las únicas etiquetas que pueden vivir dentro de la nota.
+ *
+ * La lista es cortísima a propósito: es exactamente lo que producen los
+ * seis botones de la barra y nada más. Lo que no esté aquí se cae, y con
+ * ello TODOS los atributos sin excepción — que es por donde entrarían un
+ * `onerror`, un `style` o un enlace `javascript:`.
+ */
+const ETIQUETAS_NOTA = [
+  'b',
+  'strong',
+  'i',
+  'em',
+  'u',
+  's',
+  'strike',
+  'del',
+  'ul',
+  'ol',
+  'li',
+  'br',
+  'p',
+  'div',
+];
+
+/**
+ * Deja de la nota solo lo que se puede pintar sin miedo.
+ *
+ * Lo que se restaura sale de `sessionStorage`, que es del mismo origen y
+ * por tanto no lo escribe un desconocido: para envenenarlo habría que
+ * tener ya ejecución en la página, y entonces esto sobra. Se sanea igual,
+ * por dos motivos que no son paranoia:
+ *
+ *   · lo que se pega en un `contenteditable` viene de donde sea —de Word,
+ *     de una página cualquiera— y trae `style`, `class`, `<script>` y
+ *     `<img onerror>` de regalo;
+ *   · esto acaba pintado con `dangerouslySetInnerHTML`, y esa palabra hay
+ *     que ganársela.
+ *
+ * Va con cadenas y no con `DOMParser` porque en este proyecto la
+ * aritmética vive sin DOM, para poder probarla con node. Y probarla es
+ * justo lo que hay que hacer con un saneador: `comprobar-notas.ts` le
+ * pasa las cargas de siempre y comprueba que no sobrevive ninguna.
+ */
+export function sanearNota(html: string): string {
+  return (
+    html
+      // Primero los bloques enteros CON su contenido: quitar solo la
+      // etiqueta de un <script> dejaría el código suelto como texto, y la
+      // de un <style> dejaría reglas CSS a la vista.
+      .replace(/<(script|style|iframe|object|embed|svg|math)\b[\s\S]*?<\/\1\s*>/gi, '')
+      // Y por si vienen sin cerrar.
+      .replace(/<\/?(script|style|iframe|object|embed|svg|math)\b[^>]*>/gi, '')
+      // El resto: se conserva el NOMBRE de la etiqueta si está permitida y
+      // se tira todo lo que venga detrás. Así no hay que decidir qué
+      // atributo es peligroso, porque no sobrevive ninguno.
+      .replace(/<(\/?)([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g, (_, cierre: string, etiqueta: string) =>
+        ETIQUETAS_NOTA.includes(etiqueta.toLowerCase())
+          ? `<${cierre}${etiqueta.toLowerCase()}>`
+          : ''
+      )
+      .slice(0, LIMITE_NOTA)
+  );
+}
+
+/**
+ * El texto pelado de la nota: para contar y para saber si está vacía.
+ *
+ * Un `<p><br></p>` es lo que deja un `contenteditable` recién vaciado, y
+ * de texto no tiene nada. Sin esto, el botón de copiar aparecería sobre
+ * una nota que a la vista está en blanco.
+ */
+export function textoDeNota(html: string): string {
+  return html
+    .replace(/<(br|\/p|\/div|\/li)>/gi, '\n')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+    .trim();
+}
+
+/**
+ * La nota, escrita en Markdown para pegarla fuera.
+ *
+ * El subrayado se pierde, y no hay nada que hacer: Markdown no lo tiene.
+ * Se prefiere perderlo a inventar una marca que en el destino se vería
+ * como dos guiones bajos sueltos. Lo demás viaja entero.
+ */
+export function notaAMarkdown(html: string): string {
+  const marcado = html
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, '')
+    // Las viñetas se marcan al final, cuando se sepa en qué lista están.
+    .replace(/<li>/gi, ' LI ')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<(b|strong)>/gi, '**')
+    .replace(/<\/(b|strong)>/gi, '**')
+    .replace(/<(i|em)>/gi, '*')
+    .replace(/<\/(i|em)>/gi, '*')
+    .replace(/<(s|strike|del)>/gi, '~~')
+    .replace(/<\/(s|strike|del)>/gi, '~~')
+    .replace(/<(br|\/p|\/div)>/gi, '\n');
+
+  /*
+    Numerar exige recorrer, no reemplazar: una expresión regular no lleva
+    la cuenta de por cuál va ni sabe si la lista de alrededor es de puntos
+    o de números.
+  */
+  const trozos = marcado.split(/(<\/?[uo]l>)/gi);
+  let salida = '';
+  let ordenada = false;
+  let n = 0;
+
+  for (const trozo of trozos) {
+    const etiqueta = trozo.toLowerCase();
+    if (etiqueta === '<ol>') {
+      ordenada = true;
+      n = 0;
+      continue;
+    }
+    if (etiqueta === '<ul>' || etiqueta === '</ol>' || etiqueta === '</ul>') {
+      ordenada = false;
+      continue;
+    }
+    salida += trozo.replace(/ LI /g, () => (ordenada ? `${++n}. ` : '- '));
+  }
+
+  return salida
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 export function guardar(cuaderno: Cuaderno): string {
   return JSON.stringify({
     v: VERSION,

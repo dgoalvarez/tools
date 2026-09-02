@@ -44,6 +44,39 @@ export const NOTAS = {
     en: 'Whatever you need: a link, a number, three sentences.',
   },
   copiarNota: { es: 'Copiar la nota', en: 'Copy the note' },
+  /* La barra de formato. Los rótulos van en el `title` y en el nombre
+     accesible: los botones son iconos, y un icono sin nombre no lo lee
+     nadie que no vea. */
+  barraFormato: { es: 'Formato', en: 'Formatting' },
+  negrita: { es: 'Negrita', en: 'Bold' },
+  cursiva: { es: 'Cursiva', en: 'Italic' },
+  subrayado: { es: 'Subrayado', en: 'Underline' },
+  tachado: { es: 'Tachado', en: 'Strikethrough' },
+  vinetas: { es: 'Lista con viñetas', en: 'Bulleted list' },
+  numeros: { es: 'Lista numerada', en: 'Numbered list' },
+
+  // ---------- El dibujo ----------
+  elDibujo: { es: 'El dibujo', en: 'The drawing' },
+  dibujoVacio: {
+    es: 'Dibuja aquí con el dedo, el ratón o el lápiz.',
+    en: 'Draw here with your finger, mouse or pen.',
+  },
+  /**
+   * Que el dibujo NO aguanta una recarga.
+   *
+   * Arriba, la lista y la nota sí. Callarse esta diferencia sería dejar
+   * que alguien pierda un croquis por creerse lo que promete la tarjeta
+   * de al lado, así que va a la vista y con la salida al lado: bajarlo.
+   */
+  dibujoEfimero: {
+    es: 'Este no aguanta una recarga. Descárgalo si lo quieres guardar.',
+    en: 'This one does not survive a reload. Download it if you want to keep it.',
+  },
+  deshacerTrazo: { es: 'Deshacer', en: 'Undo' },
+  borrarDibujo: { es: 'Borrar el dibujo', en: 'Clear the drawing' },
+  descargarDibujo: { es: 'Descargar', en: 'Download' },
+  tinta: { es: 'Tinta', en: 'Ink' },
+  grosor: { es: 'Grosor', en: 'Thickness' },
   /** «12 palabras». El número se sustituye. */
   palabras: { es: '{n} palabras', en: '{n} words' },
   unaPalabra: { es: '1 palabra', en: '1 word' },

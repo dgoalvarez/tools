@@ -4239,18 +4239,201 @@
   }
 
   /* ---------- La nota ---------- */
-  .campo-nota {
-    width: 100%;
+  /*
+    La nota y su barra van pegadas, como un solo control.
+
+    Separadas se leían como dos cosas —una hilera de botones sueltos y un
+    campo debajo—, y la barra no dice qué hace hasta que se ve sobre qué
+    actúa. El alto total es el mismo que tenía el campo solo: la barra sale
+    de dentro, no se suma por fuera, para que la tarjeta siga midiendo lo
+    que reserva el HTML del servidor.
+  */
+  .nota-formato {
+    display: grid;
+    grid-template-rows: auto 1fr;
     height: calc(var(--alto-libreta) + var(--fila-nueva) + 0.8125rem);
-    padding: 0.6875rem;
     border: 1px solid var(--line);
     border-radius: var(--radius);
     background: var(--bg);
+    overflow: hidden;
+  }
+
+  .barra-formato {
+    display: flex;
+    gap: 0.125rem;
+    padding: 0.25rem;
+    border-block-end: 1px solid var(--line);
+  }
+
+  /* Contorno al estar puesto, no solo al pasar el puntero: un botón de
+     formato tiene que decir si está activo sin que nadie lo toque. */
+  .boton-formato {
+    display: grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--ink-muted);
+    cursor: pointer;
+  }
+
+  .boton-formato:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+
+  .boton-formato:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: -1px;
+  }
+
+  .boton-formato[aria-pressed='true'] {
+    border-color: var(--line);
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+
+  .campo-nota {
+    width: 100%;
+    height: 100%;
+    padding: 0.6875rem;
+    overflow-y: auto;
     font: inherit;
     font-size: var(--fs-small);
     line-height: 1.6;
     color: var(--ink);
-    resize: vertical;
+  }
+
+  .campo-nota:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: -2px;
+  }
+
+  /* El texto de ayuda de un `contenteditable` vacío. Un `placeholder` de
+     verdad no existe fuera de los campos nativos, así que se pinta con el
+     atributo. `:empty` no basta: el navegador deja un <br> dentro al
+     borrar la última letra. */
+  .campo-nota:empty::before,
+  .campo-nota:has(> br:only-child)::before {
+    content: attr(data-vacia);
+    color: var(--ink-soft);
+    pointer-events: none;
+  }
+
+  /* Las listas del navegador vienen sin sangría dentro de un
+     contenteditable; sin esto las viñetas se salen por la izquierda. */
+  .campo-nota ul,
+  .campo-nota ol {
+    margin-block: 0.25rem;
+    padding-inline-start: 1.25rem;
+  }
+
+  .campo-nota ul {
+    list-style: disc;
+  }
+
+  .campo-nota ol {
+    list-style: decimal;
+  }
+
+  /* ---------- El lienzo ---------- */
+
+  /*
+    Alto FIJO, como todo lo que el servidor pinta vacío y el navegador
+    rellena. Un lienzo que creciera con el dibujo empujaría la página
+    hacia abajo mientras se dibuja, que es el peor momento posible.
+  */
+  /*
+    El dibujo ocupa las dos columnas.
+
+    Media tarjeta es poco lienzo: un croquis necesita ancho más que alto, y
+    en la mitad izquierda salía un rectángulo casi cuadrado con la lista al
+    lado dando la sensación de que sobraba sitio. Abajo y entero, además,
+    respeta el orden: primero lo que se escribe, luego lo que se dibuja.
+  */
+  .tarjeta-dibujo {
+    grid-column: 1 / -1;
+  }
+
+  .caja-lienzo {
+    position: relative;
+  }
+
+  /* La pista va encima del lienzo y no dentro: un `<canvas>` es un
+     elemento reemplazado y no admite contenido ni `::before`. */
+  .pista-lienzo {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: var(--fs-small);
+    color: var(--ink-soft);
+    /* No se pone en medio: el primer trazo empieza donde se pulse, y si
+       esto atrapara el puntero habría que dibujar dos veces. */
+    pointer-events: none;
+  }
+
+  .lienzo {
+    display: block;
+    width: 100%;
+    height: var(--alto-libreta);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--bg);
+    touch-action: none;
+    cursor: crosshair;
+  }
+
+  .mandos-dibujo {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .muestra-tinta {
+    width: 1.125rem;
+    height: 1.125rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    cursor: pointer;
+  }
+
+  .muestra-tinta[aria-pressed='true'] {
+    outline: 2px solid var(--acento);
+    outline-offset: 2px;
+  }
+
+  .muestra-grosor {
+    display: grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: none;
+    cursor: pointer;
+  }
+
+  .muestra-grosor span {
+    width: 0.875rem;
+    border-radius: 999px;
+    background: var(--ink-muted);
+  }
+
+  .muestra-grosor[aria-pressed='true'] {
+    border-color: var(--line);
+    background: var(--surface-2);
+  }
+
+  .muestra-grosor[aria-pressed='true'] span {
+    background: var(--ink);
+  }
+
+  .acciones-dibujo {
+    display: flex;
+    gap: 0.375rem;
   }
 
   .campo-nota::placeholder {

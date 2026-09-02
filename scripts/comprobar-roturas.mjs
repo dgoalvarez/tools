@@ -73,10 +73,14 @@ if (!existsSync(dist)) {
  * recortan o desplazan a propósito: ahí salirse es lo que se ha pedido,
  * que es exactamente cómo funciona `truncate`.
  *
- * OJO al escribir aquí dentro: esto es una plantilla, así que una comilla
- * invertida en un comentario la corta por la mitad y el archivo entero
- * deja de compilar. El error que sale —«Unexpected identifier»— señala a
- * la línea del comentario y no dice nada de comillas.
+ * OJO al escribir aquí dentro, y en TODAS las constantes de este archivo
+ * que van entre comillas invertidas —la sonda, los guiones, cada caso—:
+ * son plantillas. Una comilla invertida en un comentario de dentro la
+ * corta por la mitad y el archivo entero deja de compilar. El error que
+ * sale —«Unexpected identifier»— señala a la línea del comentario y no
+ * menciona las comillas por ningún lado.
+ *
+ * Ha pasado dos veces. La segunda, escribiendo el aviso de la primera.
  */
 const SONDA = `
 window.__romperse = function () {
@@ -205,6 +209,15 @@ window.__romperse = function () {
 /** Escribe en un campo de React: el valor va por el setter nativo. */
 const ESCRIBIR = `
 function __escribir(el, valor) {
+  // Un contenteditable no tiene propiedad value: llamarle al setter
+  // nativo de un textarea lanza «Illegal invocation». La nota pasó a ser
+  // uno cuando ganó la barra de formato, y estos guiones se quedaron
+  // escribiendo como si siguiera siendo un campo.
+  if (el.isContentEditable) {
+    el.textContent = valor;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    return;
+  }
   var proto = el.tagName === 'TEXTAREA'
     ? window.HTMLTextAreaElement.prototype
     : window.HTMLInputElement.prototype;

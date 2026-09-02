@@ -451,46 +451,18 @@ export function relojEnVivo(
 // ------------------------------------------------------------------ frase
 
 /**
- * La frase lista para pegar en WhatsApp o en un correo.
- *
- * Es lo que hace que la herramienta sirva de algo: nadie quiere una tabla
- * de conversiones, quiere una línea que se pega y se entiende sola.
- *
- * La forma es «cuando aquí son las X, allí son las Y», que es la pregunta
- * tal y como se hace. Antes decía «tu cita es…», y eso obligaba a que
- * siempre hubiera una cita: la herramienta sirve igual para saber cuándo
- * abre una tienda, cuándo sale un vuelo o a qué hora emiten algo.
- */
-export function componerFrase(conversion: Conversion, origen: Conversion, lang: string): string {
-  const lugar = conversion.destino.etiqueta;
-
-  if (lang === 'es') {
-    const dia =
-      conversion.saltoDeDia === 0
-        ? `(${conversion.fecha})`
-        : `(${conversion.fecha} — ojo: allí ya es ${conversion.saltoDeDia > 0 ? 'el día siguiente' : 'el día anterior'})`;
-
-    return `Cuando en ${origen.destino.etiqueta} son las ${origen.hora}, en ${lugar} son las ${conversion.hora} ${dia}.`;
-  }
-
-  const dia =
-    conversion.saltoDeDia === 0
-      ? `(${conversion.fecha})`
-      : `(${conversion.fecha} — note: that is the ${conversion.saltoDeDia > 0 ? 'next' : 'previous'} day there)`;
-
-  return `When it is ${origen.hora} in ${origen.destino.etiqueta}, it is ${conversion.hora} in ${lugar} ${dia}.`;
-}
-
-/**
  * Todas las horas en un solo mensaje.
  *
  * Sustituye a las frases sueltas que había bajo cada ficha, y no solo por
- * espacio: cuando son cinco sitios lo que se manda es UN
- * mensaje al grupo, no cinco frases iguales una detrás de otra. El aviso
- * de que allí es otro día viaja dentro de la línea que le toca, que es
- * donde hace falta.
+ * espacio: cuando son cinco sitios lo que se manda es UN mensaje al grupo,
+ * no cinco frases iguales una detrás de otra. El aviso de que allí es otro
+ * día viaja dentro de la línea que le toca, que es donde hace falta.
  *
- * `componerFrase` se queda para una sola ciudad; las dos hacen falta.
+ * Hubo una hermana para una sola ciudad —«cuando aquí son las X, allí son
+ * las Y»— y se ha ido: nunca llegó a tener botón, así que su único
+ * consumidor era la comprobación que la probaba. Si algún día hace falta
+ * copiar la hora de una fila suelta, se escribe entonces sabiendo qué
+ * frase pide de verdad ese botón.
  */
 export function componerLista(destinos: Conversion[], origen: Conversion, lang: string): string {
   const es = lang === 'es';

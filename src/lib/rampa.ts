@@ -337,9 +337,6 @@ const UMBRAL_ACROMATICO = 0.002;
 
 // ============================================== el reparto de nombres
 
-/** Los once de Tailwind, que es lo que casi todo el mundo reconoce. */
-export const NOMBRES_TAILWIND = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950] as const;
-
 /**
  * Los nombres para cada número de pasos.
  *
@@ -637,12 +634,6 @@ export function medirPaso(hex: string, texto: Texto): AccesibilidadDePaso {
   };
 }
 
-/** ¿Este paso aguanta texto encima, con alguna de las dos tintas? */
-export function aguantaTexto(hex: string, texto: Texto): boolean {
-  const m = medirPaso(hex, texto);
-  return m.conBlanco.wcag.pasaAA || m.conNegro.wcag.pasaAA;
-}
-
 /**
  * El primer paso (el más claro) sobre el que el texto BLANCO pasa AA.
  *
@@ -656,20 +647,6 @@ export function limiteDePolaridad(pasos: Paso[], texto: Texto): number | null {
 }
 
 // ============================================================== avisos
-
-/**
- * Cuánto se aparta la luminosidad de cada índice de la nominal.
- *
- * Es el precio del anclaje, medido y enseñado en vez de escondido: dice
- * «tu 500 azul pesa 63,7 y tu 500 rojo 61,3». Misma política que
- * `buscarCruces` en `scale.ts` — avisar, no arreglar por detrás.
- */
-export function desviacionDeEscalera(paleta: Paleta): number[] {
-  const nominal = escaleraNominal(paleta.ajustes);
-  return nominal.map((l, i) =>
-    paleta.rampas.reduce((peor, r) => Math.max(peor, Math.abs((r.pasos[i]?.calculado.l ?? l) - l)), 0)
-  );
-}
 
 /**
  * Los pasos cuyo croma es un mínimo local que la curva no explica.

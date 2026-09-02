@@ -35,19 +35,14 @@ export const UI = {
   // ---------- Navegación ----------
   navHome: { es: 'Inicio', en: 'Home' },
   navTools: { es: 'Herramientas', en: 'Tools' },
-  backHome: { es: 'Volver al inicio', en: 'Back to home' },
   verTodas: { es: 'Ver todas las herramientas', en: 'See all the tools' },
   todasLasHerramientas: { es: 'Todas las herramientas', en: 'All the tools' },
-  irAHerramienta: { es: 'Ir a una herramienta', en: 'Go to a tool' },
-  /** El rótulo de la herramienta que está abierta, fijada arriba de la barra. */
-  abierta: { es: 'Abierta', en: 'Open' },
   cerrar: { es: 'Cerrar', en: 'Close' },
   /** El cuarto elemento de la barra de móvil: abre el lanzador. */
   desplegarMenu: { es: 'Desplegar el menú', en: 'Expand the menu' },
   plegarMenu: { es: 'Plegar el menú', en: 'Collapse the menu' },
   abrirMenu: { es: 'Abrir el menú', en: 'Open the menu' },
   cerrarMenu: { es: 'Cerrar el menú', en: 'Close the menu' },
-  mas: { es: 'Más', en: 'More' },
 
   // ---------- Portada ----------
   homeIntro: {
@@ -57,22 +52,13 @@ export const UI = {
   openTool: { es: 'Abrir', en: 'Open' },
 
   // ---------- Estado «en construcción» ----------
-  soonBadge: { es: 'Próximamente', en: 'Coming soon' },
-  soonHeading: { es: 'Todavía no está lista', en: 'Not ready yet' },
-  soonBody: {
-    es: 'Esta herramienta está en construcción. La página ya existe para que su dirección no cambie cuando se publique: si la guardas ahora, seguirá funcionando.',
-    en: 'This tool is being built. The page already exists so its address will not change when it ships: bookmark it now and it will keep working.',
-  },
 
   // ---------- Pie ----------
   privacyNote: {
     es: 'Sin cuentas, sin cookies, sin base de datos. Todo se calcula en tu navegador.',
     en: 'No accounts, no cookies, no database. Everything is computed in your browser.',
   },
-  /** La atribución de los datos de husos horarios. La exige su licencia. */
-  datosDe: { es: 'Ciudades y códigos postales de', en: 'Cities and ZIP codes from' },
   madeBy: { es: 'Hecho por', en: 'Made by' },
-  portfolioLink: { es: 'Ver el portafolio', en: 'View the portfolio' },
 
   // ---------- Divulgación progresiva ----------
   /**

@@ -83,12 +83,6 @@ export const HUSOS = {
 
   // ---------- Resultados ----------
   resultados: { es: 'Qué hora es allí', en: 'What time it is there' },
-  mismoDia: { es: 'el mismo día', en: 'same day' },
-  diaSiguiente: { es: 'Allí ya es el día siguiente', en: 'That is the next day there' },
-  diaAnterior: {
-    es: 'Allí todavía es el día anterior',
-    en: 'That is still the previous day there',
-  },
   /**
    * Los mismos avisos, en corto.
    *
@@ -104,8 +98,6 @@ export const HUSOS = {
   adelanto: { es: 'por delante', en: 'ahead' },
   retraso: { es: 'por detrás', en: 'behind' },
 
-  // ---------- La frase ----------
-  copiarFrase: { es: 'Copiar la frase', en: 'Copy the sentence' },
   copiarTodas: { es: 'Copiar las horas', en: 'Copy the times' },
   copiado: { es: 'Copiado', en: 'Copied' },
 
@@ -124,23 +116,6 @@ export const HUSOS = {
     en: 'It is the Sunday the clocks go back there, so that hour repeats. The first of the two is used, which is what calendars do.',
   },
 
-  // ---------- Atribución y límites ----------
-  precisionTitulo: { es: 'Hasta dónde llega el código postal', en: 'How far the ZIP code goes' },
-  ubicacionTitulo: { es: 'Qué es «mi ubicación»', en: 'What “my location” means' },
-  ubicacionCuerpo: {
-    es: 'La zona horaria que ya tiene configurada tu sistema operativo. El navegador la publica sin pedir permiso y sin decirle a nadie dónde estás: no es geolocalización, y esta página no la envía a ningún sitio.',
-    en: 'The time zone your operating system is already set to. The browser reports it without asking for permission and without telling anyone where you are: it is not geolocation, and this page sends it nowhere.',
-  },
-  saltosTitulo: { es: 'Los dos domingos raros del año', en: 'The two odd Sundays of the year' },
-  saltosCuerpo: {
-    es: 'En los sitios que cambian la hora hay un domingo en que una hora no existe y otro en que ocurre dos veces. Cuando la hora que has puesto cae ahí, la herramienta lo dice en vez de elegir en silencio.',
-    en: 'Where clocks change there is one Sunday when an hour does not exist and another when it happens twice. When the time you set lands there, the tool says so instead of choosing silently.',
-  },
-  datosTitulo: { es: 'De dónde salen los datos', en: 'Where the data comes from' },
-  datosCuerpo: {
-    es: 'Las ciudades y los códigos postales vienen de GeoNames. El huso de cada código postal se deduce del condado al que pertenece, que es el nivel al que existen de verdad las fronteras horarias.',
-    en: 'Cities and ZIP codes come from GeoNames. Each ZIP code’s zone is worked out from its county, which is the level at which time-zone borders actually exist.',
-  },
   /**
    * La atribución, resumida a una línea.
    *

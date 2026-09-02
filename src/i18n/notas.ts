@@ -47,7 +47,6 @@ export const NOTAS = {
   /* La barra de formato. Los rótulos van en el `title` y en el nombre
      accesible: los botones son iconos, y un icono sin nombre no lo lee
      nadie que no vea. */
-  barraFormato: { es: 'Formato', en: 'Formatting' },
   negrita: { es: 'Negrita', en: 'Bold' },
   cursiva: { es: 'Cursiva', en: 'Italic' },
   subrayado: { es: 'Subrayado', en: 'Underline' },
@@ -81,14 +80,4 @@ export const NOTAS = {
   palabras: { es: '{n} palabras', en: '{n} words' },
   unaPalabra: { es: '1 palabra', en: '1 word' },
   copiado: { es: 'Copiado', en: 'Copied' },
-
-  // ---------- El paso a paso ----------
-  porQueSeVaTitulo: {
-    es: 'Por qué se va al cerrar',
-    en: 'Why it goes when you close it',
-  },
-  porQueSeVa: {
-    es: 'Este sitio no guarda nada de nadie, y eso no admite excepciones cómodas. Lo que escribes aquí vive en la memoria que el navegador reserva para esta pestaña: sobrevive a una recarga, a un despiste y a irte a otra herramienta y volver, pero no a cerrarla. Si algo tiene que durar más, cópialo antes.',
-    en: 'This site keeps nothing from anyone, and that does not allow convenient exceptions. What you write here lives in the memory the browser sets aside for this tab: it survives a reload, a slip and a trip to another tool and back — but not closing it. If something needs to outlive that, copy it out first.',
-  },
 } satisfies Record<string, T>;

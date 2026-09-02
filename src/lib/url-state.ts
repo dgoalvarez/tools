@@ -36,19 +36,3 @@ export function escribirParams(valores: Record<string, string | null | undefined
 
   window.history.replaceState(null, '', destino);
 }
-
-/**
- * Lee un parámetro y lo valida. Si no está o no vale, devuelve el de por
- * defecto: una dirección manipulada nunca debe romper la página.
- */
-export function leerParam<T>(
-  clave: string,
-  porDefecto: T,
-  validar: (crudo: string) => T | null
-): T {
-  const crudo = leerParams().get(clave);
-  if (crudo === null) return porDefecto;
-
-  const valor = validar(crudo);
-  return valor === null ? porDefecto : valor;
-}

@@ -45,10 +45,8 @@ export const MATERIAS = {
   color: { es: 'Color', en: 'Colour' },
   tipografia: { es: 'Tipografía', en: 'Type' },
   // No es lo mismo que `tipografia`: aquella es de letras y escalas, esta
-  // es de palabras que alguien escribe. Le servirá también a las
-  // utilidades que vengan (expresiones regulares, JSON, códigos).
+  // es de palabras que alguien escribe.
   texto: { es: 'Texto', en: 'Text' },
-  lugares: { es: 'Lugares', en: 'Places' },
 } satisfies Record<string, T>;
 
 export type MateriaKey = keyof typeof MATERIAS;
@@ -69,7 +67,6 @@ export const ACENTO_POR_MATERIA: Record<MateriaKey, string> = {
   color: 'var(--acento-color)',
   tipografia: 'var(--acento-tipografia)',
   texto: 'var(--acento-texto)',
-  lugares: 'var(--brand)',
 };
 
 /**
@@ -84,7 +81,6 @@ export const SOLIDO_POR_MATERIA: Record<MateriaKey, string> = {
   color: 'var(--solido-color)',
   tipografia: 'var(--solido-tipografia)',
   texto: 'var(--solido-texto)',
-  lugares: 'var(--l-brand)',
 };
 
 // ------------------------------------------------------------------- tarea

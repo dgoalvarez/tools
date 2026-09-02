@@ -23,7 +23,6 @@ export const PALETA = {
   claridadMin: { es: 'El más oscuro', en: 'Darkest' },
   cromaCentro: { es: 'Croma en el centro', en: 'Chroma in the middle' },
   derivaTono: { es: 'Deriva de tono', en: 'Hue drift' },
-  grados: { es: '°', en: '°' },
   /**
    * Lo que hace la deriva, dicho corto. Es el mando que nadie reconoce a
    * la primera y el que más cambia el resultado.
@@ -52,8 +51,6 @@ export const PALETA = {
   /** Lo que dice el aviso flotante al copiar. */
   copiadoAviso: { es: 'Copiado:', en: 'Copied:' },
   ajustar: { es: 'Ajustar este paso', en: 'Tune this step' },
-  /** Lo que se lee al pulsar una casilla, para el lector de pantalla. */
-  verDetalle: { es: 'Ver el detalle de', en: 'See the detail of' },
   ancla: { es: 'tu color', en: 'your colour' },
   anclaExplicado: {
     es: 'Este es el color que pegaste, intacto. La rampa se ha construido alrededor de él.',
@@ -65,27 +62,14 @@ export const PALETA = {
     es: 'La curva pedía más croma del que sRGB puede pintar a esta luminosidad y este tono. Es el techo de la pantalla, no un fallo de la rampa.',
     en: 'The curve asked for more chroma than sRGB can paint at this lightness and hue. That is the screen’s ceiling, not a flaw in the ramp.',
   },
-  /** El aviso de los pasos que no aguantan texto de ninguna de las dos tintas. */
-  sinTinta: { es: 'sin tinta', en: 'no ink' },
-  sinTintaExplicado: {
-    es: 'Ni el blanco ni el negro llegan a 4,5:1 sobre este paso, así que no vale para texto de cuerpo. Sí para fondos, bordes e iconos grandes.',
-    en: 'Neither white nor black reaches 4.5:1 on this step, so it is no good for body text. It is fine for backgrounds, borders and large icons.',
-  },
 
   // ---------- El detalle ----------
   conBlanco: { es: 'Texto blanco', en: 'White text' },
   conNegro: { es: 'Texto negro', en: 'Black text' },
   razon: { es: 'Razón', en: 'Ratio' },
-  copiarHex: { es: 'Copiar el hex', en: 'Copy the hex' },
   retocar: { es: 'Retocar este paso', en: 'Tune this step' },
   devolver: { es: 'Volver a lo calculado', en: 'Back to calculated' },
   cerrar: { es: 'Cerrar el detalle', en: 'Close the detail' },
-  anclarAqui: { es: 'Anclar mi color aquí', en: 'Anchor my colour here' },
-  anclarAyuda: {
-    es: 'Mueve tu color a este paso. Sirve para los amarillos y los cianes, que por su luminosidad caen en un paso claro aunque sean el color principal de una marca.',
-    en: 'Moves your colour to this step. Useful for yellows and cyans, which by their lightness land on a light step even when they are a brand’s main colour.',
-  },
-  soltarAncla: { es: 'Dejar que caiga solo', en: 'Let it fall where it lands' },
   anclarEn: { es: 'Anclar mi color en', en: 'Anchor my colour at' },
   anclaAuto: { es: 'Donde caiga', en: 'Where it lands' },
 

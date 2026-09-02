@@ -15,7 +15,6 @@ import {
   camposEnZona,
   convertir,
   relojEnVivo,
-  componerFrase,
   componerLista,
   buscarLugares,
   nombreDePais,
@@ -201,7 +200,7 @@ console.log('\n4. Las 11 de la noche en Colombia, vistas desde California');
   );
 }
 
-console.log('\n4b. El mensaje con todas las horas');
+console.log('\n5. El mensaje con todas las horas');
 {
   const varios = [
     destino('Miami', 'America/New_York'),
@@ -251,7 +250,7 @@ console.log('\n4b. El mensaje con todas las horas');
   );
 }
 
-console.log('\n4c. El reloj en vivo de la tarjeta de arriba');
+console.log('\n6. El reloj en vivo de la tarjeta de arriba');
 {
   /*
     Esta tarjeta no pasa por `convertir`: sale de `Intl` y es síncrona,
@@ -325,7 +324,7 @@ console.log('\n4c. El reloj en vivo de la tarjeta de arriba');
   }
 }
 
-console.log('\n5. Las horas que no existen y las que ocurren dos veces');
+console.log('\n7. Las horas que no existen y las que ocurren dos veces');
 {
   // 8 de marzo de 2026, 2:30 de la madrugada en Nueva York: esa hora no existe.
   const inexistente = convertir(
@@ -369,43 +368,7 @@ console.log('\n5. Las horas que no existen y las que ocurren dos veces');
   );
 }
 
-console.log('\n6. La frase que se copia');
-{
-  const miami = [destino('Miami', 'America/New_York')];
-  const r = convertir(
-    Temporal,
-    { año: 2026, mes: 9, dia: 4, hora: 15, minuto: 0 },
-    BOGOTA,
-    'Bogotá',
-    miami,
-    'es'
-  );
-  const frase = componerFrase(r.destinos[0]!, r.origen, 'es');
-  console.log('        ' + frase);
-  afirmar(frase.includes('Miami') && frase.includes('Bogotá'), 'nombra los dos lugares');
-  afirmar(
-    frase.includes(r.destinos[0]!.hora) && frase.includes(r.origen.hora),
-    'trae las dos horas: de la de aquí a la de allí'
-  );
-
-  const enIngles = componerFrase(r.destinos[0]!, r.origen, 'en');
-  console.log('        ' + enIngles);
-  afirmar(/^When it is /.test(enIngles), 'y existe en inglés');
-
-  const tarde = convertir(
-    Temporal,
-    { año: 2026, mes: 7, dia: 16, hora: 1, minuto: 0 },
-    BOGOTA,
-    'Bogotá',
-    [destino('Los Ángeles', 'America/Los_Angeles')],
-    'es'
-  );
-  const conAviso = componerFrase(tarde.destinos[0]!, tarde.origen, 'es');
-  console.log('        ' + conAviso);
-  afirmar(conAviso.includes('día anterior'), 'cuando cae en otro día, la frase lo dice');
-}
-
-console.log('\n7. El buscador de ciudades');
+console.log('\n8. El buscador de ciudades');
 {
   afirmar(normalizar('Bogotá') === 'bogota', 'las tildes se quitan para buscar');
   afirmar(normalizar('  MEDELLÍN ') === 'medellin', 'y los espacios y las mayúsculas');
@@ -433,7 +396,7 @@ console.log('\n7. El buscador de ciudades');
   afirmar(buscarLugares(ciudades, 'a', 'es', 8).length === 0, 'ni una letra suelta');
 }
 
-console.log('\n8. Las ciudades, en los dos idiomas');
+console.log('\n9. Las ciudades, en los dos idiomas');
 {
   // La forma del archivo. Si alguien vuelve a generar los datos con una
   // versión vieja del guion, esto se cae aquí y no en la cara de quien
@@ -486,7 +449,7 @@ console.log('\n8. Las ciudades, en los dos idiomas');
   afirmar(nombreDePais('US', 'en') === 'United States', 'y en inglés también');
 }
 
-console.log('\n9. Los datos llevan su atribución');
+console.log('\n10. Las zonas de los datos son válidas');
 {
   // Toda zona que aparezca en los datos tiene que ser una zona que el
   // navegador reconozca; si no, la conversión reventaría al usarla.
@@ -501,7 +464,7 @@ console.log('\n9. Los datos llevan su atribución');
   afirmar(malas === 0, `las ${ciudades.zonas.length} zonas de los datos son válidas`);
 }
 
-console.log('\n8. Los datos llevan su atribución');
+console.log('\n11. Los datos llevan su atribución');
 {
   afirmar(/GeoNames/.test(ciudades.fuente), `lugares.json: ${ciudades.fuente}`);
   afirmar(/CC BY 4\.0/.test(zips.fuente), 'zips.json declara la licencia');
@@ -517,7 +480,7 @@ console.log('\n8. Los datos llevan su atribución');
   elegir por nadie. Si algún día el corte que decide qué husos entran se
   vuelve más estricto y Florida pasa a salir una sola vez, esto lo dice.
 */
-console.log('\n9. Estados, departamentos y países');
+console.log('\n12. Estados, departamentos y países');
 {
   const soloDivisiones = (q: string) =>
     buscarLugares(ciudades, q, 'es', 12).filter((c) => c.tipo === 'division');

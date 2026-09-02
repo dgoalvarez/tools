@@ -38,8 +38,6 @@ export const RELOJ = {
   alarma: { es: 'Alarma', en: 'Alarm' },
   cronometro: { es: 'Cronómetro', en: 'Stopwatch' },
   temporizador: { es: 'Temporizador', en: 'Timer' },
-  /** Lo que anuncia el punto del acento en una pestaña. */
-  enMarcha: { es: 'en marcha', en: 'running' },
 
   // ---------- La cara del reloj ----------
   cara: { es: 'El reloj', en: 'The clock' },

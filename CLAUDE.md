@@ -19,15 +19,22 @@ pantalla.
 Cuatro comandos, y cada uno caza lo que los otros no ven. Un `build` en
 verde no dice nada sobre si algo se sale de su caja.
 
-| | Qué demuestra |
-| --- | --- |
-| `npm run build` | Rutas sincronizadas entre `routes.ts` y `astro.config.mjs`, etiquetas completas, tipos, todas las páginas publicadas, cada ancla del paso a paso presente en el HTML, y la CSP al día |
-| `npm run comprobar` | La aritmética: contraste, escala, rampas, notas, husos, pomodoro, reloj, encabezados |
-| `npm run romper` | Que nada desborda su contenedor, a 1440, 869 y 485 px, con contenido hostil |
-| `npm run navegar` | Que la navegación no da tirones ni recarga, y que lo guardado sobrevive al cambio de página |
-| `npm run ver` | 43 capturas. No es una alarma: una captura no sabe si está bien, solo la enseña |
+|                     | Qué demuestra                                                                                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run build`     | Rutas sincronizadas entre `routes.ts` y `astro.config.mjs`, etiquetas completas, tipos, todas las páginas publicadas, cada ancla del paso a paso presente en el HTML, y la CSP al día |
+| `npm run comprobar` | La aritmética: contraste, escala, rampas, notas, husos, pomodoro, reloj, encabezados                                                                                                  |
+| `npm run romper`    | Tres preguntas distintas sobre la maqueta, con contenido hostil y a cinco anchos: 1440, 1024, 869, 700 y 485. 1024 y 700 son los extremos apretados de los dos repartos de columnas   |
+| `npm run navegar`   | Que la navegación no da tirones ni recarga, y que lo guardado sobrevive al cambio de página                                                                                           |
+| `npm run ver`       | 49 capturas. No es una alarma: una captura no sabe si está bien, solo la enseña                                                                                                       |
 
 `npm run verificar` encadena las cuatro primeras.
+
+Las tres preguntas de `romper` entraron cada una por un fallo que las
+anteriores daban por bueno, y ese es el patrón a repetir: **¿se sale algo
+de su caja a lo ancho? ¿le caben a una caja sus hijos a lo alto? ¿y reserva
+algún campo más ancho del que usa?** La tercera avisa de algo que no es
+desbordar —una cifra despegada de su borde— y se coló porque los bordes de
+las cajas sí coincidían; lo que no coincidía era el número de dentro.
 
 **Medir gana a mirar, y mirar gana a razonar.** En este proyecto hay
 fallos que solo salieron en capturas —dos rieles pintados a la vez, un
@@ -53,6 +60,13 @@ sonado no es una alarma.
 - **Usabilidad antes que estética**, siempre que choquen.
 - **Los comentarios del código dicen por qué**, y sobre todo qué se
   descartó y a costa de qué. Están en español, como el código.
+- **Nada llega a `dangerouslySetInnerHTML` sin pasar por `sanearNota`.**
+  La nota de la libreta guarda HTML porque tiene formato, y ese HTML viene
+  de `execCommand` y de lo que alguien pegue. El saneador deja catorce
+  etiquetas y ningún atributo —no hay que decidir cuál es peligroso si no
+  sobrevive ninguno—, y lo pegado se limpia ANTES de entrar en el
+  documento. Está probado con nueve cargas en `comprobar-notas.ts` §10, y
+  con la otra mitad: que los seis formatos de la barra pasen enteros.
 
 ---
 
@@ -62,9 +76,23 @@ sonado no es una alarma.
   comillas invertidas y las barras invertidas dentro de plantillas. Ha
   pasado media docena de veces. Para un script de parcheo, la herramienta
   Write; para un cambio pequeño, Edit.
-- **Las utilidades de Tailwind ganan a `@layer components`.** Tres veces:
-  el color de un botón, el relleno de un campo y un `w-full` de shadcn.
-  Si una regla de componente no se aplica, es esto.
+- **Las utilidades de Tailwind ganan a `@layer components`.** Cuatro veces:
+  el color de un botón, el relleno de un campo, un `w-full` de shadcn y
+  tres propiedades a la vez del disparador de fecha —`justify-content`,
+  `height` y `font-weight` perdían contra `justify-center`, `h-8` y
+  `font-medium`, y el campo salía centrado y midiendo 32 px—. Si una regla
+  de componente no se aplica, es esto: lo que choca con una utilidad se
+  escribe en el `className`, donde compite de tú a tú.
+- **Una comilla invertida dentro de una plantilla de JS la parte en dos.**
+  Mordió dos veces en `comprobar-roturas.mjs`, cuyas constantes son
+  plantillas; la segunda, escribiendo el aviso de la primera. El error que
+  sale —«Unexpected identifier»— señala a la línea del comentario y no
+  menciona las comillas por ningún lado.
+- **`height: 100%` contra una fila de rejilla de alto indefinido se
+  resuelve como `auto`.** La caja crece con su contenido en vez de ceñirse
+  a la fila, así que el desplazamiento no llega a aparecer nunca. Pasó
+  queriendo que dos listas usaran el alto que les sobraba; lo que no puede
+  crecer necesita un tope escrito, no un porcentaje.
 - **La especificidad manda sobre el orden.** `:root:not([attr]) .a .b`
   (0,4,0) gana a `.hoja .a .b` (0,3,0). Así heredó la hoja de móvil el
   estado plegado del riel.

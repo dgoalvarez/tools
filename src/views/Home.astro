@@ -92,13 +92,9 @@ const { lang } = Astro.props;
 
                 <span class="relative flex items-center gap-2 text-[0.72rem] font-medium tracking-[0.06em] text-ink-soft uppercase">
                   {t(TAREAS[tool.etiquetas.tarea], lang)}
-                  {tool.listo ? (
-                    <span class="ml-auto text-[var(--acento)] group-hover:underline">
-                      {t(UI.openTool, lang)} <span aria-hidden="true">→</span>
-                    </span>
-                  ) : (
-                    <span class="ml-auto">{t(UI.soonBadge, lang)}</span>
-                  )}
+                  <span class="ml-auto text-[var(--acento)] group-hover:underline">
+                    {t(UI.openTool, lang)} <span aria-hidden="true">→</span>
+                  </span>
                 </span>
               </a>
             </li>

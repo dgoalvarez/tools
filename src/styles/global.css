@@ -804,10 +804,6 @@
     color: var(--ink-soft);
   }
 
-  .solo-movil {
-    display: none;
-  }
-
   /* ---------- El corte de móvil ---------- */
   @media (width < 48rem) {
     /* El riel entero se va: en móvil manda la barra de arriba con su
@@ -823,10 +819,6 @@
 
     .solo-escritorio {
       display: none;
-    }
-
-    .solo-movil {
-      display: flex;
     }
   }
 
@@ -3916,77 +3908,6 @@
     }
   }
 
-  /* ---------- El detalle ---------- */
-  .detalle-paso {
-    display: grid;
-    gap: 0.875rem;
-    padding: 1.0625rem;
-    border: 1px solid var(--acento);
-    border-radius: var(--radius-xl);
-    background: var(--surface);
-  }
-
-  .detalle-paso header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .detalle-paso .muestra-detalle {
-    flex: none;
-    width: 2.75rem;
-    height: 2.75rem;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-md);
-  }
-
-  .detalle-paso .variable {
-    margin: 0;
-    font-family: var(--font-mono);
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--ink);
-  }
-
-  .detalle-paso .valores {
-    margin: 0;
-    overflow: hidden;
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--ink-soft);
-  }
-
-  .detalle-paso .veredictos {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 0.25rem 0.875rem;
-    margin: 0;
-    font-size: var(--fs-small);
-  }
-
-  .detalle-paso .veredictos dt {
-    color: var(--ink-muted);
-  }
-
-  .detalle-paso .veredictos dd {
-    margin: 0;
-    font-variant-numeric: tabular-nums;
-    color: var(--ink);
-  }
-
-  .acciones-detalle .etiqueta-retoque {
-    font-size: var(--fs-small);
-    color: var(--ink-muted);
-  }
-
-  .acciones-detalle {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-  }
 }
 
 /* ============================================================

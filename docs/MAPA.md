@@ -127,8 +127,8 @@ Sin React ni DOM: se corre con `node`, y por eso se puede comprobar.
 - tipos · `Fase`, `Ajustes`, `Cuenta`
 
 **`rampa.ts`**
-- funciones · `curvaClaridad`, `curvaClaridadInversa`, `escaleraNominal`, `cromaMaximo`, `nombresPaso`, `limpiarNombre`, `nombreDePaso`, `construirRampa`, `construirPaleta`, `aplicarRetoque`, `soltarRetoque`, `soltarTodos`, `retoquesDormidos`, `medirPaso`, `aguantaTexto`, `limiteDePolaridad`, `desviacionDeEscalera`, `buscarVallesDeCroma`, `pasosIndistinguibles`, `retoquesQueRompen`, `buscarNombresRepetidos`, `aOklchCss`, `aCss`
-- constantes · `AJUSTES_INICIALES`, `LIMITES`, `NOMBRES_TAILWIND`, `NOMBRES_POR_PASOS`, `SALTO_MINIMO`
+- funciones · `curvaClaridad`, `curvaClaridadInversa`, `escaleraNominal`, `cromaMaximo`, `nombresPaso`, `limpiarNombre`, `nombreDePaso`, `construirRampa`, `construirPaleta`, `aplicarRetoque`, `soltarRetoque`, `soltarTodos`, `retoquesDormidos`, `medirPaso`, `limiteDePolaridad`, `buscarVallesDeCroma`, `pasosIndistinguibles`, `retoquesQueRompen`, `buscarNombresRepetidos`, `aOklchCss`, `aCss`
+- constantes · `AJUSTES_INICIALES`, `LIMITES`, `NOMBRES_POR_PASOS`, `SALTO_MINIMO`
 - tipos · `Ajustes`, `Tonalidad`, `Paso`, `Rampa`, `Paleta`, `AccesibilidadDePaso`
 
 **`reloj.ts`**
@@ -142,11 +142,11 @@ Sin React ni DOM: se corre con `node`, y por eso se puede comprobar.
 - tipos · `Ajustes`, `Esquema`, `Paso`, `Cruce`
 
 **`timezones.ts`**
-- funciones · `obtenerTemporal`, `zonaDelNavegador`, `nombreDeZona`, `localeDe`, `camposEnZona`, `desfaseDeZona`, `diaDeZona`, `minutosEnZona`, `convertir`, `abreviaturaDeZona`, `relojEnVivo`, `componerFrase`, `componerLista`, `normalizar`, `nombreGenericoDeZona`, `nombreDePais`, `buscarLugares`, `zonaDeZip`
+- funciones · `obtenerTemporal`, `zonaDelNavegador`, `nombreDeZona`, `localeDe`, `camposEnZona`, `desfaseDeZona`, `diaDeZona`, `minutosEnZona`, `convertir`, `abreviaturaDeZona`, `relojEnVivo`, `componerLista`, `normalizar`, `nombreGenericoDeZona`, `nombreDePais`, `buscarLugares`, `zonaDeZip`
 - tipos · `FuenteDestino`, `Destino`, `Conversion`, `Momento`, `Ambiguedad`, `Resultado`, `RelojVivo`, `DatosLugares`, `DatosZips`, `TipoLugar`, `Coincidencia`
 
 **`url-state.ts`**
-- funciones · `leerParams`, `escribirParams`, `leerParam`
+- funciones · `leerParams`, `escribirParams`
 
 **`utils.ts`**
 - funciones · `cn`

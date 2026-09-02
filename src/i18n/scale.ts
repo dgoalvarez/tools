@@ -51,7 +51,6 @@ export const ESCALA = {
     en: 'This is the table almost no tool shows, and it is where the problems appear: a heading already maxed out on a laptop while the body is still stuck at its minimum reads as “big and cramped” at once.',
   },
   columnaPaso: { es: 'Paso', en: 'Step' },
-  columnaLleno: { es: 'Al 95 % de su máximo', en: 'At 95% of its max' },
   columnaLlenoCorto: { es: '95 %', en: '95%' },
   llenoAyuda: {
     es: 'La anchura de ventana a la que ese paso ya casi ha terminado de crecer. Si los titulares llegan mucho antes que el cuerpo, la jerarquía se descompensa en los tamaños intermedios.',

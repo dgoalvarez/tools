@@ -4021,7 +4021,16 @@
   .libreta {
     display: grid;
     gap: 1rem;
-    align-items: start;
+    /*
+      Del mismo alto las tres.
+
+      Los anchos ya cuadran solos —tres columnas iguales— pero los altos no:
+      la tarjeta del dibujo lleva los mandos de tinta y grosor en su
+      cabecera y mide 33 px más que las otras dos. Con `start`, la fila
+      quedaba dentada por abajo; con `stretch`, las tres acaban en la misma
+      línea y el sobrante se lo comen la lista y la nota.
+    */
+    align-items: stretch;
 
     /*
       El alto reservado, dicho una sola vez.
@@ -4036,7 +4045,35 @@
     --fila-nueva: 2.25rem;
   }
 
+  /* El hueco que sobra al estirar va ABAJO, de una pieza. Repartido entre
+     los renglones —que es lo que hace una rejilla por defecto— separaba el
+     título del campo y el campo del pie, y las tres tarjetas dejaban de
+     parecerse entre sí por dentro. */
+  .libreta > .tarjeta-control {
+    align-content: start;
+  }
+
+  /*
+    Las tres tarjetas en una fila y del mismo tamaño.
+
+    Eran dos y el dibujo bajaba a una segunda fila ocupándola entera. Se
+    leía como dos cosas y un apéndice, cuando son tres formas de apuntar
+    lo mismo: escribir en lista, escribir suelto y dibujar.
+
+    Los altos no se dejan al azar: los tres salen de las mismas dos
+    variables y suman lo mismo. La lista es la fila de añadir más su hueco
+    más el alto de la libreta; la nota y el lienzo no tienen fila de
+    añadir, así que se la suman al suyo para acabar en la misma línea.
+  */
   @media (width >= 64rem) {
+    .libreta {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  /* Entre el móvil y las tres columnas, dos: a un tercio de 700px el
+     lienzo se queda en un sello y la lista no cabe. */
+  @media (width >= 40rem) and (width < 64rem) {
     .libreta {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -4345,18 +4382,6 @@
     rellena. Un lienzo que creciera con el dibujo empujaría la página
     hacia abajo mientras se dibuja, que es el peor momento posible.
   */
-  /*
-    El dibujo ocupa las dos columnas.
-
-    Media tarjeta es poco lienzo: un croquis necesita ancho más que alto, y
-    en la mitad izquierda salía un rectángulo casi cuadrado con la lista al
-    lado dando la sensación de que sobraba sitio. Abajo y entero, además,
-    respeta el orden: primero lo que se escribe, luego lo que se dibuja.
-  */
-  .tarjeta-dibujo {
-    grid-column: 1 / -1;
-  }
-
   .caja-lienzo {
     position: relative;
   }
@@ -4375,10 +4400,18 @@
     pointer-events: none;
   }
 
+  /*
+    El mismo alto que la nota, y por eso la misma cuenta.
+
+    Las tres tarjetas tienen que acabar en la misma línea, y la única
+    forma de que eso no dependa del contenido es que el alto salga de las
+    mismas variables en las tres. La lista gasta la fila de añadir; el
+    lienzo no la tiene, así que se la suma al suyo.
+  */
   .lienzo {
     display: block;
     width: 100%;
-    height: var(--alto-libreta);
+    height: calc(var(--alto-libreta) + var(--fila-nueva) + 0.8125rem);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     background: var(--bg);
@@ -4431,8 +4464,17 @@
     background: var(--ink);
   }
 
+  /*
+    Se envuelven cuando no caben.
+
+    A 1024 la tarjeta mide 280 px y los tres botones se salían tres
+    píxeles. Envolviendo caben; el pie ya tiene alto mínimo y no da tirón
+    al pasar a dos renglones.
+  */
   .acciones-dibujo {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 0.375rem;
   }
 

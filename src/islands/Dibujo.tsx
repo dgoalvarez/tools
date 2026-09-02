@@ -125,9 +125,14 @@ export default function Dibujo({ textos }: Props) {
     // una pantalla de densidad doble el trazo sale borroso.
     const densidad = window.devicePixelRatio || 1;
     const caja = el.getBoundingClientRect();
-    if (el.width !== Math.round(caja.width * densidad)) {
-      el.width = Math.round(caja.width * densidad);
-      el.height = Math.round(caja.height * densidad);
+    // Se miran las DOS medidas. Mirando solo el ancho, un cambio de alto
+    // —el tamaño de letra del sitio, girar el teléfono— dejaba el mapa de
+    // bits con el alto viejo y el dibujo salía estirado.
+    const ancho = Math.round(caja.width * densidad);
+    const alto = Math.round(caja.height * densidad);
+    if (el.width !== ancho || el.height !== alto) {
+      el.width = ancho;
+      el.height = alto;
     }
 
     ctx.setTransform(densidad, 0, 0, densidad, 0, 0);

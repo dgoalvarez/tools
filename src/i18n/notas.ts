@@ -100,11 +100,36 @@ export const NOTAS = {
     es: 'Este no aguanta una recarga. Descárgalo si lo quieres guardar.',
     en: 'This one does not survive a reload. Download it if you want to keep it.',
   },
+  /**
+   * Cómo sale el archivo, dicho antes de descargarlo.
+   *
+   * Las dos cosas que sorprenderían al abrirlo: que no trae el lienzo
+   * entero sino solo el dibujo, y que el fondo es transparente. Lo
+   * segundo importa más de lo que parece desde que se puede elegir el
+   * color: un trazo claro sobre nada no se ve en un visor de fondo
+   * blanco, y sin este aviso parecería que la descarga salió vacía.
+   */
+  dibujoPng: {
+    es: 'El PNG sale ceñido al dibujo y con el fondo transparente.',
+    en: 'The PNG comes out trimmed to the drawing, with a transparent background.',
+  },
   deshacerTrazo: { es: 'Deshacer', en: 'Undo' },
+  rehacerTrazo: { es: 'Rehacer', en: 'Redo' },
   borrarDibujo: { es: 'Borrar el dibujo', en: 'Clear the drawing' },
   descargarDibujo: { es: 'Descargar', en: 'Download' },
   tinta: { es: 'Tinta', en: 'Ink' },
+  /** La cuarta muestra, la que abre el selector del sistema. */
+  tintaLibre: { es: 'Elegir el color', en: 'Pick the colour' },
   grosor: { es: 'Grosor', en: 'Thickness' },
+  /** El grupo que decide el encuadre de la descarga. */
+  proporcion: { es: 'Proporción de la descarga', en: 'Download proportion' },
+  /**
+   * La primera opción: sin proporción, solo ceñido.
+   *
+   * «Ceñido» y no «Libre»: lo que hace es apretarse al dibujo, y «libre»
+   * habría sonado a que se puede arrastrar un recorte, que no se puede.
+   */
+  cenido: { es: 'Ceñido', en: 'Trimmed' },
   /** «12 palabras». El número se sustituye. */
   palabras: { es: '{n} palabras', en: '{n} words' },
   unaPalabra: { es: '1 palabra', en: '1 word' },

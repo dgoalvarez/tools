@@ -29,6 +29,8 @@ import {
   limpiarLinea,
   marcar,
   mover,
+  aProporcion,
+  cajaDeContornos,
   notaAMarkdown,
   nuevaTarea,
   restaurar,
@@ -390,6 +392,105 @@ console.log('\n12. Deshacer un borrado devuelve lo borrado a su sitio');
 
   afirmar(retiradas(t, t).length === 0, 'sin borrar nada no hay nada que deshacer');
   afirmar(restaurar([], fuera).length === 2, 'con la lista vaciada entera vuelven las dos');
+}
+
+// =====================================================================
+console.log('\n13. El encuadre de la descarga del dibujo');
+{
+  // Un trazo apaisado: de (100,200) a (300,240). Con margen 10, la caja
+  // ceñida va de (90,190) y mide 220×60.
+  const apaisado = [
+    [
+      [100, 200],
+      [300, 200],
+      [300, 240],
+      [100, 240],
+    ],
+  ];
+
+  const c = cajaDeContornos(apaisado, 10)!;
+  afirmar(
+    c.x === 90 && c.y === 190,
+    `la caja arranca en el mínimo menos el margen (${c.x},${c.y})`
+  );
+  afirmar(
+    c.ancho === 220 && c.alto === 60,
+    `y mide lo dibujado más dos márgenes (${c.ancho}×${c.alto})`
+  );
+
+  afirmar(cajaDeContornos([], 10) === null, 'sin nada dibujado no hay caja');
+  afirmar(cajaDeContornos([[]], 10) === null, 'un trazo sin puntos tampoco');
+
+  // Ceñido: la caja sale intacta.
+  afirmar(aProporcion(c, 0) === c, 'con «ceñido» la caja no se toca');
+
+  // A 1:1 tiene que CRECER a lo alto, nunca recortar a lo ancho.
+  const cuadrada = aProporcion(c, 1);
+  afirmar(
+    cuadrada.ancho === 220 && cuadrada.alto === 220,
+    `a 1:1 crece el lado corto hasta el largo (${cuadrada.ancho}×${cuadrada.alto})`
+  );
+  afirmar(cuadrada.x === c.x, 'sin tocar el eje que ya era el largo');
+  afirmar(
+    cuadrada.y === 190 - 80,
+    `y repartiendo lo añadido a los dos lados (${cuadrada.y}, se esperaba 110)`
+  );
+
+  // El centro no se mueve: es lo que hace que el dibujo quede centrado.
+  const centro = (caja: { x: number; ancho: number; y: number; alto: number }) => [
+    caja.x + caja.ancho / 2,
+    caja.y + caja.alto / 2,
+  ];
+  afirmar(
+    centro(cuadrada).join() === centro(c).join(),
+    `el centro no se mueve (${centro(cuadrada)} vs ${centro(c)})`
+  );
+
+  // Una caja alta llevada a 16:9 crece a lo ANCHO, que es el otro brazo.
+  const alta = cajaDeContornos(
+    [
+      [
+        [0, 0],
+        [50, 0],
+        [50, 400],
+        [0, 400],
+      ],
+    ],
+    0
+  )!;
+  const ancha = aProporcion(alta, 16 / 9);
+  afirmar(
+    Math.round(ancha.ancho) === Math.round(400 * (16 / 9)) && ancha.alto === 400,
+    `una caja alta a 16:9 crece a lo ancho (${Math.round(ancha.ancho)}×${ancha.alto})`
+  );
+  afirmar(centro(ancha).join() === centro(alta).join(), 'y tampoco mueve el centro');
+
+  // Nunca se pierde dibujo: la caja resultante contiene a la de partida.
+  for (const razon of [1, 4 / 5, 16 / 9]) {
+    for (const partida of [c, alta]) {
+      const r = aProporcion(partida, razon);
+      afirmar(
+        r.x <= partida.x + 0.001 &&
+          r.y <= partida.y + 0.001 &&
+          r.x + r.ancho >= partida.x + partida.ancho - 0.001 &&
+          r.y + r.alto >= partida.y + partida.alto - 0.001,
+        `a ${razon.toFixed(2)} la caja nueva contiene entera a la ceñida`
+      );
+    }
+  }
+
+  // Una que ya está en la proporción pedida se queda igual: sin esto, el
+  // PNG salía con un pixel de mas por el redondeo.
+  const yaCuadrada = cajaDeContornos(
+    [
+      [
+        [0, 0],
+        [100, 100],
+      ],
+    ],
+    0
+  )!;
+  afirmar(aProporcion(yaCuadrada, 1) === yaCuadrada, 'una caja que ya cuadra no se toca');
 }
 
 console.log(fallos === 0 ? '\nTODO CORRECTO\n' : `\n${fallos} FALLOS\n`);

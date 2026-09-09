@@ -4409,6 +4409,39 @@
     gap: 0.25rem;
   }
 
+  /*
+    Donde la tarjeta es MÁS ESTRECHA, los mandos encogen.
+
+    A 1024 px arranca el reparto de tres columnas y cada tarjeta se queda
+    en unos 280: ahí los siete mandos más el título pedían 29 px de más y
+    `romper` lo cazó —«div.mandos-dibujo se sale 29px»—. Encogiendo el
+    punto y los tres iconos de 1,75 a 1,5 rem y apretando el hueco se
+    ahorran unos 40, así que caben con margen.
+
+    Encoger y no envolver: envolviendo, el aviso se callaría para siempre
+    y la tarjeta crecería en silencio cada vez que apareciera un mando
+    nuevo. Que siga sonando es lo que hace que esto se entere la próxima
+    vez.
+
+    Se acaba en 78 rem porque a partir de ahí la tarjeta ya es ancha; y no
+    afecta al móvil, que va a una columna y tiene sitio de sobra.
+  */
+  @media (width >= 64rem) and (width < 78rem) {
+    .mandos-dibujo {
+      gap: 0.125rem;
+    }
+
+    .mandos-dibujo .punto-grosor,
+    .mandos-dibujo .mando-lienzo {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    .mandos-dibujo .separa-mandos {
+      margin-inline: 0.125rem;
+    }
+  }
+
   .muestra-tinta {
     width: 1.125rem;
     height: 1.125rem;
@@ -4417,35 +4450,202 @@
     cursor: pointer;
   }
 
-  .muestra-tinta[aria-pressed='true'] {
+  .muestra-tinta:is([aria-pressed='true'], [data-elegida]) {
     outline: 2px solid var(--acento);
     outline-offset: 2px;
   }
 
-  .muestra-grosor {
+  /*
+    La cuarta muestra es un «input type=color», no un botón.
+
+    El navegador le pinta de fábrica un marco y un relleno con margen
+    dentro; los seudoelementos de abajo lo dejan siendo exactamente el
+    mismo círculo que las otras tres. Van los de WebKit y el de Gecko:
+    sin el segundo, en Firefox queda un cuadrado con borde dentro del
+    círculo.
+  */
+  .muestra-tinta.libre {
+    padding: 0;
+    background: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .muestra-tinta.libre::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+
+  .muestra-tinta.libre::-webkit-color-swatch {
+    border: none;
+    border-radius: inherit;
+  }
+
+  .muestra-tinta.libre::-moz-color-swatch {
+    border: none;
+    border-radius: inherit;
+  }
+
+  /*
+    La proporción de la descarga.
+
+    Tiene la misma cara que «.segmento» —marco, fondo hundido, la
+    elegida en relieve— pero no lo reutiliza: aquel se hizo para
+    etiquetas con radios escondidos dentro y ocupa el ancho entero de su
+    columna. Aquí son botones con «aria-pressed» y tienen que caber al
+    lado de otros tres en una fila que ya iba llena.
+
+    De ahí las cifras: 0,7 rem y medio renglón de relleno. Es el control
+    más pequeño del sitio, y se lo puede permitir porque lo que dice
+    —«1:1», «4:5»— son dos cifras y dos puntos, no una frase que leer.
+  */
+  .proporciones {
+    display: flex;
+    gap: 0.125rem;
+    padding: 0.125rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+  }
+
+  .proporciones button {
+    padding: 0.25rem 0.4375rem;
+    border: 0;
+    border-radius: calc(var(--radius-sm) * 0.8);
+    background: none;
+    font-size: 0.7rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .proporciones button:hover {
+    color: var(--ink);
+  }
+
+  .proporciones button[aria-pressed='true'] {
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+  }
+
+  .proporciones button:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: -2px;
+  }
+
+  /*
+    El grosor: un punto que enseña el tamaño y un deslizador que lo mueve.
+
+    Eran dos botones, fino y grueso. Con dos no se puede rodear algo con
+    un trazo discreto ni tachar con uno gordo: o sobra o falta.
+
+    El punto va ANTES del deslizador y no después. Es la muestra de lo que
+    va a salir, y se lee de izquierda a derecha: primero qué, luego
+    cuánto. Su tamaño y su color los pone la isla, que es quien los sabe.
+  */
+  /*
+    El punto va dentro de una caja de tamaño FIJO.
+
+    Sin ella, el punto es el que crece y encoge, empuja a su vecino y la
+    cabecera entera baila mientras se mueve el deslizador — justo
+    mientras se está mirando para decidir. La caja mide lo que el punto
+    más gordo (32 px) y no se mueve nunca.
+  */
+  .punto-grosor {
+    flex: none;
     display: grid;
     place-items: center;
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
     background: none;
     cursor: pointer;
   }
 
-  .muestra-grosor span {
-    width: 0.875rem;
-    border-radius: 999px;
-    background: var(--ink-muted);
-  }
-
-  .muestra-grosor[aria-pressed='true'] {
+  .punto-grosor:hover,
+  .punto-grosor[data-state='open'] {
     border-color: var(--line);
-    background: var(--surface-2);
   }
 
-  .muestra-grosor[aria-pressed='true'] span {
-    background: var(--ink);
+  .punto-grosor:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 1px;
+  }
+
+  .punto-grosor > span {
+    border-radius: 999px;
+  }
+
+  /* Separa las herramientas de dibujo de las que deshacen y vacían: son
+     dos familias, y sin la raya la cabecera es una fila de siete cosas. */
+  .separa-mandos {
+    flex: none;
+    width: 1px;
+    height: 1rem;
+    margin-inline: 0.25rem;
+    background: var(--line);
+  }
+
+  .mando-lienzo {
+    display: grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--ink-muted);
+    cursor: pointer;
+  }
+
+  .mando-lienzo:hover:not(:disabled) {
+    border-color: var(--line);
+    color: var(--ink);
+  }
+
+  .mando-lienzo:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .mando-lienzo:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 1px;
+  }
+
+  /* El mando, ya dentro del emergente: rótulo, deslizador y cifra en una
+     línea. La cifra en tabulares para que no baile al pasar de 9 a 10. */
+  .tarjeta-grosor {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    width: auto;
+  }
+
+  .tarjeta-grosor label {
+    font-size: var(--fs-small);
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+
+  .tarjeta-grosor input[type='range'] {
+    width: 9rem;
+    accent-color: var(--acento);
+    cursor: pointer;
+  }
+
+  .tarjeta-grosor .cifra-grosor {
+    min-width: 1.5rem;
+    font-size: var(--fs-small);
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+    color: var(--ink);
   }
 
   /*

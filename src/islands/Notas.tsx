@@ -394,9 +394,13 @@ export default function Notas({ lang }: Props) {
           borrar: t(NOTAS.borrarDibujo, lang),
           descargar: t(NOTAS.descargarDibujo, lang),
           vacio: t(NOTAS.dibujoVacio, lang),
-          efimero: t(NOTAS.dibujoEfimero, lang),
+          efimero: `${t(NOTAS.dibujoEfimero, lang)} ${t(NOTAS.dibujoPng, lang)}`,
           tinta: t(NOTAS.tinta, lang),
+          tintaLibre: t(NOTAS.tintaLibre, lang),
           grosor: t(NOTAS.grosor, lang),
+          rehacer: t(NOTAS.rehacerTrazo, lang),
+          proporcion: t(NOTAS.proporcion, lang),
+          cenido: t(NOTAS.cenido, lang),
         }}
       />
     </div>

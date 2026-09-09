@@ -28,10 +28,17 @@
  * Con un lápiz que reporta presión, además, la usa.
  */
 import { useEffect, useRef, useState } from 'react';
-import { ArrowCounterClockwiseIcon, DownloadSimpleIcon, TrashIcon } from '@phosphor-icons/react';
+import {
+  ArrowClockwiseIcon,
+  ArrowCounterClockwiseIcon,
+  DownloadSimpleIcon,
+  TrashIcon,
+} from '@phosphor-icons/react';
 import getStroke from 'perfect-freehand';
 
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { aProporcion, cajaDeContornos } from '../lib/notas';
 
 export interface TextosDibujo {
   etiqueta: string;
@@ -41,7 +48,11 @@ export interface TextosDibujo {
   vacio: string;
   efimero: string;
   tinta: string;
+  tintaLibre: string;
   grosor: string;
+  rehacer: string;
+  proporcion: string;
+  cenido: string;
 }
 
 interface Props {
@@ -63,18 +74,71 @@ interface Trazo {
   acordarse de actualizar un hexadecimal aquí dentro.
 */
 const TINTAS = ['var(--ink)', 'var(--acento)', 'var(--danger)'] as const;
-const GROSORES = [4, 10] as const;
 
-/** El contorno del trazo, ya como camino para rellenar. */
-function contorno(trazo: Trazo): Path2D {
-  const puntos = getStroke(trazo.puntos, {
+/**
+ * El grosor, ahora continuo.
+ *
+ * Eran dos botones —fino y grueso— y con dos no se puede rodear algo con
+ * un trazo discreto ni tachar con uno gordo: o te sobra o te falta. Los
+ * topes salen de para qué sirve el lienzo: 2 px es lo más fino que se
+ * sigue viendo en una pantalla normal y 32 es un rotulador de subrayar.
+ */
+const GROSOR_MIN = 2;
+const GROSOR_MAX = 32;
+const GROSOR_INICIAL = 5;
+
+/**
+ * El color con el que empieza la muestra libre.
+ *
+ * Un naranja que no es ninguna de las tres de arriba ni ninguno de los
+ * acentos del sitio: así se nota que la cuarta muestra es OTRA cosa
+ * antes de tocarla.
+ */
+const TINTA_LIBRE_INICIAL = '#ff8a3d';
+
+/**
+ * Cómo se encuadra lo que se descarga.
+ *
+ * El PNG se ciñe SIEMPRE a lo dibujado —el lienzo entero con un croquis
+ * en una esquina no le sirve a nadie— y luego, si se pide una
+ * proporción, se ENSANCHA hasta ella. Ensanchar y no recortar: recortar
+ * a 1:1 un dibujo apaisado se comería los extremos, y el que descarga no
+ * se enteraría hasta abrir el archivo.
+ */
+const PROPORCIONES = [
+  { id: 'cenido', razon: 0 },
+  { id: '1:1', razon: 1 },
+  { id: '4:5', razon: 4 / 5 },
+  { id: '16:9', razon: 16 / 9 },
+] as const;
+
+/** El margen que se deja alrededor del dibujo al ceñirlo, en px de CSS. */
+const MARGEN = 16;
+
+/**
+ * La densidad del PNG, fija y no la de la pantalla.
+ *
+ * Con `devicePixelRatio` el mismo dibujo salía de 1200 px en un portátil
+ * y de 600 en un monitor viejo, sin que nadie lo hubiera pedido. Dos es
+ * la que hace que el trazo no se vea pixelado y que dos descargas del
+ * mismo croquis midan lo mismo en cualquier aparato.
+ */
+const DENSIDAD_PNG = 2;
+
+/** El contorno del trazo, en puntos. */
+function puntosContorno(trazo: Trazo): number[][] {
+  return getStroke(trazo.puntos, {
     size: trazo.grosor,
     thinning: 0.6,
     smoothing: 0.5,
     streamline: 0.5,
     simulatePressure: true,
   });
+}
 
+/** El contorno del trazo, ya como camino para rellenar. */
+function contorno(trazo: Trazo): Path2D {
+  const puntos = puntosContorno(trazo);
   const camino = new Path2D();
   if (puntos.length === 0) return camino;
 
@@ -84,11 +148,67 @@ function contorno(trazo: Trazo): Path2D {
   return camino;
 }
 
+/**
+ * `var(--ink)` no lo entiende el lienzo: hay que resolverlo antes.
+ *
+ * Las tres muestras de fábrica son variables del sitio —así el dibujo
+ * cambia con el tema— y la libre es un hexadecimal tal cual. Se
+ * distinguen por el prefijo y no por una bandera aparte: lo que se
+ * guarda en el trazo es lo que se va a pintar.
+ */
+function resolverTinta(estilo: CSSStyleDeclaration, tinta: string): string {
+  if (!tinta.startsWith('var(')) return tinta;
+  return estilo.getPropertyValue(tinta.slice(4, -1)).trim() || '#888';
+}
+
 export default function Dibujo({ textos }: Props) {
   const lienzo = useRef<HTMLCanvasElement>(null);
   const [trazos, setTrazos] = useState<Trazo[]>([]);
-  const [tinta, setTinta] = useState(0);
-  const [grosor, setGrosor] = useState(0);
+  /* La tinta se guarda por su VALOR y no por su índice: desde que hay una
+     muestra libre, «la tercera» ya no identifica a ninguna. */
+  const [tinta, setTinta] = useState<string>(TINTAS[0]);
+  const [tintaLibre, setTintaLibre] = useState(TINTA_LIBRE_INICIAL);
+  const [grosor, setGrosor] = useState(GROSOR_INICIAL);
+  const [proporcion, setProporcion] = useState<number>(0);
+
+  /*
+    El historial son ESTADOS enteros, no trazos sueltos.
+
+    Con una pila de trazos, deshacer solo sabría quitar el último y
+    «Borrar el dibujo» se quedaría fuera: es la acción que más duele
+    perder y la única que no se rehace a mano. Guardando la lista entera
+    en cada cambio, las tres acciones —trazar, deshacer, borrar— entran
+    por la misma puerta.
+
+    No cuesta lo que parece: los trazos no se copian, se copia el array
+    que los apunta. Un croquis de cuarenta trazos son cuarenta
+    referencias por paso.
+  */
+  const [pasado, setPasado] = useState<Trazo[][]>([]);
+  const [futuro, setFuturo] = useState<Trazo[][]>([]);
+
+  /** Cambia la lista dejando constancia, para poder volver. */
+  function cambiar(siguientes: Trazo[]) {
+    setPasado((p) => [...p, trazos]);
+    // Dibujar algo nuevo después de deshacer corta la rama: lo rehecho ya
+    // no encajaría con lo que hay ahora. Es lo que hace todo el mundo.
+    setFuturo([]);
+    setTrazos(siguientes);
+  }
+
+  function deshacer() {
+    if (pasado.length === 0) return;
+    setFuturo((f) => [...f, trazos]);
+    setTrazos(pasado[pasado.length - 1]!);
+    setPasado((p) => p.slice(0, -1));
+  }
+
+  function rehacer() {
+    if (futuro.length === 0) return;
+    setPasado((p) => [...p, trazos]);
+    setTrazos(futuro[futuro.length - 1]!);
+    setFuturo((f) => f.slice(0, -1));
+  }
 
   /*
     El trazo que se está haciendo vive en una REF, no en el estado.
@@ -164,8 +284,7 @@ export default function Dibujo({ textos }: Props) {
 
     const estilo = getComputedStyle(el);
     for (const trazo of [...trazos, ...(enCurso.current ? [enCurso.current] : [])]) {
-      // `var(--ink)` no lo entiende el lienzo: hay que resolverlo antes.
-      ctx.fillStyle = estilo.getPropertyValue(trazo.tinta.slice(4, -1)).trim() || '#888';
+      ctx.fillStyle = resolverTinta(estilo, trazo.tinta);
       ctx.fill(contorno(trazo));
     }
   });
@@ -208,12 +327,58 @@ export default function Dibujo({ textos }: Props) {
 
   const hayAlgo = trazos.length > 0;
 
+  /**
+   * El PNG, ceñido a lo dibujado y en la proporción que se haya pedido.
+   *
+   * No se exporta el lienzo de pantalla: se pinta uno aparte del tamaño
+   * de la caja y se dibujan los trazos desplazados a ella. Así el archivo
+   * no arrastra el vacío de alrededor —que en una tarjeta de 530×300 con
+   * una flecha en una esquina es casi todo— y no depende del tamaño que
+   * tuviera la tarjeta en esa ventana.
+   *
+   * El fondo se queda TRANSPARENTE, como estaba. Vale para montarlo
+   * encima de otra cosa, y a cambio hay que saberlo: un trazo claro
+   * hecho en tema oscuro no se ve sobre un fondo blanco. Lo dice el aviso
+   * de la tarjeta.
+   */
   function descargar() {
     const el = lienzo.current;
-    if (!el) return;
+    if (!el || trazos.length === 0) return;
+
+    const cenida = cajaDeContornos(trazos.map(puntosContorno), MARGEN);
+    if (!cenida) return;
+
+    const caja = aProporcion(cenida, PROPORCIONES[proporcion]!.razon);
+
+    const fuera = document.createElement('canvas');
+    fuera.width = Math.max(1, Math.round(caja.ancho * DENSIDAD_PNG));
+    fuera.height = Math.max(1, Math.round(caja.alto * DENSIDAD_PNG));
+
+    const ctx = fuera.getContext('2d');
+    if (!ctx) return;
+
+    // Escalar y mover en la MISMA transformación: los trazos guardan sus
+    // coordenadas en el lienzo de pantalla, y aquí el origen es otro.
+    ctx.setTransform(
+      DENSIDAD_PNG,
+      0,
+      0,
+      DENSIDAD_PNG,
+      -caja.x * DENSIDAD_PNG,
+      -caja.y * DENSIDAD_PNG
+    );
+
+    // Los colores se resuelven contra el lienzo de VERDAD: el de aquí no
+    // está en el documento y no hereda ninguna variable del sitio.
+    const estilo = getComputedStyle(el);
+    for (const trazo of trazos) {
+      ctx.fillStyle = resolverTinta(estilo, trazo.tinta);
+      ctx.fill(contorno(trazo));
+    }
+
     const enlace = document.createElement('a');
     enlace.download = 'dibujo.png';
-    enlace.href = el.toDataURL('image/png');
+    enlace.href = fuera.toDataURL('image/png');
     enlace.click();
   }
 
@@ -235,26 +400,144 @@ export default function Dibujo({ textos }: Props) {
               type="button"
               className="muestra-tinta"
               style={{ background: t }}
-              aria-pressed={i === tinta}
+              aria-pressed={t === tinta}
               aria-label={`${textos.tinta} ${i + 1}`}
               title={`${textos.tinta} ${i + 1}`}
-              onClick={() => setTinta(i)}
+              onClick={() => setTinta(t)}
             />
           ))}
 
-          {GROSORES.map((g, i) => (
+          {/*
+            La cuarta muestra es el selector del sistema.
+
+            Un `input type="color"` y no el selector del sitio: el de
+            Paleta es una herramienta entera —plano, canales, tres
+            espacios— y traerlo aquí metería 22 KB comprimidos de
+            aritmética de color en una página que hoy no los carga, para
+            elegir una tinta. El nativo cuesta cero, lo conoce todo el
+            mundo, va con teclado y en escritorio trae cuentagotas.
+
+            Pulsarla la elige ADEMÁS de abrir el selector: si no, volver a
+            tu color después de usar el rojo obligaría a elegirlo otra vez.
+          */}
+          <input
+            type="color"
+            className="muestra-tinta libre"
+            value={tintaLibre}
+            aria-label={textos.tintaLibre}
+            title={textos.tintaLibre}
+            data-elegida={tinta === tintaLibre || undefined}
+            onClick={() => setTinta(tintaLibre)}
+            onChange={(e) => {
+              setTintaLibre(e.target.value);
+              setTinta(e.target.value);
+            }}
+          />
+
+          {/*
+            El grosor vive en un popover, como el color en Paleta.
+
+            El deslizador puesto en la cabecera la ensanchaba, y una
+            cabecera que cambia de tamaño según lo que lleve dentro
+            arrastra a la tarjeta y a las otras dos, que van estiradas a
+            la misma altura. Aquí el disparador mide siempre lo mismo —una
+            caja del tamaño del punto más gordo— y el mando se despliega
+            encima sin mover nada.
+
+            El disparador ES la muestra: enseña el punto a tamaño real y
+            en la tinta elegida, así que dice cuánto va a salir el trazo
+            sin tener que abrirlo. Un deslizador solo dice «más» y
+            «menos»; el punto responde la pregunta de verdad.
+          */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="punto-grosor"
+                aria-label={`${textos.grosor}: ${grosor}`}
+                title={`${textos.grosor}: ${grosor}`}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{ width: `${grosor}px`, height: `${grosor}px`, background: tinta }}
+                />
+              </button>
+            </PopoverTrigger>
+
+            <PopoverContent align="end" className="tarjeta-grosor">
+              <label htmlFor="grosor-trazo">{textos.grosor}</label>
+              <input
+                id="grosor-trazo"
+                type="range"
+                min={GROSOR_MIN}
+                max={GROSOR_MAX}
+                step={1}
+                value={grosor}
+                onChange={(e) => setGrosor(Number(e.target.value))}
+              />
+              <span className="cifra-grosor">{grosor}</span>
+            </PopoverContent>
+          </Popover>
+
+          {/*
+            Deshacer, rehacer y borrar viven aquí y no en el pie.
+
+            El reparto es por lo que hace cada cosa: la cabecera es lo que
+            actúa SOBRE EL LIENZO —qué tinta, qué grosor, quitar, devolver,
+            vaciar— y el pie es lo que lo saca de aquí —en qué proporción y
+            descargar—. Antes estaban los cinco abajo y la fila no cabía en
+            478 px: la papelera se caía sola a un tercer renglón, la
+            tarjeta crecía y arrastraba a la lista y a la nota, que van
+            estiradas a la misma altura.
+
+            Sin rótulo los tres, que es lo que permite que quepan; el
+            nombre está en el rótulo accesible y en el emergente. El icono
+            de la flecha en círculo es el mismo que usa la lista de al
+            lado para deshacer.
+
+            Deshacer y rehacer SALEN SOLO cuando sirven, en vez de
+            quedarse en gris: rehacer no existe hasta que se deshace algo,
+            y anunciarlo antes sería ofrecer una función que aún no hay.
+            Vaciar sí se queda siempre, deshabilitado, porque es el único
+            que puede pulsarse sin querer y su hueco fijo evita que los
+            otros dos bailen de sitio al aparecer.
+          */}
+          <span className="separa-mandos" aria-hidden="true" />
+
+          {pasado.length > 0 && (
             <button
-              key={g}
               type="button"
-              className="muestra-grosor"
-              aria-pressed={i === grosor}
-              aria-label={`${textos.grosor} ${i + 1}`}
-              title={`${textos.grosor} ${i + 1}`}
-              onClick={() => setGrosor(i)}
+              className="mando-lienzo"
+              aria-label={textos.deshacer}
+              title={textos.deshacer}
+              onClick={deshacer}
             >
-              <span style={{ height: `${g / 2}px` }} />
+              <ArrowCounterClockwiseIcon aria-hidden="true" size={15} />
             </button>
-          ))}
+          )}
+
+          {futuro.length > 0 && (
+            <button
+              type="button"
+              className="mando-lienzo"
+              aria-label={textos.rehacer}
+              title={textos.rehacer}
+              onClick={rehacer}
+            >
+              <ArrowClockwiseIcon aria-hidden="true" size={15} />
+            </button>
+          )}
+
+          <button
+            type="button"
+            className="mando-lienzo"
+            disabled={!hayAlgo}
+            aria-label={textos.borrar}
+            title={textos.borrar}
+            onClick={() => cambiar([])}
+          >
+            <TrashIcon aria-hidden="true" size={15} />
+          </button>
         </div>
       </div>
 
@@ -270,11 +553,7 @@ export default function Dibujo({ textos }: Props) {
           onPointerDown={(e) => {
             e.currentTarget.setPointerCapture?.(e.pointerId);
             caja.current = e.currentTarget.getBoundingClientRect();
-            enCurso.current = {
-              puntos: [puntoEn(e)],
-              tinta: TINTAS[tinta]!,
-              grosor: GROSORES[grosor]!,
-            };
+            enCurso.current = { puntos: [puntoEn(e)], tinta, grosor };
             repintar();
           }}
           onPointerMove={(e) => {
@@ -302,14 +581,14 @@ export default function Dibujo({ textos }: Props) {
             enCurso.current = null;
             // Un toque sin arrastrar no es un trazo: sería un punto suelto
             // que no se ve y que ensucia el «deshacer».
-            if (trazo.puntos.length > 1) setTrazos((t) => [...t, trazo]);
+            if (trazo.puntos.length > 1) cambiar([...trazos, trazo]);
             else repintar();
           }}
           onPointerLeave={() => {
             const trazo = enCurso.current;
             if (!trazo) return;
             enCurso.current = null;
-            if (trazo.puntos.length > 1) setTrazos((t) => [...t, trazo]);
+            if (trazo.puntos.length > 1) cambiar([...trazos, trazo]);
             else repintar();
           }}
         />
@@ -323,30 +602,34 @@ export default function Dibujo({ textos }: Props) {
         <p className="contador">{textos.efimero}</p>
 
         <div className="acciones-dibujo">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!hayAlgo}
-            onClick={() => setTrazos((t) => t.slice(0, -1))}
-          >
-            <ArrowCounterClockwiseIcon aria-hidden="true" />
-            {textos.deshacer}
-          </Button>
+          {/*
+            La proporción, pegada al botón que descarga: es lo único a lo
+            que afecta y no cambia nada de lo que se ve en pantalla.
+
+            Y está SIEMPRE, también con el lienzo vacío. Enseñarla solo al
+            haber trazos cambiaba el alto del pie, y con él el de la
+            tarjeta y el de las otras dos, que van estiradas a la misma
+            altura: el primer trazo empujaba media libreta hacia abajo. Es
+            el mismo tirón que se quitó de la navegación y de la lista,
+            entrando por la tercera puerta.
+          */}
+          <div className="proporciones" role="group" aria-label={textos.proporcion}>
+            {PROPORCIONES.map((p, i) => (
+              <button
+                key={p.id}
+                type="button"
+                aria-pressed={i === proporcion}
+                title={textos.proporcion}
+                onClick={() => setProporcion(i)}
+              >
+                {p.id === 'cenido' ? textos.cenido : p.id}
+              </button>
+            ))}
+          </div>
 
           <Button variant="outline" size="sm" disabled={!hayAlgo} onClick={descargar}>
             <DownloadSimpleIcon aria-hidden="true" />
             {textos.descargar}
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!hayAlgo}
-            onClick={() => setTrazos([])}
-            aria-label={textos.borrar}
-            title={textos.borrar}
-          >
-            <TrashIcon aria-hidden="true" />
           </Button>
         </div>
       </div>

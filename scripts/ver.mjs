@@ -30,6 +30,7 @@
 import { spawn, execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -419,6 +420,49 @@ const VISTAS = [
       },
     },
   },
+  // El dibujo con algo dibujado, que es el único estado donde se ven la
+  // muestra de color libre elegida y el grupo de proporciones — los dos
+  // salen solo cuando hay trazos.
+  {
+    nombre: 'notas-dibujo',
+    ruta: 'es/notas',
+    ancho: 1440,
+    alto: 900,
+    guion: `
+      // El HTML del servidor ya trae el lienzo, pero los eventos no van a
+      // ninguna parte hasta que la isla monta. Astro quita el atributo
+      // «ssr» de <astro-island> justo cuando termina.
+      await esperar(() => !document.querySelector('astro-island[ssr]'));
+
+      // Un puntero sintético no tiene id de verdad, y setPointerCapture(0)
+      // lanza NotFoundError: el manejador se abortaría antes de crear el
+      // trazo y la tarjeta saldría vacía.
+      HTMLElement.prototype.setPointerCapture = function () {};
+
+      const lienzo = await esperar(() => document.querySelector('.lienzo'));
+      const c = lienzo.getBoundingClientRect();
+      const trazar = (x0, y0, pasos, dx, dy, presion) => {
+        lienzo.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: c.left + x0, clientY: c.top + y0, pressure: presion }));
+        for (let i = 1; i <= pasos; i++) {
+          lienzo.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: c.left + x0 + dx(i), clientY: c.top + y0 + dy(i), pressure: presion }));
+        }
+        lienzo.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: c.left + x0 + dx(pasos), clientY: c.top + y0 + dy(pasos) }));
+      };
+
+      trazar(48, 150, 40, (i) => i * 5, (i) => Math.sin(i / 5) * 28, 0.6);
+      await new Promise((r) => setTimeout(r, 120));
+      trazar(70, 230, 24, (i) => i * 6, () => 0, 0.9);
+      await new Promise((r) => setTimeout(r, 120));
+      trazar(70, 275, 24, (i) => i * 6, () => 0, 0.9);
+      await new Promise((r) => setTimeout(r, 120));
+
+      // Y se deshace el último: es la única forma de ver la cabecera
+      // completa, porque «rehacer» no existe hasta que se deshace algo.
+      // Deshacer es el PRIMER .mando-lienzo; la papelera va detrás.
+      document.querySelector('.mandos-dibujo .mando-lienzo').click();
+      await new Promise((r) => setTimeout(r, 300));
+    `,
+  },
   {
     nombre: 'notas-llena-claro',
     ruta: 'es/notas',
@@ -653,8 +697,33 @@ function preparar(ruta, { tema, tour, siembra, clics, guion }) {
   return copia;
 }
 
+/*
+  Se puede pedir un trozo:  node scripts/ver.mjs notas
+
+  Las 53 vistas arrancan un Chrome cada una, en serie: entre ocho y diez
+  minutos. Mientras se está afinando UNA tarjeta eso es esperar diez
+  minutos para mirar tres capturas, y esa espera es la que empuja a
+  cambiar dos cosas a la vez y no saber luego cuál fue.
+
+  Sin argumentos salen las 53, que es lo que hay que mirar antes de subir.
+*/
+const filtro = process.argv.slice(2).filter((a) => !a.startsWith('-'));
+const pedidas = filtro.length
+  ? VISTAS.filter((v) => filtro.some((f) => v.nombre.includes(f)))
+  : VISTAS;
+
+if (pedidas.length === 0) {
+  console.error(`✗ Ninguna vista se llama así. Hay ${VISTAS.length}:`);
+  console.error('   ' + VISTAS.map((v) => v.nombre).join(', '));
+  process.exit(1);
+}
+
+/** El perfil de usar y tirar de esta pasada. El porqué, abajo con Chrome. */
+const perfil = join(tmpdir(), `dgo-capturas-${process.pid}`);
+
 const temporales = [];
 mkdirSync(salida, { recursive: true });
+mkdirSync(perfil, { recursive: true });
 
 const servidor = spawn('python', ['-m', 'http.server', String(PUERTO)], {
   cwd: dist,
@@ -665,7 +734,7 @@ const servidor = spawn('python', ['-m', 'http.server', String(PUERTO)], {
 await new Promise((r) => setTimeout(r, 700));
 
 try {
-  for (const vista of VISTAS) {
+  for (const vista of pedidas) {
     let ruta = vista.ruta;
     if (vista.tema || vista.tour !== undefined || vista.siembra || vista.clics || vista.guion) {
       const copia = preparar(vista.ruta, {
@@ -689,6 +758,22 @@ try {
         '--headless=new',
         '--disable-gpu',
         '--hide-scrollbars',
+        /*
+          Un perfil de usar y tirar, propio de esta pasada.
+
+          Sin él, Chrome sin cabeza va al perfil de siempre, que es el del
+          navegador de verdad. Comparten el cerrojo `SingletonLock`: si
+          una pasada anterior murió a lo bruto —o hay una ventana abierta—
+          la siguiente escribe la captura y luego se queda esperando el
+          cerrojo para siempre. Pasó: el PNG estaba en disco a las 12:30 y
+          el proceso seguía vivo a las 12:35, con siete Chrome huérfanos.
+
+          Con un perfil propio no hay cerrojo que compartir y la pasada no
+          depende de si Diego tiene el navegador abierto.
+        */
+        `--user-data-dir=${perfil}`,
+        '--no-first-run',
+        '--no-default-browser-check',
         '--force-device-scale-factor=2',
         `--window-size=${vista.ancho + MARCO},${vista.alto}`,
         // El paso a paso necesita más tiempo: hay que abrirlo y pulsar
@@ -705,7 +790,13 @@ try {
   }
 } finally {
   servidor.kill();
+  // El perfil de usar y tirar se va con la pasada.
+  rmSync(perfil, { recursive: true, force: true });
   for (const t of temporales) rmSync(t, { force: true });
 }
 
-console.log(`\n✓ ${VISTAS.length} capturas en capturas/\n`);
+console.log(
+  `\n✓ ${pedidas.length} capturas en capturas/` +
+    (pedidas.length < VISTAS.length ? ` (de ${VISTAS.length}; sin filtro salen todas)` : '') +
+    '\n'
+);

@@ -185,6 +185,84 @@ export function cuantasHechas(tareas: Tarea[]): number {
   return tareas.reduce((n, t) => n + (t.hecha ? 1 : 0), 0);
 }
 
+/* ============================================================
+   El encuadre de la descarga del dibujo
+
+   Está aquí y no en la isla porque es aritmética: dos funciones que
+   reciben números y devuelven números. En la isla no se podría probar
+   sin navegador, y un recorte mal calculado no se ve —sale un PNG con
+   el dibujo cortado o descentrado, y solo lo nota quien lo abre.
+   ============================================================ */
+
+export interface Caja {
+  x: number;
+  y: number;
+  ancho: number;
+  alto: number;
+}
+
+/**
+ * La caja que ocupan unos contornos, con su margen.
+ *
+ * Recibe los CONTORNOS ya calculados y no los puntos que se tocaron: el
+ * trazo tiene grosor, y ceñirse a la línea central cortaría medio trazo
+ * por cada borde. Quien los calcula es la isla, que es la que tiene la
+ * biblioteca de trazado.
+ */
+export function cajaDeContornos(contornos: number[][][], margen: number): Caja | null {
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+
+  for (const contorno of contornos) {
+    for (const punto of contorno) {
+      const x = punto[0]!;
+      const y = punto[1]!;
+      if (x < x0) x0 = x;
+      if (y < y0) y0 = y;
+      if (x > x1) x1 = x;
+      if (y > y1) y1 = y;
+    }
+  }
+
+  if (!Number.isFinite(x0)) return null;
+
+  return {
+    x: x0 - margen,
+    y: y0 - margen,
+    ancho: x1 - x0 + margen * 2,
+    alto: y1 - y0 + margen * 2,
+  };
+}
+
+/**
+ * Ensancha la caja hasta la proporción pedida, sin mover su centro.
+ *
+ * Siempre CRECE: se añade por el lado que se queda corto y nunca se
+ * quita del que sobra. Un dibujo apaisado llevado a 1:1 gana margen
+ * arriba y abajo; recortarlo por los lados habría perdido dibujo, y
+ * quien descarga no se enteraría hasta abrir el archivo.
+ *
+ * Con razón 0 —«ceñido»— devuelve la caja tal cual.
+ */
+export function aProporcion(caja: Caja, razon: number): Caja {
+  if (!(razon > 0) || caja.ancho <= 0 || caja.alto <= 0) return caja;
+
+  const actual = caja.ancho / caja.alto;
+  // Un pelo de tolerancia: sin él, una caja que ya está en 1:1 se
+  // «ensancha» unas milésimas y el PNG sale con un píxel de más.
+  if (Math.abs(actual - razon) < 0.0001) return caja;
+
+  if (actual < razon) {
+    const ancho = caja.alto * razon;
+    return { ...caja, x: caja.x - (ancho - caja.ancho) / 2, ancho };
+  }
+
+  const alto = caja.ancho / razon;
+  return { ...caja, y: caja.y - (alto - caja.alto) / 2, alto };
+}
+
 /**
  * La lista en Markdown, que es como sale de aquí.
  *

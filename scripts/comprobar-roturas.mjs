@@ -365,6 +365,54 @@ const NOTAS_TRES_BOTONES = `
 })()
 `;
 
+/*
+  El pie del dibujo con TODO a la vez.
+
+  Es la fila más llena que puede llegar a existir —proporción, deshacer,
+  rehacer, descargar y papelera— y solo aparece después de dibujar dos
+  trazos y deshacer uno: deshacer sale cuando hay pasado y rehacer cuando
+  hay futuro. Sin este caso, ninguna pasada la veía.
+
+  Y es la fila que ya se salió dos veces: primero con la proporción en el
+  pie y el rótulo de «Deshacer» puesto, y luego con el deslizador de
+  grosor en la cabecera. La tarjeta tiene alto fijo, así que un renglón
+  de más no crece: se sale.
+*/
+const NOTAS_DIBUJO_LLENO = `
+(async () => {
+  const lienzo = await __esperar(() => document.querySelector('.lienzo'));
+
+  // Un puntero sintético no tiene id de verdad y setPointerCapture(0)
+  // lanza NotFoundError, abortando el manejador antes de crear el trazo.
+  HTMLElement.prototype.setPointerCapture = function () {};
+
+  const c = lienzo.getBoundingClientRect();
+  const trazar = (y) => {
+    lienzo.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: c.left + 20, clientY: c.top + y, pressure: 0.5 }));
+    for (let i = 1; i <= 12; i++) {
+      lienzo.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: c.left + 20 + i * 6, clientY: c.top + y, pressure: 0.5 }));
+    }
+    lienzo.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: c.left + 92, clientY: c.top + y }));
+  };
+
+  trazar(30);
+  await new Promise((r) => setTimeout(r, 80));
+  trazar(60);
+  await new Promise((r) => setTimeout(r, 80));
+
+  // Deshacer uno, para que salga también rehacer.
+  document.querySelector('.mandos-dibujo .mando-lienzo').click();
+  await new Promise((r) => setTimeout(r, 200));
+
+  // Si no están los tres —deshacer, rehacer y vaciar— esta pasada no ha
+  // mirado lo que venía a mirar.
+  const mandos = document.querySelectorAll('.mandos-dibujo .mando-lienzo');
+  if (mandos.length < 3) {
+    throw new Error('la cabecera del dibujo no llegó a los tres mandos: ' + mandos.length);
+  }
+})()
+`;
+
 /** Una línea de trescientos caracteres sin un solo espacio. */
 const NOTAS_SIN_ESPACIOS = `
 (async () => {
@@ -476,6 +524,7 @@ const CASOS = [
   { nombre: 'notas · cuarenta líneas', ruta: 'es/notas', hacer: NOTAS_LLENA },
   { nombre: 'notas · sin un espacio', ruta: 'es/notas', hacer: NOTAS_SIN_ESPACIOS },
   { nombre: 'notas · los tres botones', ruta: 'es/notas', hacer: NOTAS_TRES_BOTONES },
+  { nombre: 'notas · el dibujo lleno', ruta: 'es/notas', hacer: NOTAS_DIBUJO_LLENO },
   { nombre: 'notas · en inglés', ruta: 'en/notes' },
   { nombre: 'portada', ruta: 'es' },
   { nombre: 'portada en inglés', ruta: 'en' },

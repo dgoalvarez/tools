@@ -112,6 +112,10 @@ Sin React ni DOM: se corre con `node`, y por eso se puede comprobar.
 - funciones · `arrancarAudio`, `sonar`, `notificar`, `permisoActual`, `pedirPermiso`
 - tipos · `Permiso`
 
+**`codigo.ts`**
+- funciones · `sumaDeControl`, `aBase64url`, `deBase64url`
+- constantes · `VERSION`
+
 **`contrast.ts`**
 - funciones · `leerColor`, `componerSobre`, `esTextoGrande`, `medirWcag`, `medirApca`, `sugerirColor`, `hayDesacuerdo`, `esPolaridadClara`, `aHexEnGama`, `canalesDe`, `conCanal`, `visualDe`, `desdeVisual`
 - constantes · `ESPACIOS`
@@ -142,6 +146,11 @@ Sin React ni DOM: se corre con `node`, y por eso se puede comprobar.
 - constantes · `RAIZ_PX`, `ANCHOS_TABLA`, `ESQUEMAS`, `RAZONES`
 - tipos · `Ajustes`, `Esquema`, `Paso`, `Cruce`
 
+**`tablero.ts`**
+- funciones · `nuevoId`, `codificar`, `decodificar`, `validar`, `columnasPara`, `piezaCabe`
+- constantes · `TOPE_PIEZAS`
+- tipos · `Pieza`, `Tablero`, `Motivo`, `Lectura`
+
 **`timezones.ts`**
 - funciones · `obtenerTemporal`, `zonaDelNavegador`, `nombreDeZona`, `localeDe`, `camposEnZona`, `desfaseDeZona`, `diaDeZona`, `minutosEnZona`, `convertir`, `abreviaturaDeZona`, `relojEnVivo`, `componerLista`, `normalizar`, `nombreGenericoDeZona`, `nombreDePais`, `buscarLugares`, `zonaDeZip`
 - tipos · `FuenteDestino`, `Destino`, `Conversion`, `Momento`, `Ambiguedad`, `Resultado`, `RelojVivo`, `DatosLugares`, `DatosZips`, `TipoLugar`, `Coincidencia`
@@ -152,6 +161,11 @@ Sin React ni DOM: se corre con `node`, y por eso se puede comprobar.
 **`utils.ts`**
 - funciones · `cn`
 
+**`widgets.ts`**
+- funciones · `medidasDe`, `porCodigo`
+- constantes · `TALLAS`, `WIDGETS`, `CLAVES`
+- tipos · `Talla`, `WidgetKey`, `AjustesDibujo`, `SinAjustes`, `Widget`
+
 ## Las alarmas
 
 | Guion | Cuándo | Qué caza |
@@ -161,6 +175,7 @@ Sin React ni DOM: se corre con `node`, y por eso se puede comprobar.
 | `check-pages.mjs` | compilación | una ruta declarada sin HTML publicado |
 | `check-routes.mjs` | compilación | que `routes.ts` y `astro.config.mjs` se separen |
 | `check-tour.mjs` | compilación | un paso que señala a algo que ya no está |
+| `check-widgets.mjs` | compilación | — |
 | `mapa.mjs` | compilación | que este mapa se quede viejo |
 | `comprobar-*.ts` | `npm run comprobar` | la aritmética de cada herramienta |
 | `comprobar-roturas.mjs` | `npm run romper` | que algo se salga de su caja |
@@ -180,7 +195,7 @@ pida: descarga 780 MB de GeoNames y regenera esto, que va versionado.
 ## Los comandos
 
 - **`npm run dev`** — `astro dev`
-- **`npm run build`** — `node scripts/check-routes.mjs && node scripts/check-etiquetas.mjs && node scripts/map…`
+- **`npm run build`** — `node scripts/check-routes.mjs && node scripts/check-etiquetas.mjs && node scripts/che…`
 - **`npm run verificar`** — `npm run build && npm run comprobar && npm run romper && npm run navegar`
 - **`npm run check`** — `astro check`
 - **`npm run preview`** — `astro preview`

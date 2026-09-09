@@ -33,6 +33,9 @@ design/
 # que están en global.css, y sin ellas los valores parecen elegidos a ojo.
 !design/*.ts
 
+# Los lienzos de propuestas se publican, no se versionan
+design-propuestas/
+
 # El lienzo de propuestas se publica, no se versiona (3 MB)
 home-y-navegacion-cuatro-direcciones.html
 dgo-tools-editorial-oscuro.html

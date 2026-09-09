@@ -35,6 +35,8 @@ import {
   ArrowCounterClockwiseIcon,
   ArrowDownIcon,
   ArrowUpIcon,
+  DotsSixVerticalIcon,
+  EraserIcon,
   XIcon,
 } from '@phosphor-icons/react';
 
@@ -57,12 +59,14 @@ import {
   leer,
   marcar,
   mover,
+  moverA,
   notaAMarkdown,
   restaurar,
   retiradas,
   textoDeNota,
   type Cuaderno,
   type Retirada,
+  type Tarea,
 } from '../lib/notas';
 
 interface Props {
@@ -168,6 +172,74 @@ export default function Notas({ lang }: Props) {
     campoNuevo.current?.focus();
   }
 
+  /*
+    Arrastrar para reordenar, ADEMÁS de las flechas.
+
+    Las flechas se quedan y no son un resto: arrastrar sin alternativa de
+    teclado deja fuera a quien no usa ratón, y una lista de tareas es
+    justo donde eso importa. Lo de aquí es la vía cómoda, no la única.
+
+    Va a mano, con eventos de puntero, y no con una librería. `@dnd-kit`
+    son unos 12 KB comprimidos y se pagan sobre todo por su sensor de
+    teclado, que aquí ya está resuelto con las flechas; las filas son de
+    alto uniforme, así que saber dónde caería la línea es una división.
+
+    Se agarra por el asa y no por la fila entera: la fila lleva dentro un
+    campo de texto, y arrastrar desde él sería imposible sin romper
+    seleccionar palabras con el ratón.
+  */
+  /*
+    Dónde va a caer se lleva en la REF y también en el estado, y no es
+    duplicar por gusto.
+
+    El estado es para pintar la raya del destino; la ref es la que manda
+    al soltar. React confirma los cambios de estado cuando le viene bien,
+    no en el mismo suspiro: leyendo el estado, un arrastre rápido suelta
+    con el valor de ANTES del último movimiento y la línea se queda donde
+    estaba. Se midió con una sonda —seis movimientos, «aDonde=0», la
+    lista sin tocar— y es la misma trampa que ya está apuntada en el
+    lienzo para el trazo en curso.
+  */
+  const arrastrando = useRef<{
+    id: string;
+    alto: number;
+    y0: number;
+    desde: number;
+    hasta: number;
+  } | null>(null);
+  const [aDonde, setADonde] = useState<number | null>(null);
+
+  function empezarArrastre(evento: React.PointerEvent, tarea: Tarea, indice: number) {
+    const fila = (evento.currentTarget as HTMLElement).closest('li');
+    if (!fila) return;
+    evento.currentTarget.setPointerCapture?.(evento.pointerId);
+    arrastrando.current = {
+      id: tarea.id,
+      // El alto de una fila incluye el hueco que la separa de la
+      // siguiente: sin sumarlo, la cuenta se desvía una fila cada seis.
+      alto: fila.getBoundingClientRect().height + 2,
+      y0: evento.clientY,
+      desde: indice,
+      hasta: indice,
+    };
+    setADonde(indice);
+  }
+
+  function seguirArrastre(evento: React.PointerEvent) {
+    const a = arrastrando.current;
+    if (!a) return;
+    const saltos = Math.round((evento.clientY - a.y0) / a.alto);
+    a.hasta = Math.min(Math.max(a.desde + saltos, 0), tareas.length - 1);
+    setADonde(a.hasta);
+  }
+
+  function soltarArrastre() {
+    const a = arrastrando.current;
+    arrastrando.current = null;
+    setADonde(null);
+    if (a && a.hasta !== a.desde) conTareas(moverA(tareas, a.id, a.hasta));
+  }
+
   const cuantasVuelven =
     borradas.length === 1
       ? t(NOTAS.unaLinea, lang)
@@ -212,7 +284,7 @@ export default function Notas({ lang }: Props) {
       )}
 
       {/* ---------------------------------------------- la lista ---- */}
-      <section className="tarjeta-control" aria-labelledby="titulo-lista">
+      <section className="tarjeta-control tarjeta-lista" aria-labelledby="titulo-lista">
         <p className="titulo" id="titulo-lista">
           {t(NOTAS.laLista, lang)}
         </p>
@@ -239,7 +311,33 @@ export default function Notas({ lang }: Props) {
           ) : (
             <ul className="lista-tareas">
               {tareas.map((tarea, i) => (
-                <li key={tarea.id} className="fila-tarea" data-tour={i === 0 ? 'linea' : undefined}>
+                <li
+                  key={tarea.id}
+                  className="fila-tarea"
+                  data-tour={i === 0 ? 'linea' : undefined}
+                  data-arrastrada={arrastrando.current?.id === tarea.id || undefined}
+                  data-hueco={(aDonde === i && arrastrando.current?.id !== tarea.id) || undefined}
+                >
+                  {/*
+                    El asa, y no la fila entera.
+
+                    La fila lleva dentro un campo de texto: arrastrando
+                    desde ella no se podría seleccionar una palabra con el
+                    ratón, que es lo que se hace todo el rato para
+                    corregir. El asa es la única parte que no tiene otro
+                    oficio.
+                  */}
+                  <span
+                    className="asa-tarea"
+                    aria-hidden="true"
+                    onPointerDown={(e) => empezarArrastre(e, tarea, i)}
+                    onPointerMove={seguirArrastre}
+                    onPointerUp={soltarArrastre}
+                    onPointerCancel={soltarArrastre}
+                  >
+                    <DotsSixVerticalIcon size={14} />
+                  </span>
+
                   <input
                     type="checkbox"
                     className="casilla"
@@ -337,6 +435,31 @@ export default function Notas({ lang }: Props) {
               </Button>
             )}
 
+            {/*
+              Vaciar la lista entera, de un clic y sin preguntar.
+
+              Sin confirmación a propósito: pasa por el mismo camino que
+              los otros dos borrados, así que «Deshacer» aparece al lado y
+              devuelve las líneas a su sitio. Un diálogo de «¿seguro?» que
+              hay que contestar cada vez protege peor que un botón que
+              deshace, y encima entrena a darle a «sí» sin leer.
+
+              Solo icono: con «Borrar las hechas» y «Copiar la lista»
+              escritos, la fila no aguanta un tercer rótulo a 485 px.
+            */}
+            {tareas.length > 0 && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                aria-label={t(NOTAS.limpiarLista, lang)}
+                title={t(NOTAS.limpiarLista, lang)}
+                onClick={() => borrando([])}
+              >
+                <EraserIcon aria-hidden="true" />
+              </Button>
+            )}
+
             {tareas.length > 0 && (
               <BotonCopiar
                 texto={() => aMarkdown(tareas)}
@@ -349,7 +472,11 @@ export default function Notas({ lang }: Props) {
       </section>
 
       {/* ----------------------------------------------- la nota ---- */}
-      <section className="tarjeta-control" aria-labelledby="titulo-nota" data-tour="nota">
+      <section
+        className="tarjeta-control tarjeta-nota"
+        aria-labelledby="titulo-nota"
+        data-tour="nota"
+      >
         <p className="titulo" id="titulo-nota">
           {t(NOTAS.laNota, lang)}
         </p>

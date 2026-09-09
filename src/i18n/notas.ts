@@ -29,6 +29,10 @@ export const NOTAS = {
   bajar: { es: 'Bajar', en: 'Move down' },
   borrar: { es: 'Borrar', en: 'Delete' },
   borrarHechas: { es: 'Borrar las hechas', en: 'Clear the done ones' },
+  /** Vacía la lista entera. Va sin rótulo, así que este texto es su nombre. */
+  limpiarLista: { es: 'Vaciar la lista', en: 'Empty the list' },
+  /** El asa de arrastrar, para quien navega con lector de pantalla. */
+  arrastrarFila: { es: 'Arrastrar para reordenar', en: 'Drag to reorder' },
   /**
    * Aparece solo después de un borrado, y se queda hasta el siguiente.
    *

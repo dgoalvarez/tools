@@ -4082,14 +4082,68 @@
     sigue siendo fijo para cada pantalla: caben unas ocho líneas en un
     portátil y unas doce en un monitor.
   */
+  /*
+    La fila del contenido se lleva TODO el sobrante de la tarjeta.
+
+    Las tres tarjetas son rejillas de filas automáticas y van estiradas a
+    la misma altura, así que el hueco que sobra se repartía a partes
+    iguales entre título, campo, cuerpo y pie: quedaba aire debajo del
+    campo —que se notaba sobre todo con la lista vacía— y el pie no
+    llegaba a apoyarse abajo del todo.
+
+    Con «minmax(--alto-libreta, 1fr)» el reparto deja de existir: el
+    cuerpo tiene su suelo de siempre —que es lo que impide el tirón al
+    restaurar y lo que vale cuando las tarjetas se apilan en móvil y no
+    hay nada que estirar— y se queda además con lo que sobre.
+  */
+  /*
+    El sobrante se va ARRIBA del pie, no repartido por todas las filas.
+
+    Las tres tarjetas van estiradas a la misma altura y la del dibujo es
+    un pelo más alta —su cabecera lleva los mandos al lado del título—.
+    Ese sobrante lo repartía la rejilla entre las cuatro filas: quedaba
+    aire debajo del campo y el pie flotaba sin llegar a apoyarse.
+
+    En COLUMNA FLEXIBLE y no en rejilla: «margin-block-start: auto» en un
+    elemento de rejilla lo mueve dentro de su propia fila, que no tiene
+    hueco de sobra, así que no hacía nada. En una columna flexible el
+    margen automático se come el sobrante de la caja entera y el pie se
+    va al fondo, que es lo que se pedía. El
+    cuerpo conserva su ALTO FIJO, que es lo que impide el tirón al
+    restaurar: probarlo con «1fr» costó cuatro comprobaciones de
+    navegación en rojo —«#main alto 858 -> 1004»— porque un «1fr» contra
+    una fila de alto indefinido se comporta como «auto» y crece con el
+    contenido. Es una de las trampas apuntadas.
+  */
+  .tarjeta-lista,
+  .tarjeta-nota,
+  .tarjeta-dibujo {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tarjeta-lista .pie-lista,
+  .tarjeta-nota .pie-lista,
+  .tarjeta-dibujo .pie-lista {
+    margin-block-start: auto;
+  }
+
   .lista-cuerpo {
     height: var(--alto-libreta);
     overflow-y: auto;
     overscroll-behavior: contain;
   }
 
+  /*
+    El aviso de lista vacía va arriba, cerca del campo del que habla.
+
+    Llevaba 1,5 rem por los dos lados y con el reparto de la rejilla de
+    antes sumaban un dedo de blanco entre «Añade algo y pulsa Intro» y
+    «Todavía no hay nada». La frase explica el campo: cuanto más cerca,
+    menos parece un hueco y más una respuesta.
+  */
   .lista-vacia {
-    padding-block: 1.5rem;
+    padding-block: 0.375rem 1.5rem;
     font-size: var(--fs-small);
     color: var(--ink-soft);
   }
@@ -4115,6 +4169,57 @@
   .fila-tarea:hover,
   .fila-tarea:focus-within {
     background: var(--surface-2);
+  }
+
+  /*
+    El asa de arrastrar.
+
+    Va casi apagada y se enciende al pasar por encima de la fila: es la
+    vía cómoda, no la principal, y encendida siempre sería una columna de
+    seis puntos gritando en cada línea.
+
+    «touch-action: none» es lo que permite arrastrar con el dedo sin que
+    la lista se desplace debajo: sin ello, el navegador se queda el gesto
+    en cuanto se mueve un pelo en vertical, que es justo la dirección en
+    la que se reordena.
+  */
+  .asa-tarea {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 1rem;
+    color: var(--ink-soft);
+    opacity: 0.35;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .fila-tarea:hover .asa-tarea,
+  .fila-tarea:focus-within .asa-tarea {
+    opacity: 1;
+  }
+
+  .asa-tarea:active {
+    cursor: grabbing;
+  }
+
+  /* La que se está moviendo se despega, y donde va a caer se marca con
+     una raya. Sin las dos cosas, arrastrar es mover a ciegas. */
+  .fila-tarea[data-arrastrada] {
+    background: var(--surface-2);
+    opacity: 0.55;
+  }
+
+  .fila-tarea[data-hueco] {
+    box-shadow: 0 -2px 0 -1px var(--acento);
+  }
+
+  /* En una pantalla táctil no hay «pasar por encima», así que el asa se
+     queda visible: sin ella no habría forma de reordenar arrastrando. */
+  @media (pointer: coarse) {
+    .asa-tarea {
+      opacity: 0.7;
+    }
   }
 
   .fila-tarea .casilla {
@@ -4366,8 +4471,15 @@
     rellena. Un lienzo que creciera con el dibujo empujaría la página
     hacia abajo mientras se dibuja, que es el peor momento posible.
   */
+  /*
+    La caja se ciñe a su fila, y por eso el «height: 100%» del lienzo
+    funciona: contra una fila de alto indefinido se resolvería como
+    «auto» —es una de las trampas apuntadas— y el lienzo crecería con la
+    tarjeta sin que nadie lo parase.
+  */
   .caja-lienzo {
     position: relative;
+    min-height: 0;
   }
 
   /* La pista va encima del lienzo y no dentro: un `<canvas>` es un

@@ -397,6 +397,26 @@ const GUION_LIBRETA = [
   COMUN,
   'var __texto = "sobrevivir al viaje";',
   '__cuandoListo(1, function () {',
+  /*
+     Hay que esperar a que la isla ESCUCHE, no a que la página cargue.
+
+     «astro:page-load» suena cuando el enrutador termina, y la isla se
+     hidrata después: el HTML del servidor ya trae el campo, así que
+     escribir ahí antes de tiempo no llega a React y la comprobación
+     decía «la tarea no se añadio: 0». Salía en rojo una de cada tres, y
+     una alarma que falla una de cada tres enseña a ignorar el rojo.
+
+     Astro quita el atributo «ssr» de <astro-island> justo al terminar,
+     que es el hecho que de verdad se está esperando.
+  */
+  '  var t0 = Date.now();',
+  '  var esperando = setInterval(function () {',
+  '    if (document.querySelector("astro-island[ssr]") && Date.now() - t0 < 5000) return;',
+  '    clearInterval(esperando);',
+  '    __escribirEnLaLista();',
+  '  }, 40);',
+  '});',
+  'function __escribirEnLaLista() {',
   '  var campo = document.querySelector(".campo-nuevo");',
   '  if (!campo) { __decir("no hay campo de añadir"); return; }',
   // El valor va por el setter nativo: puesto a pelo, React no se entera.
@@ -414,7 +434,7 @@ const GUION_LIBRETA = [
   '    if (!enlace) { __decir("no hay enlace a contraste"); return; }',
   '    enlace.click();',
   '  }, 500);',
-  '});',
+  '}',
   '__alLlegar("/es/contraste", function () {',
   '  var males = [];',
   '  if (!window.__vivo) males.push("hubo recarga: se perdio la marca de window");',

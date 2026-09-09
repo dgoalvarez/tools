@@ -29,6 +29,7 @@ import {
   limpiarLinea,
   marcar,
   mover,
+  moverA,
   aProporcion,
   cajaDePixeles,
   rellenar,
@@ -130,6 +131,37 @@ console.log('\n2. Mover, y los extremos');
     vuelta.map((x) => x.id).join() === t.map((x) => x.id).join(),
     'bajar y volver a subir deja la lista igual'
   );
+}
+
+// =====================================================================
+console.log('\n2 bis. Llevar una línea a otro sitio (arrastrando)');
+{
+  let t: Tarea[] = [];
+  for (const x of ['a', 'b', 'c', 'd', 'e']) t = anadir(t, x);
+  const orden = (l: Tarea[]) => l.map((x) => x.texto).join('');
+
+  afirmar(orden(moverA(t, t[0].id, 4)) === 'bcdea', 'la primera al final');
+  afirmar(orden(moverA(t, t[4].id, 0)) === 'eabcd', 'la última al principio');
+  afirmar(orden(moverA(t, t[1].id, 3)) === 'acdbe', 'una del medio hacia abajo');
+  afirmar(orden(moverA(t, t[3].id, 1)) === 'adbce', 'y otra hacia arriba');
+
+  // Saltar de la 1 a la 5 no es lo mismo que cuatro intercambios: por eso
+  // arrastrar no puede apoyarse en `mover`.
+  let aPasos = t;
+  for (let i = 0; i < 4; i++) aPasos = mover(aPasos, t[0].id, 1);
+  afirmar(
+    orden(aPasos) === orden(moverA(t, t[0].id, 4)),
+    'con un solo salto sale lo mismo que con cuatro intercambios seguidos'
+  );
+
+  // Los extremos se recortan en vez de romperse: al soltar por encima de
+  // la lista o por debajo, el destino se sale del rango.
+  afirmar(orden(moverA(t, t[2].id, -5)) === 'cabde', 'soltar por encima la deja primera');
+  afirmar(orden(moverA(t, t[2].id, 99)) === 'abdec', 'y por debajo, última');
+
+  afirmar(moverA(t, t[2].id, 2) === t, 'dejarla donde estaba devuelve el mismo array');
+  afirmar(moverA(t, 'no-existe', 1) === t, 'mover algo que no está tampoco hace nada');
+  afirmar(orden(t) === 'abcde', 'y la lista de partida no se toca');
 }
 
 // =====================================================================

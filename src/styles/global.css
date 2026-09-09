@@ -4756,3 +4756,150 @@
     }
   }
 }
+
+/* ============================================================
+   La franja de la portada
+
+   Once casillas de una rampa OKLCH derivada de verdad. El porqué está
+   entero en «islands/RampaViva.tsx»; aquí está la maqueta y la ENTRADA,
+   que es lo que hace que la portada se mueva al abrirla.
+
+   Que la entrada sea de CSS y no de la isla no es un capricho: es lo que
+   sigue pasando con las islas apagadas, con la red a medias y en las
+   capturas. La isla solo aporta lo vivo —sembrar otro tono al recorrer
+   la franja— y por eso puede llegar tarde sin que se note.
+   ============================================================ */
+
+@layer components {
+  .rampa-viva {
+    display: grid;
+    gap: 0.9375rem;
+    padding-block-end: clamp(2.5rem, 4.5vw, 4.5rem);
+  }
+
+  /*
+    Alto FIJO, no «aspect-ratio».
+
+    Con once columnas, un cuadrado mide 145 px de alto en un monitor y 38
+    en un móvil: la misma franja pasaría de muro a hilo sin que nadie lo
+    decidiera. Y un alto escrito es además lo que impide el tirón, porque
+    la franja ocupa su sitio desde el HTML del servidor y la isla se
+    limita a repintar los colores dentro.
+  */
+  /*
+    La franja va SOBRE la línea del sitio, y el hueco entre casillas la
+    deja ver. No es adorno: es lo único que hace visible el paso 50.
+
+    Lo enseñó la captura en claro. El fondo del tema claro es #f3f6f7 y el
+    primer paso de un teal es #f0f7f6 —tres unidades de diferencia en dos
+    canales—, así que la casilla desaparecía y la rampa parecía empezar en
+    el 100, con un agujero a la izquierda. En oscuro pasa lo propio por el
+    otro extremo, con el 950 casi del color del fondo.
+
+    Enmarcando en «--line» cada casilla queda rodeada por los cuatro
+    lados y NINGUNA se tiñe: el color que se enseña sigue siendo el color
+    que se calculó, que es el asunto entero de esta franja.
+  */
+  .tira-rampa {
+    display: grid;
+    grid-template-columns: repeat(11, minmax(0, 1fr));
+    gap: 0.1875rem;
+    height: clamp(4.5rem, 9vw, 7.5rem);
+    padding: 0.1875rem;
+    border-radius: calc(var(--radius-sm) + 0.1875rem);
+    background: var(--line);
+  }
+
+  /*
+    Cada casilla CRECE desde su base. Antes bajaba 14 px y subía, y el
+    aviso de roturas lo cazó: mientras dura la entrada, la casilla asoma
+    por debajo de la franja y en tres de las diez pasadas —las lentas— el
+    navegador la medía justo ahí. «Le faltan 7 px de alto», dijo, y tenía
+    razón: los tenía.
+
+    Se arregla donde estaba el fallo y no tapándolo. Con `overflow: clip`
+    el aviso habría callado —salta el que no mira las cajas recortadas—
+    pero la casilla seguiría saliéndose. Escalando desde la base no se
+    sale nunca: encogida es MÁS pequeña que su hueco, no más grande.
+
+    Y de paso se ve mejor: once barras que suben hasta su sitio se posan;
+    once que caen desde arriba, aterrizan.
+  */
+  .casilla-rampa {
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-sm);
+    transform-origin: bottom;
+    /*
+      «backwards» y no «forwards»: sin él, las diez que esperan su turno
+      se pintan enteras y luego desaparecen para volver a entrar. El
+      parpadeo dura lo que el retardo, que aquí llega a 340 ms.
+    */
+    animation: entra-casilla 620ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  @keyframes entra-casilla {
+    from {
+      opacity: 0;
+      transform: scaleY(0.5);
+    }
+  }
+
+  /*
+    El número del paso, y no es adorno: es lo que distingue una rampa de
+    un degradado bonito. «50 · 100 · … · 950» es la escala que escribe
+    todo el mundo, y verla aquí dice de qué va esto antes de leer el pie.
+
+    La tinta la elige cada casilla según su propia claridad; eso vive en
+    la isla, que es donde se conoce el color.
+  */
+  .casilla-rampa .cifra {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.03em;
+    opacity: 0.62;
+    /*
+      Entra DESPUÉS de que su casilla se haya posado, y por una razón
+      mecánica antes que estética: la casilla escala en vertical y todo
+      lo que lleva dentro escala con ella, así que un número visible
+      durante la entrada sería un número aplastado.
+
+      Y leído, funciona igual de bien: primero aterriza el color, luego
+      dice cómo se llama.
+    */
+    animation: aparece-cifra 380ms ease-out backwards;
+  }
+
+  @keyframes aparece-cifra {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .pie-rampa {
+    margin: 0;
+    max-width: 44rem;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    /* «balance» y no «pretty»: son dos líneas, y para eso está. Con
+       «pretty» la segunda se quedaba en dos palabras sueltas. */
+    text-wrap: balance;
+  }
+
+  /*
+    Con motivo reducido aparece puesta, y no «más rápido».
+
+    Es la regla de la casa y aquí se cumple sin perder nada: lo que la
+    franja tiene que decir —once pasos reales, derivados aquí— lo dice
+    igual de quieta. Sembrar con el puntero se queda, porque cambiar de
+    color no mueve nada de sitio, que es lo que marea.
+  */
+  @media (prefers-reduced-motion: reduce) {
+    .casilla-rampa,
+    .casilla-rampa .cifra {
+      animation: none;
+    }
+  }
+}

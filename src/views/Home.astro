@@ -43,6 +43,7 @@
  */
 import Base from '../layouts/Base.astro';
 import Icono from '../components/Icono.astro';
+import RampaViva from '../islands/RampaViva';
 import { UI } from '../i18n/ui';
 import { TOOLS } from '../i18n/tools';
 import { AMBITOS, ORDEN_AMBITOS, ACENTO_POR_MATERIA, ambitoPrincipal } from '../i18n/labels';
@@ -87,6 +88,24 @@ const grupos = ORDEN_AMBITOS.map((ambito) => ({
         </p>
         <p class="m-0 text-[1rem] leading-relaxed text-ink-muted">{t(UI.homeIntro, lang)}</p>
       </div>
+    </section>
+
+    {/*
+      La franja va entre el titular y el índice, y ese sitio es el
+      argumento entero: el párrafo de arriba PROMETE que todo se calcula
+      aquí, y lo primero que se ve debajo es once colores que se acaban de
+      calcular aquí. Ponerla más abajo la habría dejado como adorno; el
+      párrafo se lee y a continuación se comprueba.
+
+      `client:idle` y no `client:load` a propósito: el servidor ya manda
+      la rampa derivada y las once casillas entran solas con una animación
+      de CSS, así que el primer fotograma está completo y los 23 KB
+      comprimidos de aritmética de color no tienen por qué competir con
+      él. Lo que espera a la isla es solo lo vivo: sembrar otro tono.
+    */}
+    <section class="rampa-viva">
+      <RampaViva client:idle />
+      <p class="pie-rampa">{t(UI.rampaPie, lang)}</p>
     </section>
 
     <div class="indice pb-[clamp(2rem,3vw,3.5rem)]">

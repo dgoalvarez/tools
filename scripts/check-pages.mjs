@@ -53,3 +53,50 @@ if (faltan.length) {
 }
 
 console.log(`✓ páginas publicadas (${rutas.length} rutas, todas con su HTML)`);
+
+/*
+ * Y la portada, además, sale con su franja de color YA DERIVADA.
+ *
+ * Esto no lo caza ninguna de las otras alarmas y por eso está aquí. La
+ * franja es una isla que monta con `client:idle`, así que si alguien
+ * mueve su cálculo al cliente —o rompe el import de `rampa.ts`— el HTML
+ * sale con once casillas sin fondo y la portada se publica con un hueco
+ * gris donde debería estar lo único que se mueve.
+ *
+ * `romper` no lo vería: una casilla vacía no se sale de su caja. Las
+ * capturas lo enseñarían, pero una captura no sabe si está bien.
+ *
+ * Se comprueba lo que importa y no cómo está escrito: que haya once, y
+ * que las once traigan un color de verdad. Probado en los dos sentidos,
+ * rompiendo el HTML publicado a propósito: sin el `background` dice
+ * «encontradas 11, 0 de 11 traen color», y sin las casillas —que es lo
+ * que quedaría si la isla dejara de pintarse en el servidor— dice
+ * «encontradas 0». Con el HTML bueno se calla.
+ */
+const PASOS = 11;
+const portadas = ['es', 'en'];
+const malas = [];
+
+for (const p of portadas) {
+  const html = readFileSync(join(dist, `${p}.html`), 'utf8');
+  const casillas = html.match(/class="casilla-rampa"[^>]*/g) ?? [];
+  const conColor = casillas.filter((c) => /background:\s*#[0-9a-f]{6}/i.test(c)).length;
+  if (casillas.length !== PASOS || conColor !== PASOS) {
+    malas.push(
+      `    ${p}.html   encontradas ${casillas.length}, ${conColor} de ${PASOS} traen color`
+    );
+  }
+}
+
+if (malas.length) {
+  console.error('\n✗ La franja de la portada no sale derivada del servidor.\n');
+  malas.forEach((m) => console.error(m));
+  console.error(
+    '\n  Son once pasos y los once tienen que traer su hexadecimal en el HTML.\n' +
+      '  Si se calculan solo en el cliente, quien llegue con la red lenta —o\n' +
+      '  con las islas apagadas— se encuentra la portada con un hueco.\n'
+  );
+  process.exit(1);
+}
+
+console.log(`✓ la franja de la portada sale derivada (${PASOS} pasos con color, 2 idiomas)`);

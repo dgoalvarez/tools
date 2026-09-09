@@ -50,6 +50,27 @@ export const UI = {
     en: 'Everything runs in your browser. Nothing is stored, nothing is sent, and the state lives in the address: sharing a result is pasting a link.',
   },
   openTool: { es: 'Abrir', en: 'Open' },
+  /**
+   * El pie de la franja de color.
+   *
+   * Dice qué es —una rampa de once pasos, no un degradado— y qué se puede
+   * hacer con ella. Sin esta frase la franja es decoración; con ella es la
+   * demostración de lo que promete el párrafo de al lado.
+   *
+   * Decía «derivados mientras cargaba la página» y era falso a medias: la
+   * rampa de fábrica la calcula el servidor al compilar, y lo que sí sale
+   * de tu navegador es cada color que aparece al recorrerla. La frase se
+   * cambió para que la afirmación cuelgue de donde es cierta. Aquí la
+   * exactitud no es puntillosidad: es literalmente lo que vende el sitio.
+   *
+   * «Recórrela» y no «pasa el puntero» a propósito: vale para un ratón y
+   * para un dedo, y así no hacen falta dos frases y una consulta de
+   * medios para elegir entre ellas.
+   */
+  rampaPie: {
+    es: 'Once pasos de una rampa OKLCH, no un degradado. Recórrela: cada color que aparece lo calcula tu navegador al momento.',
+    en: 'Eleven steps of an OKLCH ramp, not a gradient. Run across it: every colour that appears is worked out by your browser on the spot.',
+  },
 
   // ---------- Estado «en construcción» ----------
 

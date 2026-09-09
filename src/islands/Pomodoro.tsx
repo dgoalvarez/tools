@@ -20,6 +20,8 @@
  *     al que se le dice que no.
  */
 import { useEffect, useState } from 'react';
+
+import { useAhora } from '../hooks/useAhora';
 import {
   PauseIcon,
   PlayIcon,
@@ -76,7 +78,25 @@ export default function Pomodoro({ lang }: Props) {
 
   const [ajustes, setAjustes] = useState<Ajustes>(AJUSTES_INICIALES);
   const [cuenta, setCuenta] = useState<Cuenta>({ estado: 'parado', fase: 'trabajo', hechos: 0 });
-  const [ahora, setAhora] = useState(() => Date.now());
+  /*
+    El latido lo pone el reloj compartido, no un intervalo propio.
+
+    Solo se pide mientras la cuenta corre —también en el margen, donde
+    baja de cinco a cero y si no se repintara se quedaría clavada—, que
+    es lo que ya hacía el intervalo de antes. Parada, esta isla no
+    despierta a nadie.
+
+    El `|| Date.now()` cubre el primer render: el reloj compartido
+    devuelve 0 hasta su primer tic, a propósito, para que el HTML del
+    servidor y el primer pintado del cliente puedan coincidir. Aquí
+    coinciden igual porque la cuenta guardada se lee en un efecto, así
+    que los dos empiezan parados.
+  */
+  const corriendo = cuenta.estado === 'andando' || cuenta.estado === 'margen';
+  // Cuatro veces por segundo: el número solo cambia una, pero así nunca
+  // se ve un segundo congelado al volver de otra pestaña.
+  const tic = useAhora(corriendo ? 250 : null);
+  const ahora = tic || Date.now();
   const [listo, setListo] = useState(false);
 
   const [conSonido, setConSonido] = useState(true);
@@ -120,19 +140,6 @@ export default function Pomodoro({ lang }: Props) {
   useEffect(() => {
     if (listo) guardarCuenta(cuenta);
   }, [listo, cuenta]);
-
-  // ---------- el latido ----------
-
-  useEffect(() => {
-    // También durante el margen: ahí la cuenta atrás va de cinco a cero y
-    // si no se repintara se quedaría clavada en el cinco.
-    if (cuenta.estado !== 'andando' && cuenta.estado !== 'margen') return;
-
-    // Cuatro veces por segundo: el número solo cambia una, pero así nunca
-    // se ve un segundo congelado al volver de otra pestaña.
-    const t = setInterval(() => setAhora(Date.now()), 250);
-    return () => clearInterval(t);
-  }, [cuenta.estado]);
 
   // ---------- el cambio de fase ----------
 
@@ -225,7 +232,10 @@ export default function Pomodoro({ lang }: Props) {
         terminaEn: Date.now() + restante,
       };
     });
-    setAhora(Date.now());
+    // Antes había aquí un `setAhora(Date.now())` para que la primera cifra
+    // no fuera la de la pausa. Ya no hace falta: `ahora` cae a `Date.now()`
+    // mientras el reloj compartido no haya dado su primer tic, y el tic
+    // llega en el mismo fotograma en que la cuenta pasa a «andando».
   }
 
   function pausar() {

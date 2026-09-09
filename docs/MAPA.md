@@ -33,6 +33,7 @@ Existe para no volver a averiguar lo mismo cada sesión.
 **Pomodoro** · `pomodoro`
 
 - `scripts/comprobar-pomodoro.ts`
+- `src/hooks/useAhora.ts`
 - `src/i18n/pomodoro.ts`
 - `src/islands/Pomodoro.tsx`
 - `src/lib/aviso.ts`

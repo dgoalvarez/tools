@@ -118,8 +118,30 @@ export const NOTAS = {
   borrarDibujo: { es: 'Borrar el dibujo', en: 'Clear the drawing' },
   descargarDibujo: { es: 'Descargar', en: 'Download' },
   tinta: { es: 'Tinta', en: 'Ink' },
-  /** La cuarta muestra, la que abre el selector del sistema. */
+  /** La cuarta muestra, la que abre el selector de color del sitio. */
   tintaLibre: { es: 'Elegir el color', en: 'Pick the colour' },
+  /**
+   * Las dos herramientas del lienzo.
+   *
+   * «Bote» y no «Relleno»: lo que se elige es el instrumento, y en
+   * español el bote de pintura es el nombre que tiene desde siempre. Un
+   * rótulo que dice el efecto —«Relleno»— no explica que hay que TOCAR
+   * dentro de la forma.
+   */
+  lapiz: { es: 'Dibujar', en: 'Draw' },
+  /*
+   * El rótulo del bote dice DÓNDE hay que tocar, no solo cómo se llama.
+   *
+   * Se midió: cuatro trazos sueltos que forman un cuadrado dejan las
+   * cuatro esquinas con hueco —la biblioteca de trazado afina las puntas—
+   * y el color se escapa por ahí y baña el lienzo. Quien lo sufra sin
+   * aviso pensará que la herramienta está rota; sabiendo que la forma
+   * tiene que estar cerrada, lo entiende y cierra el trazo.
+   */
+  bote: {
+    es: 'Bote de pintura · toca dentro de una forma cerrada',
+    en: 'Paint bucket · tap inside a closed shape',
+  },
   grosor: { es: 'Grosor', en: 'Thickness' },
   /** El grupo que decide el encuadre de la descarga. */
   proporcion: { es: 'Proporción de la descarga', en: 'Download proportion' },

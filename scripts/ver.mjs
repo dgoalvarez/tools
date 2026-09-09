@@ -459,7 +459,7 @@ const VISTAS = [
       // Y se deshace el último: es la única forma de ver la cabecera
       // completa, porque «rehacer» no existe hasta que se deshace algo.
       // Deshacer es el PRIMER .mando-lienzo; la papelera va detrás.
-      document.querySelector('.mandos-dibujo .mando-lienzo').click();
+      document.querySelector('[data-mando=\"deshacer\"]').click();
       await new Promise((r) => setTimeout(r, 300));
     `,
   },

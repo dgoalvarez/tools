@@ -202,23 +202,36 @@ export interface Caja {
 }
 
 /**
- * La caja que ocupan unos contornos, con su margen.
+ * La caja que ocupa lo que de verdad está pintado.
  *
- * Recibe los CONTORNOS ya calculados y no los puntos que se tocaron: el
- * trazo tiene grosor, y ceñirse a la línea central cortaría medio trazo
- * por cada borde. Quien los calcula es la isla, que es la que tiene la
- * biblioteca de trazado.
+ * Mira los PÍXELES y no la geometría de los trazos, y la razón es el
+ * bote de pintura: un relleno se guarda como un punto y un color, y
+ * hasta que no se pinta nadie sabe hasta dónde llega — puede quedarse
+ * dentro de una forma o escaparse por un hueco del contorno y bañar el
+ * lienzo entero. Con la geometría habría que adivinarlo; con los píxeles
+ * se sabe.
+ *
+ * Y de paso arregla el caso de los trazos sin tener que tratarlos
+ * aparte: lo pintado es lo pintado, venga de donde venga.
+ *
+ * `datos` es RGBA seguido, como lo devuelve `getImageData`. Se mira solo
+ * la transparencia: el lienzo se sirve sin fondo, así que todo lo que
+ * tenga alfa es dibujo.
  */
-export function cajaDeContornos(contornos: number[][][], margen: number): Caja | null {
+export function cajaDePixeles(
+  datos: Uint8ClampedArray | number[],
+  ancho: number,
+  alto: number,
+  margen: number
+): Caja | null {
   let x0 = Infinity;
   let y0 = Infinity;
   let x1 = -Infinity;
   let y1 = -Infinity;
 
-  for (const contorno of contornos) {
-    for (const punto of contorno) {
-      const x = punto[0]!;
-      const y = punto[1]!;
+  for (let y = 0; y < alto; y++) {
+    for (let x = 0; x < ancho; x++) {
+      if (datos[(y * ancho + x) * 4 + 3]! === 0) continue;
       if (x < x0) x0 = x;
       if (y < y0) y0 = y;
       if (x > x1) x1 = x;
@@ -228,12 +241,103 @@ export function cajaDeContornos(contornos: number[][][], margen: number): Caja |
 
   if (!Number.isFinite(x0)) return null;
 
+  // El píxel de la derecha ocupa sitio: de la columna 3 a la 5 hay tres
+  // columnas pintadas, no dos.
   return {
     x: x0 - margen,
     y: y0 - margen,
-    ancho: x1 - x0 + margen * 2,
-    alto: y1 - y0 + margen * 2,
+    ancho: x1 - x0 + 1 + margen * 2,
+    alto: y1 - y0 + 1 + margen * 2,
   };
+}
+
+/**
+ * El bote de pintura: llena la mancha que toca el punto de partida.
+ *
+ * Recorrido por LÍNEAS y no píxel a píxel con una pila de vecinos. Con
+ * la pila, un lienzo de 726×710 —que es lo que mide a densidad doble—
+ * mete medio millón de puntos en memoria y se atraganta; por líneas se
+ * apunta un tramo entero de golpe y la pila se queda en decenas.
+ *
+ * La tolerancia existe porque los trazos van suavizados: el borde de una
+ * línea negra sobre nada no salta de opaco a transparente, pasa por una
+ * franja de medias tintas. Sin margen, el relleno se cuela por esa
+ * franja y deja un halo del color viejo pegado al contorno.
+ *
+ * Devuelve cuántos píxeles pintó, que es lo que permite comprobarlo.
+ */
+export function rellenar(
+  datos: Uint8ClampedArray | number[],
+  ancho: number,
+  alto: number,
+  inicioX: number,
+  inicioY: number,
+  color: [number, number, number, number],
+  tolerancia = 32
+): number {
+  const x0 = Math.round(inicioX);
+  const y0 = Math.round(inicioY);
+  if (x0 < 0 || y0 < 0 || x0 >= ancho || y0 >= alto) return 0;
+
+  const en = (x: number, y: number) => (y * ancho + x) * 4;
+  const origen = en(x0, y0);
+  const semilla = [datos[origen]!, datos[origen + 1]!, datos[origen + 2]!, datos[origen + 3]!];
+
+  // Tocar donde ya está el color pedido no haría nada y daría vueltas
+  // para siempre en el peor de los casos.
+  if (
+    Math.abs(semilla[0]! - color[0]) <= 1 &&
+    Math.abs(semilla[1]! - color[1]) <= 1 &&
+    Math.abs(semilla[2]! - color[2]) <= 1 &&
+    Math.abs(semilla[3]! - color[3]) <= 1
+  ) {
+    return 0;
+  }
+
+  const igual = (i: number) =>
+    Math.abs(datos[i]! - semilla[0]!) <= tolerancia &&
+    Math.abs(datos[i + 1]! - semilla[1]!) <= tolerancia &&
+    Math.abs(datos[i + 2]! - semilla[2]!) <= tolerancia &&
+    Math.abs(datos[i + 3]! - semilla[3]!) <= tolerancia;
+
+  const pintar = (i: number) => {
+    datos[i] = color[0];
+    datos[i + 1] = color[1];
+    datos[i + 2] = color[2];
+    datos[i + 3] = color[3];
+  };
+
+  let pintados = 0;
+  const pila: [number, number][] = [[x0, y0]];
+
+  while (pila.length) {
+    const [px, py] = pila.pop()!;
+    let x = px;
+    while (x >= 0 && igual(en(x, py))) x--;
+    x++;
+
+    let arriba = false;
+    let abajo = false;
+
+    while (x < ancho && igual(en(x, py))) {
+      pintar(en(x, py));
+      pintados++;
+
+      if (py > 0) {
+        const vecino = igual(en(x, py - 1));
+        if (vecino && !arriba) pila.push([x, py - 1]);
+        arriba = vecino;
+      }
+      if (py < alto - 1) {
+        const vecino = igual(en(x, py + 1));
+        if (vecino && !abajo) pila.push([x, py + 1]);
+        abajo = vecino;
+      }
+      x++;
+    }
+  }
+
+  return pintados;
 }
 
 /**

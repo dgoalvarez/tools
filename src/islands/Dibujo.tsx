@@ -32,13 +32,17 @@ import {
   ArrowClockwiseIcon,
   ArrowCounterClockwiseIcon,
   DownloadSimpleIcon,
-  TrashIcon,
+  EraserIcon,
+  PaintBucketIcon,
+  PencilSimpleIcon,
 } from '@phosphor-icons/react';
 import getStroke from 'perfect-freehand';
 
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { aProporcion, cajaDeContornos } from '../lib/notas';
+import { aProporcion, cajaDePixeles, rellenar } from '../lib/notas';
+import SelectorColor from './SelectorColor';
+import type { Lang } from '../i18n/config';
 
 export interface TextosDibujo {
   etiqueta: string;
@@ -53,9 +57,12 @@ export interface TextosDibujo {
   rehacer: string;
   proporcion: string;
   cenido: string;
+  lapiz: string;
+  bote: string;
 }
 
 interface Props {
+  lang: Lang;
   textos: TextosDibujo;
 }
 
@@ -63,10 +70,34 @@ interface Props {
 type Punto = [number, number, number];
 
 interface Trazo {
+  tipo: 'trazo';
   puntos: Punto[];
   tinta: string;
   grosor: number;
 }
+
+/** Un bote de pintura: dónde se tocó y con qué color. */
+interface Relleno {
+  tipo: 'relleno';
+  x: number;
+  y: number;
+  tinta: string;
+}
+
+/**
+ * Lo dibujado es UNA lista en orden, no dos.
+ *
+ * Un bote no es un objeto que se pueda poner encima o debajo: es una
+ * operación sobre lo que hubiera pintado en ese momento. Guardando
+ * trazos por un lado y rellenos por otro habría que decidir un orden al
+ * repintar, y cualquiera que se eligiera estaría mal la mitad de las
+ * veces: un trazo hecho DESPUÉS de rellenar tiene que verse encima, y
+ * uno hecho antes tiene que frenar el color.
+ *
+ * Con una sola lista no hay nada que decidir: se repite lo que pasó, en
+ * el orden en que pasó.
+ */
+type Elemento = Trazo | Relleno;
 
 /*
   Las tintas salen de las variables del sitio, no de códigos sueltos: así
@@ -161,15 +192,82 @@ function resolverTinta(estilo: CSSStyleDeclaration, tinta: string): string {
   return estilo.getPropertyValue(tinta.slice(4, -1)).trim() || '#888';
 }
 
-export default function Dibujo({ textos }: Props) {
+/**
+ * Un color de CSS a los cuatro números que entiende el bote.
+ *
+ * El bote no pinta con un pincel: escribe bytes en el mapa de bits, así
+ * que necesita el color descompuesto. Se resuelve con el propio
+ * navegador —pintando un píxel y leyéndolo— en vez de con una tabla de
+ * conversión: así valen igual `#ff8a3d`, `rgb(0 120 114)` y lo que sea
+ * que devuelva `getPropertyValue` para una variable del tema, que
+ * cambia de forma entre navegadores.
+ */
+let cuentagotas: CanvasRenderingContext2D | null = null;
+function aRgba(color: string): [number, number, number, number] {
+  if (!cuentagotas) {
+    const c = document.createElement('canvas');
+    c.width = 1;
+    c.height = 1;
+    cuentagotas = c.getContext('2d', { willReadFrequently: true });
+  }
+  if (!cuentagotas) return [0, 0, 0, 255];
+
+  cuentagotas.clearRect(0, 0, 1, 1);
+  cuentagotas.fillStyle = color;
+  cuentagotas.fillRect(0, 0, 1, 1);
+  const d = cuentagotas.getImageData(0, 0, 1, 1).data;
+  return [d[0]!, d[1]!, d[2]!, d[3]!];
+}
+
+export default function Dibujo({ lang, textos }: Props) {
   const lienzo = useRef<HTMLCanvasElement>(null);
-  const [trazos, setTrazos] = useState<Trazo[]>([]);
+  const [elementos, setElementos] = useState<Elemento[]>([]);
   /* La tinta se guarda por su VALOR y no por su índice: desde que hay una
      muestra libre, «la tercera» ya no identifica a ninguna. */
   const [tinta, setTinta] = useState<string>(TINTAS[0]);
-  const [tintaLibre, setTintaLibre] = useState(TINTA_LIBRE_INICIAL);
   const [grosor, setGrosor] = useState(GROSOR_INICIAL);
   const [proporcion, setProporcion] = useState<number>(0);
+
+  /** Qué hace un toque en el lienzo: dibujar una línea o llenar. */
+  const [herramienta, setHerramienta] = useState<'trazo' | 'relleno'>('trazo');
+
+  /*
+    El campo de color y lo que hay escrito dentro, por separado.
+
+    `SelectorColor` lo pide así porque quien está tecleando un
+    hexadecimal pasa por estados que todavía no son un color —«#f», «#ff»—
+    y borrárselos o corregírselos a media palabra es lo que hacía que no
+    se pudiera escribir uno a mano. Se guarda lo escrito TAL CUAL y
+    aparte el último que sí valía, que es el que mueven los controles.
+  */
+  const [brutoColor, setBrutoColor] = useState(TINTA_LIBRE_INICIAL);
+  const colorValido = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(brutoColor.trim());
+  const tintaLibre = colorValido ? brutoColor.trim() : TINTA_LIBRE_INICIAL;
+
+  /*
+    El cuentagotas solo donde el navegador lo trae.
+
+    Es la misma comprobación que hace Paleta, y va en un efecto y no
+    directamente: `EyeDropper` no existe en el servidor, y mirarlo
+    durante el pintado dejaría el HTML del servidor distinto del primer
+    pintado del cliente.
+  */
+  const [soportaCuentagotas, setSoportaCuentagotas] = useState(false);
+  useEffect(() => {
+    setSoportaCuentagotas(typeof window !== 'undefined' && 'EyeDropper' in window);
+  }, []);
+
+  async function usarCuentagotas() {
+    const Api = typeof window !== 'undefined' ? window.EyeDropper : undefined;
+    if (!Api) return;
+    try {
+      const { sRGBHex } = await new Api().open();
+      setBrutoColor(sRGBHex);
+      setTinta(sRGBHex);
+    } catch {
+      // Cancelarlo no es un error: se cierra y ya.
+    }
+  }
 
   /*
     El historial son ESTADOS enteros, no trazos sueltos.
@@ -184,29 +282,29 @@ export default function Dibujo({ textos }: Props) {
     que los apunta. Un croquis de cuarenta trazos son cuarenta
     referencias por paso.
   */
-  const [pasado, setPasado] = useState<Trazo[][]>([]);
-  const [futuro, setFuturo] = useState<Trazo[][]>([]);
+  const [pasado, setPasado] = useState<Elemento[][]>([]);
+  const [futuro, setFuturo] = useState<Elemento[][]>([]);
 
   /** Cambia la lista dejando constancia, para poder volver. */
-  function cambiar(siguientes: Trazo[]) {
-    setPasado((p) => [...p, trazos]);
+  function cambiar(siguientes: Elemento[]) {
+    setPasado((p) => [...p, elementos]);
     // Dibujar algo nuevo después de deshacer corta la rama: lo rehecho ya
     // no encajaría con lo que hay ahora. Es lo que hace todo el mundo.
     setFuturo([]);
-    setTrazos(siguientes);
+    setElementos(siguientes);
   }
 
   function deshacer() {
     if (pasado.length === 0) return;
-    setFuturo((f) => [...f, trazos]);
-    setTrazos(pasado[pasado.length - 1]!);
+    setFuturo((f) => [...f, elementos]);
+    setElementos(pasado[pasado.length - 1]!);
     setPasado((p) => p.slice(0, -1));
   }
 
   function rehacer() {
     if (futuro.length === 0) return;
-    setPasado((p) => [...p, trazos]);
-    setTrazos(futuro[futuro.length - 1]!);
+    setPasado((p) => [...p, elementos]);
+    setElementos(futuro[futuro.length - 1]!);
     setFuturo((f) => f.slice(0, -1));
   }
 
@@ -251,13 +349,67 @@ export default function Dibujo({ textos }: Props) {
   useEffect(() => () => cancelAnimationFrame(fotograma.current), []);
 
   /*
-    El lienzo se redibuja entero en cada cambio, y a propósito.
+    Lo ya hecho se pinta en un lienzo APARTE que se guarda entre
+    fotogramas, y encima va el trazo en curso.
 
-    Pintar solo lo nuevo sería más rápido, pero obliga a llevar una copia
-    del mapa de bits para poder deshacer. Un croquis son decenas de
-    trazos, no miles: redibujar los cuarenta cuesta menos de un
-    fotograma, y a cambio deshacer es quitar el último del array.
+    Antes se redibujaba todo en cada cuadro y salía barato. Con el bote de
+    pintura deja de serlo: un relleno obliga a leer el mapa de bits
+    entero, recorrerlo y volver a escribirlo, y eso son un millón de
+    píxeles por bote. Hacerlo sesenta veces por segundo mientras se
+    arrastra el dedo dejaría el trazo colgado.
+
+    Así que lo terminado se compone UNA vez —cuando cambia la lista o el
+    tamaño— y cada fotograma solo copia esa imagen y le añade el trazo que
+    se está haciendo. El bote se paga una vez, no en cada cuadro.
   */
+  const base = useRef<HTMLCanvasElement | null>(null);
+  /** Qué lista hay compuesta ahora mismo en el lienzo escondido. */
+  const compuesto = useRef<Elemento[] | null>(null);
+  const medida = useRef({ ancho: 0, alto: 0, densidad: 1 });
+
+  /** Pinta la lista entera en el lienzo escondido, en su orden. */
+  const componer = () => {
+    const el = lienzo.current;
+    const fuera = base.current;
+    if (!el || !fuera) return;
+
+    const { ancho, alto, densidad } = medida.current;
+    const ctx = fuera.getContext('2d', { willReadFrequently: true });
+    if (!ctx || ancho === 0 || alto === 0) return;
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, ancho, alto);
+    ctx.setTransform(densidad, 0, 0, densidad, 0, 0);
+
+    const estilo = getComputedStyle(el);
+    for (const cosa of elementos) {
+      if (cosa.tipo === 'trazo') {
+        ctx.fillStyle = resolverTinta(estilo, cosa.tinta);
+        ctx.fill(contorno(cosa));
+        continue;
+      }
+
+      /*
+        El bote trabaja en píxeles, así que se sale de la transformación:
+        el punto se guardó en unidades de CSS y aquí hay que llevarlo a
+        píxeles de verdad, que en una pantalla de densidad doble son el
+        doble.
+      */
+      const imagen = ctx.getImageData(0, 0, ancho, alto);
+      rellenar(
+        imagen.data,
+        ancho,
+        alto,
+        cosa.x * densidad,
+        cosa.y * densidad,
+        aRgba(resolverTinta(estilo, cosa.tinta))
+      );
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.putImageData(imagen, 0, 0);
+      ctx.setTransform(densidad, 0, 0, densidad, 0, 0);
+    }
+  };
+
   useEffect(() => {
     const el = lienzo.current;
     if (!el) return;
@@ -279,12 +431,31 @@ export default function Dibujo({ textos }: Props) {
       el.height = alto;
     }
 
-    ctx.setTransform(densidad, 0, 0, densidad, 0, 0);
-    ctx.clearRect(0, 0, caja.width, caja.height);
+    if (!base.current) base.current = document.createElement('canvas');
+    const fuera = base.current;
+    const cambioTamano = fuera.width !== ancho || fuera.height !== alto;
+    if (cambioTamano) {
+      fuera.width = ancho;
+      fuera.height = alto;
+    }
 
-    const estilo = getComputedStyle(el);
-    for (const trazo of [...trazos, ...(enCurso.current ? [enCurso.current] : [])]) {
-      ctx.fillStyle = resolverTinta(estilo, trazo.tinta);
+    medida.current = { ancho, alto, densidad };
+
+    // Se recompone solo cuando hace falta: al cambiar la lista o el
+    // tamaño. Mientras se arrastra, no cambia ninguna de las dos.
+    if (cambioTamano || compuesto.current !== elementos) {
+      componer();
+      compuesto.current = elementos;
+    }
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, ancho, alto);
+    ctx.drawImage(fuera, 0, 0);
+
+    const trazo = enCurso.current;
+    if (trazo) {
+      ctx.setTransform(densidad, 0, 0, densidad, 0, 0);
+      ctx.fillStyle = resolverTinta(getComputedStyle(el), trazo.tinta);
       ctx.fill(contorno(trazo));
     }
   });
@@ -293,7 +464,9 @@ export default function Dibujo({ textos }: Props) {
   useEffect(() => {
     const el = lienzo.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
-    const observador = new ResizeObserver(() => setTrazos((t) => [...t]));
+    // Pide un repintado sin tocar la lista: cambiar su identidad haría
+    // recomponer el lienzo escondido, y con botes eso cuesta de verdad.
+    const observador = new ResizeObserver(() => repintar());
     observador.observe(el);
     return () => observador.disconnect();
   }, []);
@@ -325,7 +498,7 @@ export default function Dibujo({ textos }: Props) {
     return [e.clientX - c.left, e.clientY - c.top, e.pressure || 0.5];
   };
 
-  const hayAlgo = trazos.length > 0;
+  const hayAlgo = elementos.length > 0;
 
   /**
    * El PNG, ceñido a lo dibujado y en la proporción que se haya pedido.
@@ -342,43 +515,70 @@ export default function Dibujo({ textos }: Props) {
    * de la tarjeta.
    */
   function descargar() {
-    const el = lienzo.current;
-    if (!el || trazos.length === 0) return;
+    const fuente = base.current;
+    if (!fuente || elementos.length === 0) return;
 
-    const cenida = cajaDeContornos(trazos.map(puntosContorno), MARGEN);
-    if (!cenida) return;
+    const { ancho, alto, densidad } = medida.current;
+    const ctxFuente = fuente.getContext('2d', { willReadFrequently: true });
+    if (!ctxFuente || ancho === 0 || alto === 0) return;
+
+    /*
+      La caja se mide sobre los PÍXELES ya pintados, no sobre la
+      geometría de los trazos.
+
+      Es lo que obligó el bote: un relleno se guarda como un punto y un
+      color, y hasta que no se pinta nadie sabe hasta dónde llega — puede
+      quedarse dentro de una forma o escaparse por un hueco y bañar el
+      lienzo entero. Con los contornos habría que adivinarlo.
+
+      Se mide en píxeles de pantalla y se pasa a unidades de CSS, que es
+      donde vive el margen.
+    */
+    const datos = ctxFuente.getImageData(0, 0, ancho, alto).data;
+    const enPixeles = cajaDePixeles(datos, ancho, alto, 0);
+    if (!enPixeles) return;
+
+    const cenida = {
+      x: enPixeles.x / densidad - MARGEN,
+      y: enPixeles.y / densidad - MARGEN,
+      ancho: enPixeles.ancho / densidad + MARGEN * 2,
+      alto: enPixeles.alto / densidad + MARGEN * 2,
+    };
 
     const caja = aProporcion(cenida, PROPORCIONES[proporcion]!.razon);
 
-    const fuera = document.createElement('canvas');
-    fuera.width = Math.max(1, Math.round(caja.ancho * DENSIDAD_PNG));
-    fuera.height = Math.max(1, Math.round(caja.alto * DENSIDAD_PNG));
+    const salida = document.createElement('canvas');
+    salida.width = Math.max(1, Math.round(caja.ancho * DENSIDAD_PNG));
+    salida.height = Math.max(1, Math.round(caja.alto * DENSIDAD_PNG));
 
-    const ctx = fuera.getContext('2d');
+    const ctx = salida.getContext('2d');
     if (!ctx) return;
 
-    // Escalar y mover en la MISMA transformación: los trazos guardan sus
-    // coordenadas en el lienzo de pantalla, y aquí el origen es otro.
-    ctx.setTransform(
-      DENSIDAD_PNG,
-      0,
-      0,
-      DENSIDAD_PNG,
-      -caja.x * DENSIDAD_PNG,
-      -caja.y * DENSIDAD_PNG
-    );
+    /*
+      Se copia el lienzo escondido y se reescala, en vez de volver a
+      pintar la lista.
 
-    // Los colores se resuelven contra el lienzo de VERDAD: el de aquí no
-    // está en el documento y no hereda ninguna variable del sitio.
-    const estilo = getComputedStyle(el);
-    for (const trazo of trazos) {
-      ctx.fillStyle = resolverTinta(estilo, trazo.tinta);
-      ctx.fill(contorno(trazo));
-    }
+      Repintarla obligaría a repetir cada bote a la densidad del PNG, que
+      no es la de la pantalla: el mismo toque caería en otro píxel y el
+      color podría escaparse por un hueco que a esta densidad no existía.
+      Copiando, lo que se descarga es exactamente lo que se ve.
+    */
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(
+      fuente,
+      caja.x * densidad,
+      caja.y * densidad,
+      caja.ancho * densidad,
+      caja.alto * densidad,
+      0,
+      0,
+      salida.width,
+      salida.height
+    );
 
     const enlace = document.createElement('a');
     enlace.download = 'dibujo.png';
-    enlace.href = fuera.toDataURL('image/png');
+    enlace.href = salida.toDataURL('image/png');
     enlace.click();
   }
 
@@ -394,60 +594,93 @@ export default function Dibujo({ textos }: Props) {
         </p>
 
         <div className="mandos-dibujo">
-          {TINTAS.map((t, i) => (
-            <button
-              key={t}
-              type="button"
-              className="muestra-tinta"
-              style={{ background: t }}
-              aria-pressed={t === tinta}
-              aria-label={`${textos.tinta} ${i + 1}`}
-              title={`${textos.tinta} ${i + 1}`}
-              onClick={() => setTinta(t)}
-            />
-          ))}
-
           {/*
-            La cuarta muestra es el selector del sistema.
+            UN disparador para el color, no cuatro muestras sueltas.
 
-            Un `input type="color"` y no el selector del sitio: el de
-            Paleta es una herramienta entera —plano, canales, tres
-            espacios— y traerlo aquí metería 22 KB comprimidos de
-            aritmética de color en una página que hoy no los carga, para
-            elegir una tinta. El nativo cuesta cero, lo conoce todo el
-            mundo, va con teclado y en escritorio trae cuentagotas.
+            Estaban las tres de fábrica y una cuarta libre, todas a la
+            vista. Se recogieron porque no cabían: a 1024 px la tarjeta
+            mide 280 y con los once mandos de ahora la cabecera se salía
+            48 —lo dijo `romper`—. Recogiendo el color en uno se ahorran
+            los tres huecos y las tres muestras.
 
-            Pulsarla la elige ADEMÁS de abrir el selector: si no, volver a
-            tu color después de usar el rojo obligaría a elegirlo otra vez.
+            No se pierde nada: las tres de fábrica siguen ahí, dentro del
+            mismo panel y en la primera fila, a un clic. Y el disparador
+            enseña SIEMPRE la tinta puesta, así que la pregunta que se
+            hace de un vistazo —«¿con qué estoy dibujando?»— se sigue
+            contestando sin abrir nada.
+
+            El panel es el selector del sitio, el mismo que Paleta y
+            Contraste. Estuvo siendo un `input type="color"` —el del
+            sistema— por lo que cuesta este: arrastra `contrast.ts` y con
+            él la aritmética de color, unos 22 KB comprimidos, a una
+            página que no los cargaba. Se cambió porque el del sistema es
+            una ventana ajena que se abre encima, con otra tipografía y
+            otro idioma, y aquí elegir un color es parte de la
+            herramienta. El precio está medido y se paga a sabiendas.
           */}
-          <input
-            type="color"
-            className="muestra-tinta libre"
-            value={tintaLibre}
-            aria-label={textos.tintaLibre}
-            title={textos.tintaLibre}
-            data-elegida={tinta === tintaLibre || undefined}
-            onClick={() => setTinta(tintaLibre)}
-            onChange={(e) => {
-              setTintaLibre(e.target.value);
-              setTinta(e.target.value);
-            }}
-          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="muestra-tinta disparador"
+                style={{ background: tinta }}
+                aria-label={`${textos.tinta}: ${tinta === tintaLibre ? tintaLibre : textos.tinta}`}
+                title={textos.tintaLibre}
+              />
+            </PopoverTrigger>
+
+            <PopoverContent align="end" className="tarjeta-tinta w-auto">
+              <div className="tintas-fabrica" role="group" aria-label={textos.tinta}>
+                {TINTAS.map((t, i) => (
+                  <button
+                    key={t}
+                    type="button"
+                    className="muestra-tinta"
+                    style={{ background: t }}
+                    aria-pressed={t === tinta}
+                    aria-label={`${textos.tinta} ${i + 1}`}
+                    title={`${textos.tinta} ${i + 1}`}
+                    onClick={() => setTinta(t)}
+                  />
+                ))}
+              </div>
+
+              <SelectorColor
+                lang={lang}
+                id="tinta-dibujo"
+                etiqueta={textos.tintaLibre}
+                bruto={brutoColor}
+                hex={tintaLibre}
+                valido={colorValido}
+                onCambio={(valor) => {
+                  setBrutoColor(valor);
+                  const limpio = valor.trim();
+                  if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(limpio)) setTinta(limpio);
+                }}
+                onCuentagotas={soportaCuentagotas ? usarCuentagotas : undefined}
+                sinTarjeta
+              />
+            </PopoverContent>
+          </Popover>
+
+          {/* Un respiro entre el color y el grosor: son dos preguntas
+              distintas y estaban pegadas, sin nada que las separase. */}
+          <span className="separa-mandos" aria-hidden="true" />
 
           {/*
-            El grosor vive en un popover, como el color en Paleta.
+            El grosor vive en un popover, como el color.
 
             El deslizador puesto en la cabecera la ensanchaba, y una
             cabecera que cambia de tamaño según lo que lleve dentro
             arrastra a la tarjeta y a las otras dos, que van estiradas a
-            la misma altura. Aquí el disparador mide siempre lo mismo —una
-            caja del tamaño del punto más gordo— y el mando se despliega
-            encima sin mover nada.
+            la misma altura. Aquí el disparador mide siempre lo mismo y el
+            mando se despliega encima sin mover nada.
 
-            El disparador ES la muestra: enseña el punto a tamaño real y
-            en la tinta elegida, así que dice cuánto va a salir el trazo
-            sin tener que abrirlo. Un deslizador solo dice «más» y
-            «menos»; el punto responde la pregunta de verdad.
+            El disparador enseña una LÍNEA del grosor actual, no un punto.
+            Con el punto no se entendía de qué iba el botón: un círculo
+            pequeño puede ser cualquier cosa. Una raya horizontal que
+            engorda es la forma en que se dibuja «grosor de trazo» en
+            todas partes, y encima es la muestra de lo que va a salir.
           */}
           <Popover>
             <PopoverTrigger asChild>
@@ -459,12 +692,17 @@ export default function Dibujo({ textos }: Props) {
               >
                 <span
                   aria-hidden="true"
-                  style={{ width: `${grosor}px`, height: `${grosor}px`, background: tinta }}
+                  style={{
+                    // El tope visual es 10 px: a partir de ahí la raya
+                    // llenaría el botón y dejaría de leerse como una raya.
+                    height: `${Math.min(grosor, 10)}px`,
+                    background: tinta,
+                  }}
                 />
               </button>
             </PopoverTrigger>
 
-            <PopoverContent align="end" className="tarjeta-grosor">
+            <PopoverContent align="end" className="tarjeta-grosor w-auto">
               <label htmlFor="grosor-trazo">{textos.grosor}</label>
               <input
                 id="grosor-trazo"
@@ -478,6 +716,38 @@ export default function Dibujo({ textos }: Props) {
               <span className="cifra-grosor">{grosor}</span>
             </PopoverContent>
           </Popover>
+
+          {/*
+            El bote de pintura.
+
+            Es un MODO y no una acción, así que va pulsado o no: mientras
+            está elegido, tocar el lienzo llena en vez de dibujar. Al lado
+            del lápiz, que es el otro modo, para que se lea que son las
+            dos caras de lo mismo.
+          */}
+          <button
+            type="button"
+            className="mando-lienzo"
+            aria-pressed={herramienta === 'trazo'}
+            data-mando="lapiz"
+            aria-label={textos.lapiz}
+            title={textos.lapiz}
+            onClick={() => setHerramienta('trazo')}
+          >
+            <PencilSimpleIcon aria-hidden="true" size={15} />
+          </button>
+
+          <button
+            type="button"
+            className="mando-lienzo"
+            aria-pressed={herramienta === 'relleno'}
+            data-mando="bote"
+            aria-label={textos.bote}
+            title={textos.bote}
+            onClick={() => setHerramienta('relleno')}
+          >
+            <PaintBucketIcon aria-hidden="true" size={15} />
+          </button>
 
           {/*
             Deshacer, rehacer y borrar viven aquí y no en el pie.
@@ -508,6 +778,7 @@ export default function Dibujo({ textos }: Props) {
             <button
               type="button"
               className="mando-lienzo"
+              data-mando="deshacer"
               aria-label={textos.deshacer}
               title={textos.deshacer}
               onClick={deshacer}
@@ -520,6 +791,7 @@ export default function Dibujo({ textos }: Props) {
             <button
               type="button"
               className="mando-lienzo"
+              data-mando="rehacer"
               aria-label={textos.rehacer}
               title={textos.rehacer}
               onClick={rehacer}
@@ -532,11 +804,12 @@ export default function Dibujo({ textos }: Props) {
             type="button"
             className="mando-lienzo"
             disabled={!hayAlgo}
+            data-mando="vaciar"
             aria-label={textos.borrar}
             title={textos.borrar}
             onClick={() => cambiar([])}
           >
-            <TrashIcon aria-hidden="true" size={15} />
+            <EraserIcon aria-hidden="true" size={15} />
           </button>
         </div>
       </div>
@@ -551,9 +824,18 @@ export default function Dibujo({ textos }: Props) {
           className="lienzo"
           aria-label={textos.etiqueta}
           onPointerDown={(e) => {
-            e.currentTarget.setPointerCapture?.(e.pointerId);
             caja.current = e.currentTarget.getBoundingClientRect();
-            enCurso.current = { puntos: [puntoEn(e)], tinta, grosor };
+
+            // Con el bote no se arrastra: se toca y se llena. No hay
+            // captura de puntero que valga porque no hay gesto que seguir.
+            if (herramienta === 'relleno') {
+              const [x, y] = puntoEn(e);
+              cambiar([...elementos, { tipo: 'relleno', x, y, tinta }]);
+              return;
+            }
+
+            e.currentTarget.setPointerCapture?.(e.pointerId);
+            enCurso.current = { tipo: 'trazo', puntos: [puntoEn(e)], tinta, grosor };
             repintar();
           }}
           onPointerMove={(e) => {
@@ -581,14 +863,14 @@ export default function Dibujo({ textos }: Props) {
             enCurso.current = null;
             // Un toque sin arrastrar no es un trazo: sería un punto suelto
             // que no se ve y que ensucia el «deshacer».
-            if (trazo.puntos.length > 1) cambiar([...trazos, trazo]);
+            if (trazo.puntos.length > 1) cambiar([...elementos, trazo]);
             else repintar();
           }}
           onPointerLeave={() => {
             const trazo = enCurso.current;
             if (!trazo) return;
             enCurso.current = null;
-            if (trazo.puntos.length > 1) cambiar([...trazos, trazo]);
+            if (trazo.puntos.length > 1) cambiar([...elementos, trazo]);
             else repintar();
           }}
         />

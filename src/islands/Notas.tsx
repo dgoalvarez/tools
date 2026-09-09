@@ -388,6 +388,7 @@ export default function Notas({ lang }: Props) {
 
       {/* ---------------------------------------------- el dibujo ---- */}
       <Dibujo
+        lang={lang}
         textos={{
           etiqueta: t(NOTAS.elDibujo, lang),
           deshacer: t(NOTAS.deshacerTrazo, lang),
@@ -401,6 +402,8 @@ export default function Notas({ lang }: Props) {
           rehacer: t(NOTAS.rehacerTrazo, lang),
           proporcion: t(NOTAS.proporcion, lang),
           cenido: t(NOTAS.cenido, lang),
+          lapiz: t(NOTAS.lapiz, lang),
+          bote: t(NOTAS.bote, lang),
         }}
       />
     </div>

@@ -30,7 +30,9 @@ import {
   marcar,
   mover,
   aProporcion,
-  cajaDeContornos,
+  cajaDePixeles,
+  rellenar,
+  type Caja,
   notaAMarkdown,
   nuevaTarea,
   restaurar,
@@ -397,75 +399,62 @@ console.log('\n12. Deshacer un borrado devuelve lo borrado a su sitio');
 // =====================================================================
 console.log('\n13. El encuadre de la descarga del dibujo');
 {
-  // Un trazo apaisado: de (100,200) a (300,240). Con margen 10, la caja
-  // ceñida va de (90,190) y mide 220×60.
-  const apaisado = [
-    [
-      [100, 200],
-      [300, 200],
-      [300, 240],
-      [100, 240],
-    ],
-  ];
+  /** Un lienzo RGBA en blanco, para pintarle cosas a mano. */
+  function lienzo(ancho: number, alto: number) {
+    return new Uint8ClampedArray(ancho * alto * 4);
+  }
+  function poner(d: Uint8ClampedArray, ancho: number, x: number, y: number, c: number[]) {
+    const i = (y * ancho + x) * 4;
+    d[i] = c[0]!;
+    d[i + 1] = c[1]!;
+    d[i + 2] = c[2]!;
+    d[i + 3] = c[3]!;
+  }
 
-  const c = cajaDeContornos(apaisado, 10)!;
+  const NEGRO = [0, 0, 0, 255];
+
+  // Una mancha de (10,4) a (13,6): cuatro columnas por tres filas.
+  const d = lienzo(20, 10);
+  for (let y = 4; y <= 6; y++) for (let x = 10; x <= 13; x++) poner(d, 20, x, y, NEGRO);
+
+  const c = cajaDePixeles(d, 20, 10, 2)!;
+  afirmar(c.x === 8 && c.y === 2, `arranca en el mínimo menos el margen (${c.x},${c.y})`);
   afirmar(
-    c.x === 90 && c.y === 190,
-    `la caja arranca en el mínimo menos el margen (${c.x},${c.y})`
-  );
-  afirmar(
-    c.ancho === 220 && c.alto === 60,
-    `y mide lo dibujado más dos márgenes (${c.ancho}×${c.alto})`
+    c.ancho === 8 && c.alto === 7,
+    `y mide lo pintado más dos márgenes, contando el último píxel (${c.ancho}×${c.alto})`
   );
 
-  afirmar(cajaDeContornos([], 10) === null, 'sin nada dibujado no hay caja');
-  afirmar(cajaDeContornos([[]], 10) === null, 'un trazo sin puntos tampoco');
+  afirmar(cajaDePixeles(lienzo(20, 10), 20, 10, 2) === null, 'un lienzo vacío no tiene caja');
 
-  // Ceñido: la caja sale intacta.
+  // Lo transparente no cuenta aunque lleve color: el lienzo se sirve sin
+  // fondo, así que un píxel con alfa 0 es sitio vacío.
+  const fantasma = lienzo(20, 10);
+  poner(fantasma, 20, 5, 5, [255, 0, 0, 0]);
+  afirmar(cajaDePixeles(fantasma, 20, 10, 0) === null, 'un píxel con alfa 0 no cuenta');
+
   afirmar(aProporcion(c, 0) === c, 'con «ceñido» la caja no se toca');
 
-  // A 1:1 tiene que CRECER a lo alto, nunca recortar a lo ancho.
   const cuadrada = aProporcion(c, 1);
   afirmar(
-    cuadrada.ancho === 220 && cuadrada.alto === 220,
+    cuadrada.ancho === 8 && cuadrada.alto === 8,
     `a 1:1 crece el lado corto hasta el largo (${cuadrada.ancho}×${cuadrada.alto})`
   );
-  afirmar(cuadrada.x === c.x, 'sin tocar el eje que ya era el largo');
-  afirmar(
-    cuadrada.y === 190 - 80,
-    `y repartiendo lo añadido a los dos lados (${cuadrada.y}, se esperaba 110)`
-  );
 
-  // El centro no se mueve: es lo que hace que el dibujo quede centrado.
-  const centro = (caja: { x: number; ancho: number; y: number; alto: number }) => [
-    caja.x + caja.ancho / 2,
-    caja.y + caja.alto / 2,
-  ];
-  afirmar(
-    centro(cuadrada).join() === centro(c).join(),
-    `el centro no se mueve (${centro(cuadrada)} vs ${centro(c)})`
-  );
+  const centro = (k: Caja) => [k.x + k.ancho / 2, k.y + k.alto / 2].join();
+  afirmar(centro(cuadrada) === centro(c), 'sin mover el centro');
 
-  // Una caja alta llevada a 16:9 crece a lo ANCHO, que es el otro brazo.
-  const alta = cajaDeContornos(
-    [
-      [
-        [0, 0],
-        [50, 0],
-        [50, 400],
-        [0, 400],
-      ],
-    ],
+  // Nunca se pierde dibujo: la caja nueva contiene entera a la ceñida.
+  const alta = cajaDePixeles(
+    (() => {
+      const a = lienzo(20, 40);
+      for (let y = 2; y < 38; y++) poner(a, 20, 10, y, NEGRO);
+      return a;
+    })(),
+    20,
+    40,
     0
   )!;
-  const ancha = aProporcion(alta, 16 / 9);
-  afirmar(
-    Math.round(ancha.ancho) === Math.round(400 * (16 / 9)) && ancha.alto === 400,
-    `una caja alta a 16:9 crece a lo ancho (${Math.round(ancha.ancho)}×${ancha.alto})`
-  );
-  afirmar(centro(ancha).join() === centro(alta).join(), 'y tampoco mueve el centro');
 
-  // Nunca se pierde dibujo: la caja resultante contiene a la de partida.
   for (const razon of [1, 4 / 5, 16 / 9]) {
     for (const partida of [c, alta]) {
       const r = aProporcion(partida, razon);
@@ -479,18 +468,83 @@ console.log('\n13. El encuadre de la descarga del dibujo');
     }
   }
 
-  // Una que ya está en la proporción pedida se queda igual: sin esto, el
-  // PNG salía con un pixel de mas por el redondeo.
-  const yaCuadrada = cajaDeContornos(
-    [
-      [
-        [0, 0],
-        [100, 100],
-      ],
-    ],
-    0
-  )!;
-  afirmar(aProporcion(yaCuadrada, 1) === yaCuadrada, 'una caja que ya cuadra no se toca');
+  const yaCuadrada = cajaDePixeles(d, 20, 10, 2.5)!;
+  afirmar(
+    aProporcion(yaCuadrada, yaCuadrada.ancho / yaCuadrada.alto) === yaCuadrada,
+    'una caja que ya cuadra con lo pedido no se toca'
+  );
+}
+
+// =====================================================================
+console.log('\n14. El bote de pintura');
+{
+  const ANCHO = 24;
+  const ALTO = 24;
+  const NEGRO: [number, number, number, number] = [0, 0, 0, 255];
+  const ROJO: [number, number, number, number] = [255, 0, 0, 255];
+
+  /** Un cuadrado hueco de 8×8 con la esquina en (6,6). */
+  function conCaja(hueco = false) {
+    const d = new Uint8ClampedArray(ANCHO * ALTO * 4);
+    const poner = (x: number, y: number) => {
+      const i = (y * ANCHO + x) * 4;
+      d[i] = 0;
+      d[i + 1] = 0;
+      d[i + 2] = 0;
+      d[i + 3] = 255;
+    };
+    for (let x = 6; x <= 13; x++) {
+      poner(x, 6);
+      // El hueco se abre en la línea de abajo: es por donde se escapa.
+      if (!(hueco && x === 10)) poner(x, 13);
+    }
+    for (let y = 6; y <= 13; y++) {
+      poner(6, y);
+      poner(13, y);
+    }
+    return d;
+  }
+
+  // Dentro de la caja cerrada: se llena el hueco de 6×6 y nada más.
+  const cerrada = conCaja();
+  const dentro = rellenar(cerrada, ANCHO, ALTO, 9, 9, ROJO, 8);
+  afirmar(dentro === 36, `dentro de una forma cerrada pinta justo su hueco (${dentro}, van 36)`);
+
+  const leerPunto = (d: Uint8ClampedArray, x: number, y: number) => {
+    const i = (y * ANCHO + x) * 4;
+    return [d[i], d[i + 1], d[i + 2], d[i + 3]].join();
+  };
+  afirmar(leerPunto(cerrada, 9, 9) === ROJO.join(), 'el punto tocado queda del color pedido');
+  afirmar(leerPunto(cerrada, 6, 9) === NEGRO.join(), 'y el contorno no se toca');
+  afirmar(leerPunto(cerrada, 2, 2) === '0,0,0,0', 'lo de fuera se queda como estaba');
+
+  // Con un hueco en el contorno, el color se escapa y baña el resto. Es
+  // el comportamiento esperado, no un fallo: por eso lo dice la ficha.
+  const rota = conCaja(true);
+  const escapado = rellenar(rota, ANCHO, ALTO, 9, 9, ROJO, 8);
+  afirmar(escapado > 400, `por un hueco del contorno se escapa (${escapado} de 576)`);
+  afirmar(leerPunto(rota, 2, 2) === ROJO.join(), 'y llega hasta la esquina de fuera');
+
+  // Tocar el contorno lo pinta a él, no al hueco.
+  const sobreLinea = conCaja();
+  rellenar(sobreLinea, ANCHO, ALTO, 6, 9, ROJO, 8);
+  afirmar(leerPunto(sobreLinea, 6, 9) === ROJO.join(), 'tocando la línea se pinta la línea');
+  afirmar(leerPunto(sobreLinea, 9, 9) === '0,0,0,0', 'y el hueco de dentro se queda vacío');
+
+  // Volver a tocar donde ya está el color no hace nada, y sobre todo no
+  // se queda dando vueltas.
+  afirmar(rellenar(cerrada, ANCHO, ALTO, 9, 9, ROJO, 8) === 0, 'repetir el bote no pinta nada');
+
+  // Fuera del lienzo no revienta.
+  afirmar(rellenar(cerrada, ANCHO, ALTO, -1, 5, ROJO, 8) === 0, 'un punto fuera no pinta nada');
+  afirmar(rellenar(cerrada, ANCHO, ALTO, 99, 5, ROJO, 8) === 0, 'ni uno pasado el borde');
+
+  // Un lienzo entero vacío se llena de punta a punta.
+  const vacio = new Uint8ClampedArray(ANCHO * ALTO * 4);
+  afirmar(
+    rellenar(vacio, ANCHO, ALTO, 12, 12, ROJO, 8) === ANCHO * ALTO,
+    'sin nada dibujado se llena el lienzo entero'
+  );
 }
 
 console.log(fallos === 0 ? '\nTODO CORRECTO\n' : `\n${fallos} FALLOS\n`);

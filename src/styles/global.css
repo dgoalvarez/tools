@@ -4423,10 +4423,13 @@
     nuevo. Que siga sonando es lo que hace que esto se entere la próxima
     vez.
 
-    Se acaba en 78 rem porque a partir de ahí la tarjeta ya es ancha; y no
-    afecta al móvil, que va a una columna y tiene sitio de sobra.
+    Va de 40 a 78 rem: son las dos bandas donde la tarjeta comparte fila
+    —dos columnas desde 40, tres desde 64— y en las dos se salía. Por
+    debajo de 40 no entra a propósito: ahí es un móvil, la tarjeta ocupa
+    el ancho entero y ya cabe, y encoger los mandos a 24 px dejaría el
+    blanco de un dedo por debajo de lo que se puede pulsar bien.
   */
-  @media (width >= 64rem) and (width < 78rem) {
+  @media (width >= 40rem) and (width < 78rem) {
     .mandos-dibujo {
       gap: 0.125rem;
     }
@@ -4456,33 +4459,36 @@
   }
 
   /*
-    La cuarta muestra es un «input type=color», no un botón.
+    El disparador del color: la muestra que abre el panel.
 
-    El navegador le pinta de fábrica un marco y un relleno con margen
-    dentro; los seudoelementos de abajo lo dejan siendo exactamente el
-    mismo círculo que las otras tres. Van los de WebKit y el de Gecko:
-    sin el segundo, en Firefox queda un cuadrado con borde dentro del
-    círculo.
+    Es más grande que las tres de dentro —1,75 rem frente a 1,125— porque
+    no es una opción, es un mando: mide lo mismo que el grosor, el lápiz
+    y el bote, con los que comparte fila. Y lleva su borde, como ellos:
+    sin borde no se lee como pulsable hasta que pasa el puntero, y en
+    táctil eso no pasa nunca.
   */
-  .muestra-tinta.libre {
-    padding: 0;
-    background: none;
-    -webkit-appearance: none;
-    appearance: none;
+  .muestra-tinta.disparador {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: var(--radius-sm);
+    border-color: var(--line);
   }
 
-  .muestra-tinta.libre::-webkit-color-swatch-wrapper {
-    padding: 0;
+  .muestra-tinta.disparador:hover,
+  .muestra-tinta.disparador[data-state='open'] {
+    border-color: var(--ink-soft);
   }
 
-  .muestra-tinta.libre::-webkit-color-swatch {
-    border: none;
-    border-radius: inherit;
+  /* Las tres de fábrica, ya dentro del panel y encima del selector. */
+  .tintas-fabrica {
+    display: flex;
+    gap: 0.375rem;
+    margin-block-end: 0.75rem;
   }
 
-  .muestra-tinta.libre::-moz-color-swatch {
-    border: none;
-    border-radius: inherit;
+  .tintas-fabrica .muestra-tinta {
+    width: 1.375rem;
+    height: 1.375rem;
   }
 
   /*
@@ -4547,21 +4553,29 @@
     cuánto. Su tamaño y su color los pone la isla, que es quien los sabe.
   */
   /*
-    El punto va dentro de una caja de tamaño FIJO.
+    El grosor: una RAYA dentro de una caja de tamaño fijo.
 
-    Sin ella, el punto es el que crece y encoge, empuja a su vecino y la
-    cabecera entera baila mientras se mueve el deslizador — justo
-    mientras se está mirando para decidir. La caja mide lo que el punto
-    más gordo (32 px) y no se mueve nunca.
+    Era un punto y no se entendía de qué iba el botón — un círculo
+    pequeño puede ser cualquier cosa. Una raya horizontal que engorda es
+    la forma en que se dibuja «grosor de trazo» en todas partes, y encima
+    es la muestra de lo que va a salir: se pinta con la tinta elegida.
+
+    La caja no se mueve aunque la raya engorde. Sin ella, la raya empuja
+    a su vecino y la cabecera baila justo mientras se está mirando para
+    decidir.
+
+    Y con BORDE de verdad, no transparente hasta el hover: sin borde,
+    sobre una tarjeta, no se lee como pulsable — y en una pantalla táctil
+    no hay hover que lo revele nunca. Es la regla de la casa.
   */
   .punto-grosor {
     flex: none;
     display: grid;
     place-items: center;
-    width: 2rem;
-    height: 2rem;
+    width: 1.75rem;
+    height: 1.75rem;
     padding: 0;
-    border: 1px solid transparent;
+    border: 1px solid var(--line);
     border-radius: var(--radius-sm);
     background: none;
     cursor: pointer;
@@ -4569,7 +4583,7 @@
 
   .punto-grosor:hover,
   .punto-grosor[data-state='open'] {
-    border-color: var(--line);
+    border-color: var(--ink-soft);
   }
 
   .punto-grosor:focus-visible {
@@ -4578,6 +4592,7 @@
   }
 
   .punto-grosor > span {
+    width: 0.875rem;
     border-radius: 999px;
   }
 
@@ -4591,13 +4606,20 @@
     background: var(--line);
   }
 
+  /*
+    Con borde de fábrica y no transparente hasta el hover.
+
+    «Nada de botones fantasma»: sin borde, sobre una tarjeta, no se leen
+    como pulsables hasta que pasa el puntero, y en una pantalla táctil
+    eso no pasa nunca. Estaban así y era un descuido.
+  */
   .mando-lienzo {
     display: grid;
     place-items: center;
     width: 1.75rem;
     height: 1.75rem;
     padding: 0;
-    border: 1px solid transparent;
+    border: 1px solid var(--line);
     border-radius: var(--radius-sm);
     background: none;
     color: var(--ink-muted);
@@ -4605,7 +4627,14 @@
   }
 
   .mando-lienzo:hover:not(:disabled) {
-    border-color: var(--line);
+    border-color: var(--ink-soft);
+    color: var(--ink);
+  }
+
+  /* Elegido: el lápiz o el bote, que son modos y no acciones. */
+  .mando-lienzo[aria-pressed='true'] {
+    border-color: var(--acento);
+    background: color-mix(in srgb, var(--acento) 14%, transparent);
     color: var(--ink);
   }
 
@@ -4621,11 +4650,20 @@
 
   /* El mando, ya dentro del emergente: rótulo, deslizador y cifra en una
      línea. La cifra en tabulares para que no baile al pasar de 9 a 10. */
+  /*
+    El emergente se ciñe a lo que lleva dentro.
+
+    «width: auto» aquí no bastaba: el panel de shadcn trae `w-72` —288 px—
+    como utilidad de Tailwind, y una utilidad gana a una regla de
+    componente. El resultado era un hueco muerto a la derecha del
+    deslizador, casi la mitad del panel. Lo que choca con una utilidad se
+    escribe donde compite de tú a tú, y por eso el ancho va en el
+    `className` de la isla.
+  */
   .tarjeta-grosor {
     display: flex;
     align-items: center;
     gap: 0.625rem;
-    width: auto;
   }
 
   .tarjeta-grosor label {
@@ -4638,6 +4676,12 @@
     width: 9rem;
     accent-color: var(--acento);
     cursor: pointer;
+  }
+
+  /* El selector de color trae su propia anchura y su maqueta; aquí solo
+     se le quita el relleno de más que deja el panel. */
+  .tarjeta-tinta {
+    padding: 0.75rem;
   }
 
   .tarjeta-grosor .cifra-grosor {

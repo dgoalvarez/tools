@@ -401,14 +401,17 @@ const NOTAS_DIBUJO_LLENO = `
   await new Promise((r) => setTimeout(r, 80));
 
   // Deshacer uno, para que salga también rehacer.
-  document.querySelector('.mandos-dibujo .mando-lienzo').click();
+  document.querySelector('[data-mando=\"deshacer\"]').click();
   await new Promise((r) => setTimeout(r, 200));
 
   // Si no están los tres —deshacer, rehacer y vaciar— esta pasada no ha
   // mirado lo que venía a mirar.
-  const mandos = document.querySelectorAll('.mandos-dibujo .mando-lienzo');
-  if (mandos.length < 3) {
-    throw new Error('la cabecera del dibujo no llegó a los tres mandos: ' + mandos.length);
+  const mandos = document.querySelectorAll('[data-mando]');
+  // Cinco: lápiz, bote, deshacer, rehacer y vaciar. Los dos del medio
+  // solo existen cuando hay pasado y futuro, que es lo que monta el
+  // guion de arriba.
+  if (mandos.length < 5) {
+    throw new Error('la cabecera del dibujo no llegó a los cinco mandos: ' + mandos.length);
   }
 })()
 `;

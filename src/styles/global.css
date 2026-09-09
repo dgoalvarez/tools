@@ -3948,7 +3948,6 @@
       animation: none;
     }
   }
-
 }
 
 /* ============================================================
@@ -4483,6 +4482,7 @@
 
 @layer components {
   .riel-item,
+  .fila-indice,
   .acordeon > summary,
   .segmento label,
   .selector-hora .opcion,
@@ -4498,6 +4498,7 @@
   }
 
   .riel-item:active,
+  .fila-indice:active,
   .acordeon > summary:active,
   .segmento label:active,
   .selector-hora .opcion:active,
@@ -4512,6 +4513,7 @@
 
   /* ---------- Las filas se tiñen ---------- */
   .riel-item:active,
+  .fila-indice:active,
   .acordeon > summary:active,
   .segmento label:active,
   .selector-hora .opcion:active {
@@ -4590,5 +4592,167 @@
   .barra-movil {
     background: var(--bg);
     backdrop-filter: none;
+  }
+}
+
+/* ============================================================
+   El índice de la portada
+
+   Antes eran tarjetas, y cada una llevaba siete dispositivos alrededor de
+   una sola frase. El porqué del cambio está en `views/Home.astro`; aquí
+   está lo que quedó, que es poco a propósito.
+
+   Una fila por herramienta. El icono con el color de su materia, el
+   nombre, y la frase que dice para qué sirve — los dos del mismo tamaño y
+   en la misma línea, porque los dos importan igual: el nombre es por
+   dónde se busca y la frase es lo que decide si es la que hacía falta.
+
+   Lo minimalista pide precisión, así que aquí lo único que hay son tres
+   columnas alineadas y una línea fina entre filas. La misma línea fina
+   que llevan la lista de husos, el reloj mundial y la libreta: en este
+   sitio una fila de una lista se separa así.
+   ============================================================ */
+
+@layer components {
+  /*
+    Con medida, y alineado a la izquierda con el titular.
+
+    Sin tope, en un monitor las frases acababan a media pantalla y el
+    índice flotaba en un vacío enorme; la línea de los rótulos llegaba
+    hasta el borde y el bloque se deshacía. Un titular ancho sobre un
+    bloque de texto más estrecho es una composición de toda la vida.
+  */
+  .indice {
+    display: grid;
+    gap: clamp(1.75rem, 3vw, 2.75rem);
+    max-width: 72rem;
+  }
+
+  /* El mismo rótulo que los grupos del riel, con la línea que ya usaba la
+     portada para cerrar el renglón. */
+  .rotulo-indice {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    margin: 0 0 0.25rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .rotulo-indice::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  .lista-indice {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .lista-indice li + li {
+    border-block-start: 1px solid var(--line);
+  }
+
+  .fila-indice {
+    display: grid;
+    /*
+      La columna del nombre ciñe al más largo, «Escala tipográfica», y no
+      un dedo más. Estaba en 13 rem y dejaba un pasillo de 145 px entre
+      «Reloj» y su frase: la vista tenía que cruzarlo en cada fila.
+
+      Fija y no automática a propósito: cada grupo es su propia lista, y
+      con `auto` productividad y diseño sacarían anchos distintos y las
+      frases dejarían de formar una columna. Esa columna es justo lo que
+      hace que esto se lea como un índice.
+    */
+    grid-template-columns: 1.5rem minmax(0, 11.5rem) minmax(0, 1fr);
+    align-items: center;
+    column-gap: clamp(0.875rem, 1.2vw, 1.375rem);
+    row-gap: 0.125rem;
+    padding: clamp(0.75rem, 1.1vw, 1.0625rem) 0.75rem;
+    border-radius: var(--radius);
+    color: inherit;
+  }
+
+  /* El icono es lo único de color, y no es adorno: es la misma marca que
+     se pulsa en el riel, así que reconocerla aquí sirve para después. */
+  .fila-indice .icono {
+    display: grid;
+    place-items: center;
+    color: var(--acento);
+  }
+
+  .fila-indice .nombre {
+    min-width: 0;
+    font-size: var(--fs-h3);
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.012em;
+    color: var(--ink);
+  }
+
+  /*
+    La frase, al tamaño del cuerpo y no en letra pequeña.
+
+    Es lo único que dice para qué sirve la herramienta. Iba a 0,9 rem y en
+    gris debajo de un nombre de treinta píxeles que no dice nada.
+  */
+  .fila-indice .para {
+    min-width: 0;
+    font-size: var(--fs-body);
+    line-height: 1.5;
+    color: var(--ink-muted);
+    text-wrap: pretty;
+  }
+
+  .fila-indice:hover {
+    background: var(--surface);
+  }
+
+  /* Al pasar por encima, el nombre toma el acento de su materia. Se puede
+     porque los acentos están derivados para leerse COMO TEXTO sobre las
+     tres superficies del sitio; lo comprueba «comprobar-encabezado.ts». */
+  .fila-indice:hover .nombre {
+    color: var(--acento);
+  }
+
+  .fila-indice:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: -2px;
+  }
+
+  /*
+    En estrecho, el nombre y la frase se apilan a la derecha del icono.
+
+    Con las tres columnas, a 480 px el nombre se quedaba en trece
+    caracteres y «Escala tipográfica» se partía en tres líneas.
+  */
+  @media (width < 48rem) {
+    .fila-indice {
+      grid-template-columns: 1.5rem minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .fila-indice .icono {
+      grid-area: 1 / 1 / 3 / 2;
+      align-self: start;
+      margin-block-start: 0.125rem;
+    }
+
+    .fila-indice .nombre {
+      grid-area: 1 / 2;
+    }
+
+    .fila-indice .para {
+      grid-area: 2 / 2;
+    }
   }
 }

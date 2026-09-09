@@ -69,6 +69,10 @@ if (!existsSync(dist)) {
  */
 const VISTAS = [
   { nombre: 'portada', ruta: 'es', ancho: 1440, alto: 900 },
+  // El índice es superficie nueva: hay que verlo en los dos temas y
+  // apilado, que es donde el nombre y la frase dejan de compartir línea.
+  { nombre: 'portada-claro', ruta: 'es', ancho: 1440, alto: 900, tema: 'light' },
+  { nombre: 'portada-estrecha', ruta: 'es', ancho: 485, alto: 900 },
   // El riel desplegado, que es el estado que hay que mirar además del
   // plegado: se guarda en el <html> antes del primer pintado.
   {

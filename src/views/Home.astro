@@ -6,11 +6,37 @@
  * entera, así que el relleno crece con la ventana en vez de dejar una
  * franja muerta a los lados.
  *
- * Las tarjetas miden todas lo mismo y cada una se pinta con el acento de
- * su materia. El halo de color va al 16 % por un motivo medido, no
- * estético: al 42 % la etiqueta de ámbito que va encima se quedaba en
- * 1,45:1. El color de la tarjeta lo lleva ahora el borde, que no tiene
- * texto delante.
+ * ---------------------------------------------------------------------
+ * Por qué el índice y no las tarjetas
+ *
+ * Había una rejilla de tarjetas, y cada tarjeta llevaba SIETE dispositivos
+ * alrededor de una sola frase: rótulo de materia, chip de icono de 44 px,
+ * nombre, resumen, rótulo de tarea, «Abrir →», y encima un halo radial, un
+ * degradado y un borde teñido.
+ *
+ * Dos de esos siete contradecían al propio proyecto. `labels.ts` dice, con
+ * estas palabras, que la materia y la tarea son «el modelo mental de quien
+ * construye herramientas, no el de quien las usa». La tarjeta las ponía
+ * las dos, una arriba y otra abajo, enmarcando el contenido. El riel, que
+ * se diseñó después y mejor, no enseña ninguna.
+ *
+ * Y la jerarquía estaba del revés: el nombre —«Reloj»— se llevaba treinta
+ * píxeles de altura y no dice nada; la frase, que es lo ÚNICO que explica
+ * para qué sirve, iba en gris a 0,9 rem.
+ *
+ * Así que la portada pasa a ser lo que en realidad es: un índice. Una fila
+ * por herramienta, el nombre y su frase del mismo tamaño y en la misma
+ * línea, agrupadas por ámbito igual que en el riel. Se lee entera de
+ * arriba abajo en diez segundos, y aguanta doce herramientas donde la
+ * rejilla ya pedía scroll con siete.
+ *
+ * El color no se va: lo lleva el icono, que además es la misma marca que
+ * se va a pulsar en el riel a partir de mañana. Lo que se va es el color
+ * DECORATIVO — siete halos encendidos sobre un fondo casi negro, que es
+ * exactamente el aspecto que tiene todo lo que se genera solo.
+ *
+ * El titular se queda como estaba. La contención es el argumento: siete
+ * cosas, una frase cada una, y nada más. Eso es lo que dice el titular.
  *
  * Todo sale de src/i18n/tools.ts y src/i18n/labels.ts. Añadir una
  * herramienta ahí la añade aquí sin tocar este archivo.
@@ -19,7 +45,7 @@ import Base from '../layouts/Base.astro';
 import Icono from '../components/Icono.astro';
 import { UI } from '../i18n/ui';
 import { TOOLS } from '../i18n/tools';
-import { MATERIAS, TAREAS, ACENTO_POR_MATERIA } from '../i18n/labels';
+import { AMBITOS, ORDEN_AMBITOS, ACENTO_POR_MATERIA, ambitoPrincipal } from '../i18n/labels';
 import { t, type Lang } from '../i18n/config';
 import { route, TOOL_KEYS } from '../i18n/routes';
 
@@ -28,6 +54,14 @@ interface Props {
 }
 
 const { lang } = Astro.props;
+
+/* Los mismos grupos y el mismo orden que el riel: quien llega por la
+   portada y luego navega por la barra encuentra las cosas donde ya las
+   había visto. */
+const grupos = ORDEN_AMBITOS.map((ambito) => ({
+  ambito,
+  herramientas: TOOL_KEYS.filter((key) => ambitoPrincipal(TOOLS[key].etiquetas) === ambito),
+})).filter((grupo) => grupo.herramientas.length > 0);
 ---
 
 <Base
@@ -55,52 +89,31 @@ const { lang } = Astro.props;
       </div>
     </section>
 
-    <p
-      class="m-0 mb-[1.125rem] flex items-center gap-3.5 text-[0.72rem] font-medium tracking-[0.12em] text-ink-soft uppercase after:h-px after:flex-1 after:bg-line after:content-['']"
-    >
-      {t(UI.navTools, lang)}
-    </p>
-
-    {/* Todas del mismo alto: lo garantiza la rejilla, y el alto mínimo
-        crece con la ventana para que en un monitor ganen alto y no solo
-        anchura. */}
-    <ul class="grid gap-[clamp(0.875rem,1.4vw,1.375rem)] pb-[clamp(1.75rem,3vw,3rem)] md:grid-cols-3">
+    <div class="indice pb-[clamp(2rem,3vw,3.5rem)]">
       {
-        TOOL_KEYS.map((key) => {
-          const tool = TOOLS[key];
-          return (
-            <li class="h-full" style={`--acento: ${ACENTO_POR_MATERIA[tool.etiquetas.materia]}`}>
-              <a
-                href={route(key, lang)}
-                class="group relative flex h-full min-h-[clamp(15.75rem,19vw,23rem)] flex-col gap-3 overflow-hidden rounded-2xl border border-[color-mix(in_srgb,var(--acento)_28%,var(--line))] bg-[linear-gradient(160deg,var(--surface-2),var(--surface)_62%)] p-6 before:pointer-events-none before:absolute before:inset-[-40%_55%_55%_-20%] before:bg-[radial-gradient(closest-side,var(--acento),transparent)] before:opacity-[0.16] before:content-['']"
-              >
-                <span class="relative text-[0.72rem] font-medium tracking-[0.1em] text-ink-muted uppercase">
-                  {t(MATERIAS[tool.etiquetas.materia], lang)}
-                </span>
+        grupos.map((grupo) => (
+          <section class="grupo-indice">
+            <p class="rotulo-indice">{t(AMBITOS[grupo.ambito], lang)}</p>
 
-                <span class="relative grid size-11 place-items-center rounded-xl bg-[var(--acento)] text-[var(--brand-ink)]">
-                  <Icono nombre={tool.icono} tamano={24} />
-                </span>
-
-                <h2 class="relative m-0 text-[length:clamp(1.4rem,1.7vw,1.875rem)] font-semibold tracking-[-0.032em] text-ink">
-                  {t(tool.name, lang)}
-                </h2>
-
-                <span class="relative flex-1 text-[0.9rem] leading-relaxed text-ink-muted">
-                  {t(tool.summary, lang)}
-                </span>
-
-                <span class="relative flex items-center gap-2 text-[0.72rem] font-medium tracking-[0.06em] text-ink-soft uppercase">
-                  {t(TAREAS[tool.etiquetas.tarea], lang)}
-                  <span class="ml-auto text-[var(--acento)] group-hover:underline">
-                    {t(UI.openTool, lang)} <span aria-hidden="true">→</span>
-                  </span>
-                </span>
-              </a>
-            </li>
-          );
-        })
+            <ul class="lista-indice">
+              {grupo.herramientas.map((key) => {
+                const tool = TOOLS[key];
+                return (
+                  <li style={`--acento: ${ACENTO_POR_MATERIA[tool.etiquetas.materia]}`}>
+                    <a href={route(key, lang)} class="fila-indice">
+                      <span class="icono">
+                        <Icono nombre={tool.icono} tamano={20} />
+                      </span>
+                      <span class="nombre">{t(tool.name, lang)}</span>
+                      <span class="para">{t(tool.summary, lang)}</span>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ))
       }
-    </ul>
+    </div>
   </div>
 </Base>

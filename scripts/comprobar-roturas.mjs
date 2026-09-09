@@ -317,6 +317,54 @@ const NOTAS_LLENA = `
 })()
 `;
 
+/*
+  El pie de la lista con sus TRES botones a la vez.
+
+  «Deshacer» solo existe después de borrar algo, así que sin pulsar no
+  aparece nunca y ninguna de las pasadas de aquí lo veía. Es la fila más
+  llena que puede tener la herramienta —deshacer, borrar las hechas y
+  copiar la lista— y la tarjeta tiene alto FIJO: si a 485 px la fila se
+  parte en dos renglones, hay que saber si le siguen cabiendo.
+
+  Se apunta algo, se marca una hecha y se borra otra. Así salen los tres.
+*/
+const NOTAS_TRES_BOTONES = `
+(async () => {
+  const campo = await __esperar(() => document.querySelector('.campo-nuevo'));
+  const formulario = campo.closest('form');
+
+  for (let i = 0; i < 4; i++) {
+    __escribir(campo, 'una tarea con su texto para apretar la fila, la numero ' + i);
+    formulario.requestSubmit();
+    await new Promise((r) => setTimeout(r, 30));
+  }
+
+  // Una hecha saca «Borrar las hechas»; un borrado saca «Deshacer».
+  document.querySelector('input[type=checkbox]').click();
+  await new Promise((r) => setTimeout(r, 60));
+  document.querySelectorAll('.acciones-tarea')[1].querySelectorAll('button')[2].click();
+  await new Promise((r) => setTimeout(r, 200));
+
+  /*
+    Y se comprueba que los tres estén de verdad antes de medir nada.
+
+    Un caso que prepara una pantalla puede quedarse a medias en silencio
+    —un selector que cambia de nombre, un clic que llega antes de que la
+    isla escuche— y entonces las cinco pasadas salen en verde sin haber
+    mirado lo que venían a mirar. Esa es la peor clase de alarma: la que
+    dice que todo está bien porque no ha llegado a preguntar.
+
+    El error viaja por el mismo canal que las roturas, así que se ve.
+  */
+  const pie = document.querySelector('.pie-lista .mandos-pie');
+  if (!pie || pie.children.length < 3) {
+    throw new Error(
+      'el pie no llegó a tener los tres botones: ' + (pie ? pie.children.length : 'sin pie')
+    );
+  }
+})()
+`;
+
 /** Una línea de trescientos caracteres sin un solo espacio. */
 const NOTAS_SIN_ESPACIOS = `
 (async () => {
@@ -427,6 +475,7 @@ const CASOS = [
   { nombre: 'notas · vacía', ruta: 'es/notas' },
   { nombre: 'notas · cuarenta líneas', ruta: 'es/notas', hacer: NOTAS_LLENA },
   { nombre: 'notas · sin un espacio', ruta: 'es/notas', hacer: NOTAS_SIN_ESPACIOS },
+  { nombre: 'notas · los tres botones', ruta: 'es/notas', hacer: NOTAS_TRES_BOTONES },
   { nombre: 'notas · en inglés', ruta: 'en/notes' },
   { nombre: 'portada', ruta: 'es' },
   { nombre: 'portada en inglés', ruta: 'en' },

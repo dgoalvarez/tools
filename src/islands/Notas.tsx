@@ -31,7 +31,12 @@
  * que se quitó de la navegación. Lo comprueba `npm run navegar`.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowDownIcon, ArrowUpIcon, XIcon } from '@phosphor-icons/react';
+import {
+  ArrowCounterClockwiseIcon,
+  ArrowDownIcon,
+  ArrowUpIcon,
+  XIcon,
+} from '@phosphor-icons/react';
 
 import BotonCopiar from '../components/BotonCopiar';
 import Dibujo from './Dibujo';
@@ -53,8 +58,11 @@ import {
   marcar,
   mover,
   notaAMarkdown,
+  restaurar,
+  retiradas,
   textoDeNota,
   type Cuaderno,
+  type Retirada,
 } from '../lib/notas';
 
 interface Props {
@@ -68,6 +76,27 @@ export default function Notas({ lang }: Props) {
   const [cuaderno, setCuaderno] = useState<Cuaderno>(VACIO);
   const [listo, setListo] = useState(false);
   const [borrador, setBorrador] = useState('');
+
+  /*
+    Lo que se llevó el último borrado, para poder devolverlo.
+
+    Es lo ÚNICO que se puede deshacer, y a propósito: añadir, marcar,
+    mover y escribir se rehacen a mano en un segundo, así que un deshacer
+    que los cubriera todos estaría casi siempre encendido y no diría nada.
+    Sale solo cuando de verdad se ha perdido algo.
+  */
+  const [borradas, setBorradas] = useState<Retirada[]>([]);
+
+  /*
+    El navegador no deja guardar.
+
+    Pasa en una ventana privada y con la cuota llena. La excepción se
+    tragaba en silencio, y lo grave no es perder lo escrito: es que el
+    encabezado sigue prometiendo que se queda mientras la pestaña siga
+    abierta. Una promesa que se rompe sin avisar es peor que no haberla
+    hecho.
+  */
+  const [sinGuardar, setSinGuardar] = useState(false);
 
   const campoNuevo = useRef<HTMLInputElement>(null);
 
@@ -101,7 +130,9 @@ export default function Notas({ lang }: Props) {
       sessionStorage.setItem(CLAVE, guardar(c));
     } catch {
       // Cuota llena o almacenamiento bloqueado: lo escrito sigue en
-      // pantalla, solo que no sobrevivirá a la recarga.
+      // pantalla, solo que no sobrevivirá a la recarga. Y eso hay que
+      // decirlo, porque el encabezado promete lo contrario.
+      setSinGuardar(true);
     }
   }, []);
 
@@ -124,6 +155,23 @@ export default function Notas({ lang }: Props) {
   function conTareas(siguientes: typeof tareas) {
     setCuaderno((c) => ({ ...c, tareas: siguientes }));
   }
+
+  /** Como `conTareas`, pero apuntando lo que se lleva por delante. */
+  function borrando(siguientes: typeof tareas) {
+    setBorradas(retiradas(tareas, siguientes));
+    conTareas(siguientes);
+  }
+
+  function alDeshacer() {
+    conTareas(restaurar(tareas, borradas));
+    setBorradas([]);
+    campoNuevo.current?.focus();
+  }
+
+  const cuantasVuelven =
+    borradas.length === 1
+      ? t(NOTAS.unaLinea, lang)
+      : t(NOTAS.variasLineas, lang).replace('{n}', String(borradas.length));
 
   function alAnadir(evento: React.FormEvent) {
     evento.preventDefault();
@@ -151,6 +199,18 @@ export default function Notas({ lang }: Props) {
 
   return (
     <div className="libreta">
+      {/*
+        Va arriba del todo y ocupa la fila entera, porque no es de la
+        lista ni de la nota: es de las tres. Y `role="status"` para que
+        quien no lo vea se entere, sin robar el foco a quien está
+        escribiendo — que es exactamente cuando esto puede aparecer.
+      */}
+      {sinGuardar && (
+        <p className="aviso-sin-guardar" role="status">
+          {t(NOTAS.sinGuardar, lang)}
+        </p>
+      )}
+
       {/* ---------------------------------------------- la lista ---- */}
       <section className="tarjeta-control" aria-labelledby="titulo-lista">
         <p className="titulo" id="titulo-lista">
@@ -228,7 +288,7 @@ export default function Notas({ lang }: Props) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => conTareas(borrar(tareas, tarea.id))}
+                      onClick={() => borrando(borrar(tareas, tarea.id))}
                       aria-label={`${t(NOTAS.borrar, lang)}: ${tarea.texto}`}
                     >
                       <XIcon aria-hidden="true" size={15} />
@@ -244,12 +304,34 @@ export default function Notas({ lang }: Props) {
           <p className="contador">{contador}</p>
 
           <div className="mandos-pie">
+            {/*
+              Deshacer va PRIMERO, y pegado al que acaba de borrar.
+
+              Quien acaba de pulsar «Borrar las hechas» sin querer tiene el
+              puntero justo ahí, y lo que busca está al lado. Ponerlo al
+              final de la fila —detrás de «Copiar la lista»— habría sido
+              ordenarlo por importancia general en vez de por lo que acaba
+              de pasar.
+            */}
+            {borradas.length > 0 && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={alDeshacer}
+                aria-label={t(NOTAS.deshacerBorradoDetalle, lang).replace('{n}', cuantasVuelven)}
+              >
+                <ArrowCounterClockwiseIcon aria-hidden="true" size={15} />
+                {t(NOTAS.deshacerBorrado, lang)}
+              </Button>
+            )}
+
             {hechas > 0 && (
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
-                onClick={() => conTareas(borrarHechas(tareas))}
+                onClick={() => borrando(borrarHechas(tareas))}
               >
                 {t(NOTAS.borrarHechas, lang)}
               </Button>

@@ -29,6 +29,35 @@ export const NOTAS = {
   bajar: { es: 'Bajar', en: 'Move down' },
   borrar: { es: 'Borrar', en: 'Delete' },
   borrarHechas: { es: 'Borrar las hechas', en: 'Clear the done ones' },
+  /**
+   * Aparece solo después de un borrado, y se queda hasta el siguiente.
+   *
+   * Sin tiempo límite a propósito: un aviso que se va en cinco segundos
+   * convierte deshacer en una carrera, y aquí no hay ninguna prisa. Lo
+   * único destructivo de la herramienta son los dos borrados, así que el
+   * botón solo sale cuando de verdad se ha perdido algo.
+   */
+  deshacerBorrado: { es: 'Deshacer', en: 'Undo' },
+  /** Lo que lee un lector de pantalla. «{n}» se sustituye. */
+  deshacerBorradoDetalle: {
+    es: 'Deshacer el borrado: vuelven {n}',
+    en: 'Undo the delete: {n} coming back',
+  },
+  unaLinea: { es: '1 línea', en: '1 line' },
+  variasLineas: { es: '{n} líneas', en: '{n} lines' },
+  /**
+   * El aviso de que lo escrito ya no sobrevive a una recarga.
+   *
+   * La herramienta promete, en su encabezado y sin letra pequeña, que lo
+   * escrito se queda mientras la pestaña siga abierta. En una ventana
+   * privada o con la cuota llena, `sessionStorage` lanza y esa promesa
+   * deja de ser verdad. Antes se tragaba la excepción en silencio: se
+   * seguía escribiendo con una garantía que ya no existía. Ahora lo dice.
+   */
+  sinGuardar: {
+    es: 'Este navegador no deja guardar nada, así que lo escrito no sobrevivirá a una recarga. Sigue funcionando todo; copia lo que quieras conservar.',
+    en: 'This browser will not let anything be saved, so what you write will not survive a reload. Everything still works; copy anything you want to keep.',
+  },
   /** «1 de 3». Los dos números se sustituyen. */
   contador: { es: '{a} de {b}', en: '{a} of {b}' },
   listaVacia: {

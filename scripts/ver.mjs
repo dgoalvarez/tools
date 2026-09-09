@@ -392,6 +392,33 @@ const VISTAS = [
       },
     },
   },
+  // Con el borrado hecho y «Deshacer» a la vista.
+  //
+  // Es un control que solo existe después de perder algo, así que sin
+  // pulsar no hay nada que mirar. Y hay que mirarlo: es la única fila del
+  // pie que puede llevar tres botones a la vez —deshacer, borrar las
+  // hechas y copiar— y ahí es donde se envuelve si no cabe.
+  {
+    nombre: 'notas-deshacer',
+    ruta: 'es/notas',
+    ancho: 1440,
+    alto: 900,
+    clics: ['.acciones-tarea button:nth-child(3)'],
+    siembra: {
+      clave: 'dgo-tools-notas',
+      valor: {
+        v: 1,
+        tareas: [
+          { id: 'a', texto: 'derivar el acento y medirlo con la propia herramienta', hecha: true },
+          { id: 'b', texto: 'reencuadrar los copys de husos', hecha: true },
+          { id: 'c', texto: 'comprobar que no da tirón al restaurar', hecha: false },
+          { id: 'd', texto: 'capturas en claro y en oscuro', hecha: false },
+          { id: 'e', texto: 'subir y mirar en producción', hecha: false },
+        ],
+        nota: 'Se borra una línea sin querer y vuelve con un botón.',
+      },
+    },
+  },
   {
     nombre: 'notas-llena-claro',
     ruta: 'es/notas',

@@ -4221,6 +4221,29 @@
     border-block-start: 1px solid var(--line);
   }
 
+  /*
+    El aviso de que este navegador no deja guardar.
+
+    Cruza las tres columnas porque no es de una tarjeta: es de la
+    herramienta entera. Y va con el color de aviso y no con el de error
+    —«--danger» es para lo que se ha hecho mal— porque aquí no se ha
+    equivocado nadie: el navegador no deja, y todo lo demás sigue
+    funcionando.
+  */
+  .aviso-sin-guardar {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 0.75rem 0.875rem;
+    border: 1px solid var(--line);
+    border-inline-start: 3px solid var(--acento);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    font-size: var(--fs-small);
+    line-height: 1.5;
+    color: var(--ink-muted);
+    text-wrap: pretty;
+  }
+
   .pie-lista .contador {
     font-size: var(--fs-small);
     font-variant-numeric: tabular-nums;

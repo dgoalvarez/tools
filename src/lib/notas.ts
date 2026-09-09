@@ -129,6 +129,58 @@ export function borrarHechas(tareas: Tarea[]): Tarea[] {
   return tareas.filter((t) => !t.hecha);
 }
 
+/** Una línea que se borró, con el sitio del que salió. */
+export interface Retirada {
+  posicion: number;
+  tarea: Tarea;
+}
+
+/**
+ * Lo que se llevó un borrado, para poder devolverlo.
+ *
+ * Se apunta la POSICIÓN además de la línea porque «Borrar las hechas»
+ * puede llevarse la 2 y la 5 a la vez, y devolverlas al final sería
+ * devolver otra lista.
+ */
+export function retiradas(antes: Tarea[], despues: Tarea[]): Retirada[] {
+  const quedan = new Set(despues.map((t) => t.id));
+  const fuera: Retirada[] = [];
+  antes.forEach((tarea, posicion) => {
+    if (!quedan.has(tarea.id)) fuera.push({ posicion, tarea });
+  });
+  return fuera;
+}
+
+/**
+ * Devuelve a su sitio lo que se borró.
+ *
+ * **Restaura, no revierte**, y esa es la decisión. Un deshacer que
+ * sustituye la lista entera por la de antes se lleva por delante lo que
+ * se haya escrito después: se borra una línea sin querer, se apuntan dos
+ * cosas más, se pulsa «Deshacer» y desaparecen las dos. Aquí solo vuelven
+ * las que faltaban, y todo lo demás se queda.
+ *
+ * Se insertan de menor a mayor posición para que cada índice signifique
+ * lo mismo que significaba: metiendo primero la 5 y luego la 2, la 5
+ * acabaría en la 6. Con el otro orden, «a b c d e» borrando la b y la d
+ * vuelve como «a c e b d», que es lo que dice la comprobación 12 cuando
+ * se rompe esto a propósito.
+ *
+ * Y las que ya estén —dos pulsaciones seguidas del mismo botón— no se
+ * duplican.
+ */
+export function restaurar(tareas: Tarea[], fuera: Retirada[]): Tarea[] {
+  const hay = new Set(tareas.map((t) => t.id));
+  const salida = [...tareas];
+
+  for (const { posicion, tarea } of [...fuera].sort((a, b) => a.posicion - b.posicion)) {
+    if (hay.has(tarea.id)) continue;
+    salida.splice(Math.min(posicion, salida.length), 0, tarea);
+  }
+
+  return salida;
+}
+
 export function cuantasHechas(tareas: Tarea[]): number {
   return tareas.reduce((n, t) => n + (t.hecha ? 1 : 0), 0);
 }

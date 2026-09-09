@@ -31,6 +31,8 @@ import {
   mover,
   notaAMarkdown,
   nuevaTarea,
+  restaurar,
+  retiradas,
   sanearNota,
   textoDeNota,
   type Tarea,
@@ -338,6 +340,56 @@ console.log('\n11. La nota, en Markdown');
     `las viñetas salen con guion (${JSON.stringify(md)})`
   );
   afirmar(md.includes('1. a') && md.includes('2. b'), 'la lista numerada se numera de verdad');
+}
+
+// =====================================================================
+console.log('\n12. Deshacer un borrado devuelve lo borrado a su sitio');
+{
+  // Cinco líneas para poder borrar salteado, que es lo que hace «Borrar
+  // las hechas» y donde un deshacer ingenuo se delata.
+  let t = anadir(anadir(anadir(anadir(anadir([], 'a'), 'b'), 'c'), 'd'), 'e');
+
+  t = marcar(t, t[1].id, true);
+  t = marcar(t, t[3].id, true);
+
+  const despues = borrarHechas(t);
+  const fuera = retiradas(t, despues);
+
+  afirmar(fuera.length === 2, 'se apuntan las dos que se fueron');
+  afirmar(
+    fuera[0].posicion === 1 && fuera[1].posicion === 3,
+    'con la posición de la que salieron, no con la de después'
+  );
+
+  const vuelta = restaurar(despues, fuera);
+  afirmar(
+    vuelta.map((x) => x.texto).join('') === 'abcde',
+    `vuelven a su sitio y no al final (${vuelta.map((x) => x.texto).join('')})`
+  );
+
+  // El caso que decidió que esto RESTAURA en vez de revertir: se borra
+  // sin querer, se siguen apuntando cosas, y luego se deshace. Con un
+  // deshacer que sustituye la lista entera, las nuevas desaparecerían.
+  const conMas = anadir(anadir(despues, 'f'), 'g');
+  const mezcla = restaurar(conMas, fuera);
+  afirmar(
+    mezcla.length === 7 &&
+      mezcla.some((x) => x.texto === 'f') &&
+      mezcla.some((x) => x.texto === 'g'),
+    'lo escrito después del borrado sobrevive al deshacer'
+  );
+
+  // Dos pulsaciones seguidas del mismo botón no duplican nada.
+  afirmar(restaurar(vuelta, fuera).length === 5, 'deshacer dos veces no duplica');
+
+  // Un borrado de una sola línea, que es el otro botón.
+  const una = borrar(t, t[0].id);
+  const fueraUna = retiradas(t, una);
+  afirmar(fueraUna.length === 1 && fueraUna[0].posicion === 0, 'el borrado de una sola se apunta');
+  afirmar(restaurar(una, fueraUna)[0].texto === 'a', 'y vuelve a la cabeza de la lista');
+
+  afirmar(retiradas(t, t).length === 0, 'sin borrar nada no hay nada que deshacer');
+  afirmar(restaurar([], fuera).length === 2, 'con la lista vaciada entera vuelven las dos');
 }
 
 console.log(fallos === 0 ? '\nTODO CORRECTO\n' : `\n${fallos} FALLOS\n`);

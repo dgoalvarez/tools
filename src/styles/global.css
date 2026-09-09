@@ -4374,10 +4374,25 @@
     de dentro, no se suma por fuera, para que la tarjeta siga midiendo lo
     que reserva el HTML del servidor.
   */
+  /*
+    El campo se queda con el hueco que sobra en la tarjeta.
+
+    El alto escrito pasa a ser la BASE de un elemento flexible, no un
+    tope: sigue valiendo de suelo cuando las tarjetas se apilan en móvil y
+    no hay nada que repartir, y en escritorio se estira hasta el pie en
+    vez de dejar un palmo en blanco entre el texto y el recuento.
+
+    Flexible y no «1fr» de rejilla: un «1fr» contra una fila de alto
+    indefinido se comporta como «auto» y crece con lo escrito, que es lo
+    que devolvió el tirón al restaurar y sacó cuatro comprobaciones de
+    navegación en rojo. Aquí el «min-height: 0» impide que el contenido
+    empuje, y quien se desplaza es el campo de dentro.
+  */
   .nota-formato {
     display: grid;
     grid-template-rows: auto 1fr;
-    height: calc(var(--alto-libreta) + var(--fila-nueva) + 0.8125rem);
+    flex: 1 1 calc(var(--alto-libreta) + var(--fila-nueva) + 0.8125rem);
+    min-height: 0;
     border: 1px solid var(--line);
     border-radius: var(--radius);
     background: var(--bg);

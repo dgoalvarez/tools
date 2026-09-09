@@ -51,7 +51,7 @@ export const TOOLS: Record<ToolKey, Tool> = {
       materia: 'tiempo',
       tarea: 'convertir',
     },
-    icono: 'reloj',
+    icono: 'globo',
   },
   clock: {
     name: { es: 'Reloj', en: 'Clock' },

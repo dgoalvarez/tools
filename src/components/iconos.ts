@@ -15,7 +15,7 @@
  * Para añadir uno: buscarlo en https://phosphoricons.com, importarlo aquí
  * con su nombre exacto y darle una clave en castellano.
  */
-import reloj from '@phosphor-icons/core/regular/clock.svg?raw';
+import globo from '@phosphor-icons/core/regular/globe.svg?raw';
 import contraste from '@phosphor-icons/core/regular/circle-half.svg?raw';
 import cronometro from '@phosphor-icons/core/regular/timer.svg?raw';
 import despertador from '@phosphor-icons/core/regular/alarm.svg?raw';
@@ -44,7 +44,7 @@ export const VIEWBOX = '0 0 256 256';
 
 export const ICONOS = {
   // --- de las herramientas ---
-  reloj: interior(reloj),
+  globo: interior(globo),
   cronometro: interior(cronometro),
   despertador: interior(despertador),
   contraste: interior(contraste),

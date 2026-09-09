@@ -80,6 +80,7 @@ export default defineConfig({
 const SITE_URL = 'https://tools.dgoalvarez.com';
 const PAIRS = [
   { en: '/en', es: '/es' },
+  { en: '/en/board', es: '/es/tablero' },
   { en: '/en/timezones', es: '/es/horarios' },
   { en: '/en/clock', es: '/es/reloj' },
   { en: '/en/pomodoro', es: '/es/pomodoro' },

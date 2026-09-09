@@ -12,10 +12,19 @@
 import type { Lang } from './config';
 
 export type PageKey =
-  'home' | 'timezones' | 'clock' | 'pomodoro' | 'notes' | 'contrast' | 'palette' | 'scale';
+  | 'home'
+  | 'board'
+  | 'timezones'
+  | 'clock'
+  | 'pomodoro'
+  | 'notes'
+  | 'contrast'
+  | 'palette'
+  | 'scale';
 
 export const ROUTES: Record<PageKey, Record<Lang, string>> = {
   home: { en: '/en', es: '/es' },
+  board: { en: '/en/board', es: '/es/tablero' },
   timezones: { en: '/en/timezones', es: '/es/horarios' },
   // «Pomodoro» se dice igual en los dos idiomas, así que la dirección es
   // la misma. Traducirla a «/es/tomate» sería inventar un nombre que

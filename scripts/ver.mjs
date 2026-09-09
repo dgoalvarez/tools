@@ -69,6 +69,10 @@ if (!existsSync(dist)) {
  * `data-theme="light"` puesto a mano en el <html>.
  */
 const VISTAS = [
+  // El tablero, que es la vista nueva. Vacío es su primer estado de
+  // verdad: es lo que ve quien llega, y donde se explica qué es esto.
+  { nombre: 'tablero-vacio', ruta: 'es/tablero', ancho: 1440, alto: 900 },
+  { nombre: 'tablero-estrecho', ruta: 'es/tablero', ancho: 485, alto: 900 },
   { nombre: 'portada', ruta: 'es', ancho: 1440, alto: 900 },
   // El índice es superficie nueva: hay que verlo en los dos temas y
   // apilado, que es donde el nombre y la frase dejan de compartir línea.

@@ -529,6 +529,8 @@ const CASOS = [
   { nombre: 'notas · los tres botones', ruta: 'es/notas', hacer: NOTAS_TRES_BOTONES },
   { nombre: 'notas · el dibujo lleno', ruta: 'es/notas', hacer: NOTAS_DIBUJO_LLENO },
   { nombre: 'notas · en inglés', ruta: 'en/notes' },
+  { nombre: 'tablero · vacío', ruta: 'es/tablero' },
+  { nombre: 'tablero · en inglés', ruta: 'en/board' },
   { nombre: 'portada', ruta: 'es' },
   { nombre: 'portada en inglés', ruta: 'en' },
 ];

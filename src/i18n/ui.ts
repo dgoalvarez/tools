@@ -34,6 +34,8 @@ export const UI = {
 
   // ---------- Navegación ----------
   navHome: { es: 'Inicio', en: 'Home' },
+  /** El tablero: va arriba del riel, separado de las herramientas. */
+  navTablero: { es: 'Mi tablero', en: 'My board' },
   navTools: { es: 'Herramientas', en: 'Tools' },
   verTodas: { es: 'Ver todas las herramientas', en: 'See all the tools' },
   todasLasHerramientas: { es: 'Todas las herramientas', en: 'All the tools' },

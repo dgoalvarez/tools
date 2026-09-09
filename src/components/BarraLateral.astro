@@ -97,6 +97,21 @@ const other = otherLang(lang);
       <span class="icono"><Icono nombre="lupa" tamano={18} /></span>
       <span class="nombre">{t(UI.verTodas, lang)}</span>
     </button>
+
+    {/*
+      El tablero va aquí arriba y no dentro de los grupos, porque no es
+      una herramienta: es donde se juntan. Meterlo bajo «Productividad»
+      lo pondría a competir con las cosas que contiene.
+    */}
+    <a
+      href={route('board', lang)}
+      class="riel-item"
+      aria-current={pagina === 'board' ? 'page' : undefined}
+      title={t(UI.navTablero, lang)}
+    >
+      <span class="icono"><Icono nombre="rejilla" tamano={18} /></span>
+      <span class="nombre">{t(UI.navTablero, lang)}</span>
+    </a>
   </div>
 
   <div class="riel-lista">

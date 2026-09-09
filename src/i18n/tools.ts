@@ -9,8 +9,8 @@
  * clave.
  */
 import type { T } from './config';
-import type { ToolKey } from './routes';
-import type { Etiquetas } from './labels';
+import type { PageKey, ToolKey } from './routes';
+import type { Etiquetas, MateriaKey } from './labels';
 import type { IconoKey } from '../components/iconos';
 
 interface Tool {
@@ -149,3 +149,62 @@ export const TOOLS: Record<ToolKey, Tool> = {
     icono: 'tipografia',
   },
 };
+
+/**
+ * El tablero, que es una página pero NO una herramienta.
+ *
+ * Va aparte de `TOOLS` a propósito. Si entrara ahí tendría que entrar
+ * también en `TOOL_KEYS`, y entonces se colaría en el índice de la
+ * portada, en los grupos del riel y en la hoja de móvil —los tres
+ * recorren esa lista— además de exigir materia, tarea y ámbito. No los
+ * tiene: no hace una cosa, es donde se juntan todas.
+ *
+ * Por eso tampoco lleva ficha de `Etiquetas`: se pinta con el color de la
+ * marca porque las contiene todas.
+ */
+export const TABLERO = {
+  name: { es: 'Mi tablero', en: 'My board' },
+  summary: {
+    es: 'Tus herramientas juntas, del tamaño que quieras.',
+    en: 'Your tools together, at whatever size you want.',
+  },
+  description: {
+    es: 'Monta tu propio panel con las herramientas del sitio: una lista, una nota, un dibujo, un pomodoro. Eliges cuáles, de qué tamaño y en qué orden, y el tablero entero cabe en un código corto que puedes copiar y pegar en otro aparato.',
+    en: 'Build your own panel from the tools on this site: a list, a note, a drawing, a pomodoro. You choose which ones, what size and in what order, and the whole board fits in a short code you can copy and paste on another device.',
+  },
+  icono: 'rejilla' as IconoKey,
+} satisfies { name: T; summary: T; description: T; icono: IconoKey };
+
+/**
+ * Los textos y la materia de una página cualquiera.
+ *
+ * Existe porque `Base.astro` necesitaba saber el acento de la página y lo
+ * sacaba con `TOOLS[page]`, dando por hecho que toda página que no fuera
+ * la portada era una herramienta. Con el tablero eso deja de ser cierto.
+ *
+ * `materia: null` significa «píntate con la marca», y lo dicen tanto la
+ * portada como el tablero — así que además desaparece el caso especial
+ * que la portada ya tenía escrito a mano.
+ */
+export function fichaDe(page: PageKey): {
+  name: T;
+  summary: T;
+  description: T;
+  materia: MateriaKey | null;
+} {
+  if (page === 'board') return { ...TABLERO, materia: null };
+  if (page === 'home') {
+    return { name: UI_VACIO, summary: UI_VACIO, description: UI_VACIO, materia: null };
+  }
+  const meta = TOOLS[page];
+  return {
+    name: meta.name,
+    summary: meta.summary,
+    description: meta.description,
+    materia: meta.etiquetas.materia,
+  };
+}
+
+/* La portada trae su título y su descripción de `ui.ts`, no de aquí: solo
+   necesita que `fichaDe` le diga que no tiene materia. */
+const UI_VACIO: T = { es: '', en: '' };

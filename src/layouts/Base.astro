@@ -17,7 +17,7 @@ import BarraMovil from '../components/BarraMovil.astro';
 import Lanzador from '../components/Lanzador.astro';
 import Footer from '../components/Footer.astro';
 import { UI } from '../i18n/ui';
-import { TOOLS } from '../i18n/tools';
+import { fichaDe } from '../i18n/tools';
 import { ACENTO_POR_MATERIA, SOLIDO_POR_MATERIA } from '../i18n/labels';
 import { t, otherLang, OG_LOCALE, DEFAULT_LANG, LANGS, type Lang } from '../i18n/config';
 import { route, type PageKey } from '../i18n/routes';
@@ -32,21 +32,33 @@ interface Props {
 
 const { lang, page, title, description } = Astro.props;
 
-/** La herramienta abierta, o null en la portada. */
-const herramienta = page === 'home' ? null : page;
-
 /**
  * El acento de la página. Cada herramienta se pinta con el de su materia
- * y todo lo demás lo hereda; la portada usa el de la marca.
+ * y todo lo demás lo hereda.
+ *
+ * La materia sale de `fichaDe` y no de `TOOLS[page]` porque hay DOS
+ * páginas que no son herramientas: la portada y el tablero. Antes esto
+ * era un `page === 'home' ? … : …` que daba por hecho que todo lo demás
+ * sí lo era, y con el tablero dejó de ser cierto.
+ *
+ * `materia: null` quiere decir «píntate con la marca». La portada porque
+ * no abre ninguna; el tablero porque las contiene todas.
  */
-const acento = herramienta
-  ? ACENTO_POR_MATERIA[TOOLS[herramienta].etiquetas.materia]
-  : 'var(--brand)';
+const materia = fichaDe(page).materia;
+
+/**
+ * Cuál de las herramientas del riel está abierta, o `null`.
+ *
+ * Ni la portada ni el tablero lo están: el tablero tiene su propio sitio
+ * arriba del riel, separado de los grupos, y marcar una herramienta
+ * cuando estás en él sería mentir sobre dónde estás.
+ */
+const herramientaAbierta = page === 'home' || page === 'board' ? null : page;
+
+const acento = materia ? ACENTO_POR_MATERIA[materia] : 'var(--brand)';
 
 /** El relleno de los botones principales. Va aparte del acento a propósito. */
-const solido = herramienta
-  ? SOLIDO_POR_MATERIA[TOOLS[herramienta].etiquetas.materia]
-  : 'var(--l-brand)';
+const solido = materia ? SOLIDO_POR_MATERIA[materia] : 'var(--l-brand)';
 
 const site = Astro.site!;
 const canonical = new URL(route(page, lang), site).href;
@@ -198,10 +210,10 @@ const ogImage = new URL('/og.png', site).href;
       En móvil el riel no se pinta y manda la barra de arriba con su hoja.
     */}
     <div class="marco">
-      <BarraLateral lang={lang} abierta={herramienta} pagina={page} />
+      <BarraLateral lang={lang} abierta={herramientaAbierta} pagina={page} />
 
       <div class="flex min-w-0 flex-1 flex-col">
-        <BarraMovil lang={lang} abierta={herramienta} pagina={page} />
+        <BarraMovil lang={lang} abierta={herramientaAbierta} pagina={page} />
 
         <main id="main" class="flex-1">
           <slot />

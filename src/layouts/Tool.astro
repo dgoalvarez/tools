@@ -32,18 +32,26 @@
 import Base from './Base.astro';
 import Tour from '../islands/Tour';
 import { UI } from '../i18n/ui';
-import { TOOLS } from '../i18n/tools';
+import { fichaDe } from '../i18n/tools';
 import { MATERIAS } from '../i18n/labels';
 import { t, type Lang } from '../i18n/config';
 import type { ToolKey } from '../i18n/routes';
 
 interface Props {
   lang: Lang;
-  tool: ToolKey;
+  /**
+   * La página: una herramienta, o el tablero.
+   *
+   * Era `tool: ToolKey` y se ensanchó porque el tablero usa esta misma
+   * cabecera —título, resumen y botón del paso a paso— sin ser una
+   * herramienta. Todo lo que cambia entre los dos casos sale de
+   * `fichaDe`, que es quien sabe que hay páginas sin materia.
+   */
+  tool: ToolKey | 'board';
 }
 
 const { lang, tool } = Astro.props;
-const meta = TOOLS[tool];
+const meta = fichaDe(tool);
 
 const name = t(meta.name, lang);
 const description = t(meta.description, lang);
@@ -58,7 +66,12 @@ const description = t(meta.description, lang);
   <div class="mx-auto max-w-[1560px] px-[var(--pad-x)]">
     <header class="cabecera">
       <div class="cabecera-fila">
-        <p class="cabecera-materia">{t(MATERIAS[meta.etiquetas.materia], lang)}</p>
+        {/* El rótulo de materia solo lo llevan las herramientas. El
+            tablero no tiene una: las contiene todas, así que en su sitio
+            va su propio nombre. */}
+        <p class="cabecera-materia">
+          {meta.materia ? t(MATERIAS[meta.materia], lang) : t(UI.navTablero, lang)}
+        </p>
         <Tour client:load lang={lang} tool={tool} />
       </div>
 

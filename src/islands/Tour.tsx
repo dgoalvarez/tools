@@ -29,7 +29,8 @@ import type { ToolKey } from '@/i18n/routes';
 
 interface Props {
   lang: Lang;
-  tool: ToolKey;
+  /** La página con paso a paso: una herramienta, o el tablero. */
+  tool: ToolKey | 'board';
 }
 
 export default function Tour({ lang, tool }: Props) {

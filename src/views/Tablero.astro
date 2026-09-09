@@ -1,0 +1,51 @@
+---
+/**
+ * El tablero.
+ *
+ * El aviso de dónde se guarda va AQUÍ y no dentro de la isla, por lo
+ * mismo que el de notas: es texto fijo, sale del servidor en el primer
+ * pintado, y quien llega tiene que poder leerlo antes de montar nada.
+ *
+ * Y hay una razón más, esta de la maquinaria: `check-tour.mjs` exige que
+ * cada ancla no opcional del paso a paso exista en el HTML publicado. Un
+ * tablero recién estrenado está VACÍO, así que las tres anclas firmes
+ * tienen que vivir en el marco —el estado vacío, el botón de añadir y el
+ * código— y no dentro de las piezas, que a esas alturas no hay.
+ */
+import Tool from '../layouts/Tool.astro';
+import { TABLERO_TEXTOS as TX } from '../i18n/tablero';
+import { UI } from '../i18n/ui';
+import { t, type Lang } from '../i18n/config';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<Tool lang={lang} tool="board">
+  <p class="aviso-sesion">{t(TX.aviso, lang)}</p>
+
+  <div class="tablero">
+    <section class="tablero-vacio" data-tour="tablero-vacio">
+      <p class="titulo">{t(TX.vacioTitulo, lang)}</p>
+      <p class="cuerpo">{t(TX.vacioCuerpo, lang)}</p>
+
+      <p class="marca-anadir" data-tour="tablero-anadir">{t(TX.anadir, lang)}</p>
+    </section>
+
+    <section class="tablero-codigo" data-tour="tablero-codigo">
+      <p class="titulo">{t(TX.codigo, lang)}</p>
+      <p class="ayuda">{t(TX.codigoAyuda, lang)}</p>
+    </section>
+  </div>
+
+  <noscript>
+    <p
+      class="mt-6 max-w-[var(--measure)] rounded-lg border border-line bg-surface-2 p-4 text-[length:var(--fs-small)] text-ink-muted"
+    >
+      {t(UI.sinJs, lang)}
+    </p>
+  </noscript>
+</Tool>

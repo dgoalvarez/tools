@@ -37,7 +37,72 @@ export interface PasoTour {
   opcional?: boolean;
 }
 
-export const TOUR: Record<ToolKey, PasoTour[]> = {
+/**
+ * Los pasos de cada página que tiene paso a paso.
+ *
+ * La clave es una herramienta MÁS el tablero, que es una página y no una
+ * herramienta: no está en `TOOL_KEYS` a propósito —así no se cuela en el
+ * índice de la portada ni en los grupos del riel— pero sí tiene su
+ * recorrido, porque también hay que explicarlo.
+ */
+export const TOUR: Record<ToolKey | 'board', PasoTour[]> = {
+  // --------------------------------------------------------- tablero
+  /*
+    Tres pasos firmes y dos opcionales, y el reparto no es casual.
+
+    Los firmes señalan al MARCO —el estado vacío, el botón de añadir y el
+    código—, que existen en el HTML publicado con el tablero recién
+    estrenado, que es lo que «check-tour.mjs» va a buscar. Los de las
+    piezas van con «opcional», que es literalmente para lo que se inventó
+    esa marca: solo salen cuando hay algo puesto.
+  */
+  board: [
+    {
+      ancla: 'tablero-vacio',
+      titulo: { es: 'Esto lo montas tú', en: 'You build this one' },
+      cuerpo: {
+        es: 'Las demás páginas hacen una cosa cada una. Esta no hace ninguna: es donde pones las que uses a la vez, para no tener tres pestañas abiertas.',
+        en: 'Every other page does one thing. This one does none: it is where you put the ones you use at the same time, so you do not need three tabs open.',
+      },
+    },
+    {
+      ancla: 'tablero-anadir',
+      titulo: { es: 'Añade lo que uses', en: 'Add what you use' },
+      cuerpo: {
+        es: 'Cada herramienta entra en su versión compacta y se usa entera desde aquí: el pomodoro se arranca y se para, la lista se marca. Lo que se queda en su página son los ajustes finos.',
+        en: 'Each tool comes in its compact form and you use it in full from here: the pomodoro starts and stops, the list gets ticked. What stays on its own page are the fine settings.',
+      },
+    },
+    {
+      ancla: 'tablero-codigo',
+      titulo: { es: 'Tu tablero cabe en un código', en: 'Your board fits in a code' },
+      cuerpo: {
+        es: 'Unas pocas letras que llevan dentro el tablero entero: qué hay, de qué tamaño y en qué orden. No apuntan a ningún servidor, porque no hay ninguno. Cópialas para llevártelo a otro navegador.',
+        en: 'A handful of letters carrying the whole board inside: what is on it, at what size, in what order. They point at no server, because there is none. Copy them to take it to another browser.',
+      },
+    },
+    {
+      ancla: 'tablero-pieza',
+      titulo: { es: 'Cada pieza tiene su barra', en: 'Each piece has its bar' },
+      cuerpo: {
+        es: 'Ahí se cambia el tamaño, se mueve de sitio y se quita. El asa de la izquierda arrastra; las flechas hacen lo mismo con el teclado, que es lo que permite reordenar sin ratón.',
+        en: 'That is where you change the size, move it and take it out. The handle on the left drags; the arrows do the same from the keyboard, which is what makes reordering possible without a mouse.',
+      },
+      opcional: true,
+    },
+    {
+      ancla: 'tablero-talla',
+      titulo: {
+        es: 'El tamaño se elige, no se estira',
+        en: 'You pick the size, you do not stretch it',
+      },
+      cuerpo: {
+        es: 'Cada herramienta trae las tallas que le sientan bien, y solo esas. Así ninguna combinación queda rota, y en un móvil se apilan solas sin que tengas que rehacer nada.',
+        en: 'Each tool brings the sizes that suit it, and only those. That way no combination ends up broken, and on a phone they stack on their own without you having to redo anything.',
+      },
+      opcional: true,
+    },
+  ],
   // ------------------------------------------------------------ notas
   notes: [
     {

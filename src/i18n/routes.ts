@@ -12,14 +12,7 @@
 import type { Lang } from './config';
 
 export type PageKey =
-  | 'home'
-  | 'timezones'
-  | 'clock'
-  | 'pomodoro'
-  | 'notes'
-  | 'contrast'
-  | 'palette'
-  | 'scale';
+  'home' | 'timezones' | 'clock' | 'pomodoro' | 'notes' | 'contrast' | 'palette' | 'scale';
 
 export const ROUTES: Record<PageKey, Record<Lang, string>> = {
   home: { en: '/en', es: '/es' },
@@ -38,16 +31,29 @@ export const ROUTES: Record<PageKey, Record<Lang, string>> = {
 /** Ruta de una página en un idioma. */
 export const route = (page: PageKey, lang: Lang): string => ROUTES[page][lang];
 
-/** Las herramientas, en el orden en que se muestran. */
+/**
+ * Las herramientas, en el orden en que se muestran.
+ *
+ * Este array manda en los TRES sitios donde aparece la lista —el índice
+ * de la portada, el riel y la hoja de móvil—, porque los tres filtran de
+ * aquí por ámbito. Cambiar el orden aquí lo cambia en los tres a la vez,
+ * y esa es justo la propiedad que interesa: quien llega por la portada y
+ * luego navega por la barra encuentra las cosas donde ya las había visto.
+ *
+ * Dentro de cada ámbito van por parejas, y la pareja de delante es la que
+ * más se usa. En productividad, la nota y el pomodoro son lo de la sesión
+ * que se está haciendo ahora mismo —se apuntan las tres cosas, se pone el
+ * temporizador, y se vuelve—; los husos y el reloj son lo de mirar la
+ * hora, que se hace de vez en cuando. En diseño, la rampa y el contraste
+ * son las dos de color, y la escala va detrás porque es la de letra.
+ */
 export const TOOL_KEYS = [
+  'notes',
+  'pomodoro',
   'timezones',
   'clock',
-  'pomodoro',
-  // Va detrás del pomodoro a propósito: es su pareja. Se apuntan las
-  // tres cosas de la sesión, se pone el temporizador, y se vuelve.
-  'notes',
-  'contrast',
   'palette',
+  'contrast',
   'scale',
 ] as const satisfies readonly PageKey[];
 

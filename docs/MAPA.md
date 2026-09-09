@@ -12,15 +12,32 @@ Existe para no volver a averiguar lo mismo cada sesión.
 
 | | Ruta · es | Ruta · en | Materia | Tarea | Ámbito | Pasos |
 | --- | --- | --- | --- | --- | --- | --- |
+| **Notas** | `/es/notas` | `/en/notes` | texto | anotar | productividad | 6 |
+| **Pomodoro** | `/es/pomodoro` | `/en/pomodoro` | tiempo | cronometrar | productividad | 4 |
 | **Husos horarios** | `/es/horarios` | `/en/timezones` | tiempo | convertir | productividad | 8 |
 | **Reloj** | `/es/reloj` | `/en/clock` | tiempo | cronometrar | productividad | 7 |
-| **Pomodoro** | `/es/pomodoro` | `/en/pomodoro` | tiempo | cronometrar | productividad | 4 |
-| **Notas** | `/es/notas` | `/en/notes` | texto | anotar | productividad | 6 |
-| **Contraste** | `/es/contraste` | `/en/contrast` | color | comprobar | diseno | 9 |
 | **Paleta** | `/es/paleta` | `/en/palette` | color | generar | diseno | 6 |
+| **Contraste** | `/es/contraste` | `/en/contrast` | color | comprobar | diseno | 9 |
 | **Escala tipográfica** | `/es/escala` | `/en/type-scale` | tipografia | generar | diseno | 10 |
 
 ### Los archivos de cada una
+
+**Notas** · `notes`
+
+- `scripts/comprobar-notas.ts`
+- `src/i18n/notas.ts`
+- `src/islands/Notas.tsx`
+- `src/lib/notas.ts`
+- `src/views/Notas.astro`
+
+**Pomodoro** · `pomodoro`
+
+- `scripts/comprobar-pomodoro.ts`
+- `src/i18n/pomodoro.ts`
+- `src/islands/Pomodoro.tsx`
+- `src/lib/aviso.ts`
+- `src/lib/pomodoro.ts`
+- `src/views/Pomodoro.astro`
 
 **Husos horarios** · `timezones`
 
@@ -40,34 +57,10 @@ Existe para no volver a averiguar lo mismo cada sesión.
 - `src/lib/timezones.ts`
 - `src/views/Reloj.astro`
 
-**Pomodoro** · `pomodoro`
-
-- `scripts/comprobar-pomodoro.ts`
-- `src/i18n/pomodoro.ts`
-- `src/islands/Pomodoro.tsx`
-- `src/lib/aviso.ts`
-- `src/lib/pomodoro.ts`
-- `src/views/Pomodoro.astro`
-
-**Notas** · `notes`
-
-- `scripts/comprobar-notas.ts`
-- `src/i18n/notas.ts`
-- `src/islands/Notas.tsx`
-- `src/lib/notas.ts`
-- `src/views/Notas.astro`
-
-**Contraste** · `contrast`
+**Paleta** · `palette`
 
 - `scripts/comprobar-contraste.ts`
 - `scripts/comprobar-encabezado.ts`
-- `src/i18n/contrast.ts`
-- `src/islands/Contrast.tsx`
-- `src/lib/contrast.ts`
-- `src/views/Contrast.astro`
-
-**Paleta** · `palette`
-
 - `scripts/comprobar-rampas.ts`
 - `src/i18n/contrast.ts`
 - `src/i18n/paleta.ts`
@@ -76,6 +69,13 @@ Existe para no volver a averiguar lo mismo cada sesión.
 - `src/lib/contrast.ts`
 - `src/lib/rampa.ts`
 - `src/views/Paleta.astro`
+
+**Contraste** · `contrast`
+
+- `src/i18n/contrast.ts`
+- `src/islands/Contrast.tsx`
+- `src/lib/contrast.ts`
+- `src/views/Contrast.astro`
 
 **Escala tipográfica** · `scale`
 

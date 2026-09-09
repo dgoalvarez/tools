@@ -57,6 +57,11 @@
  *     proceso con la sonda, y una llamada síncrona deja parado el bucle
  *     de eventos: Chrome pedía la página, nadie contestaba, y el proceso
  *     se quedaba colgado hasta el tiempo de espera.
+ *   · **Se espera a la ruta, no a la campana.** Colgar la comprobación
+ *     del segundo `astro:page-load` fallaba una de cada cuatro veces: si
+ *     el enrutador emite una campana de más sobre la misma página, la
+ *     comprobación se dispara antes de haber llegado. `__alLlegar` mira
+ *     `location.pathname`, que es el hecho que se está esperando.
  *   · **El rastro no avisa.** El título va contando por dónde va la
  *     sonda, y eso es solo para mirar una captura: si el rastro también
  *     avisara por la red, el primer aviso sería «llego a la carga 1» y
@@ -223,6 +228,34 @@ const COMUN = [
   // corre después de los módulos, así que el de la navegación ya pasó.
   // La espera corta que sigue es para ir DETRÁS de él: los manejadores se
   // llaman en el orden en que se registraron, y este se registró antes.
+  /*
+    Espera a estar EN el sitio, no a que suene la segunda campana.
+
+    Antes las comprobaciones del salto colgaban de `__cuandoListo(2)`, es
+    decir, del segundo `astro:page-load`. Eso da por hecho que la segunda
+    campana significa «ya he llegado», y no siempre: si el enrutador emite
+    un `page-load` de más sobre la misma página, la comprobación se
+    dispara todavía en el origen y falla diciendo «no llegó». Salía en rojo
+    una de cada cuatro veces, y una alarma que falla una de cada cuatro
+    enseña a ignorar el rojo.
+
+    Esto mira la ruta, que es el hecho que de verdad se está esperando.
+  */
+  'function __alLlegar(trozo, fn) {',
+  '  var t0 = Date.now();',
+  '  var id = setInterval(function () {',
+  '    if (location.pathname.indexOf(trozo) !== -1) {',
+  '      clearInterval(id);',
+  // Un respiro para que el enrutador acabe de montar lo que trajo.
+  '      setTimeout(fn, 200);',
+  '      return;',
+  '    }',
+  '    if (Date.now() - t0 > 15000) {',
+  '      clearInterval(id);',
+  '      __decir("no llego a " + trozo + " en 15 s; sigue en " + location.pathname);',
+  '    }',
+  '  }, 100);',
+  '}',
   'function __cuandoListo(n, fn) {',
   '  var veces = 0;',
   '  document.addEventListener("astro:page-load", function () {',
@@ -311,7 +344,7 @@ function guionNavegar(dentroDeLaHoja) {
     '  if (!enlace) { __decir("no hay enlace al pomodoro"); return; }',
     '  enlace.click();',
     '});',
-    '__cuandoListo(2, function () {',
+    '__alLlegar("/es/pomodoro", function () {',
     '  var males = __males;',
     '  if (!window.__vivo) males.push("hubo recarga: se perdio la marca de window");',
     '  if (location.pathname === __antesRuta) males.push("no cambio la ruta: " + __antesRuta);',
@@ -382,7 +415,7 @@ const GUION_LIBRETA = [
   '    enlace.click();',
   '  }, 500);',
   '});',
-  '__cuandoListo(2, function () {',
+  '__alLlegar("/es/contraste", function () {',
   '  var males = [];',
   '  if (!window.__vivo) males.push("hubo recarga: se perdio la marca de window");',
   '  if (location.pathname.indexOf("/es/contraste") === -1) {',

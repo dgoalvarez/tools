@@ -104,7 +104,31 @@ export default function Dibujo({ textos }: Props) {
   */
   const enCurso = useRef<Trazo | null>(null);
   const [, setTic] = useState(0);
-  const repintar = () => setTic((n) => n + 1);
+
+  /*
+    Un repintado por FOTOGRAMA, no uno por evento.
+
+    Un lápiz dispara `pointermove` más veces de las que la pantalla pinta,
+    y cada uno pedía un repintado que redibujaba los cuarenta trazos
+    enteros. Repintar dos veces entre dos fotogramas no se ve: es trabajo
+    que se tira.
+
+    `requestAnimationFrame` es el reloj de la pantalla, así que junta
+    todos los eventos que caen entre dos pintados en un solo repintado.
+
+    Los puntos NO se pierden por esto: se apuntan todos en la ref según
+    llegan. Lo que se agrupa es el dibujar, no el escuchar.
+  */
+  const fotograma = useRef(0);
+  const repintar = () => {
+    if (fotograma.current) return;
+    fotograma.current = requestAnimationFrame(() => {
+      fotograma.current = 0;
+      setTic((n) => n + 1);
+    });
+  };
+
+  useEffect(() => () => cancelAnimationFrame(fotograma.current), []);
 
   /*
     El lienzo se redibuja entero en cada cambio, y a propósito.
@@ -155,9 +179,31 @@ export default function Dibujo({ textos }: Props) {
     return () => observador.disconnect();
   }, []);
 
-  const puntoDe = (e: React.PointerEvent<HTMLCanvasElement>): Punto => {
-    const caja = e.currentTarget.getBoundingClientRect();
-    return [e.clientX - caja.left, e.clientY - caja.top, e.pressure || 0.5];
+  /**
+   * La caja del lienzo, medida UNA vez al empezar el trazo.
+   *
+   * Se medía en cada punto, y medir obliga al navegador a recalcular la
+   * maqueta ahí mismo. Con un lápiz que dispara doscientos eventos por
+   * segundo, eso son doscientos recálculos mientras se dibuja — justo
+   * cuando lo único que importa es que el trazo no se retrase.
+   *
+   * El lienzo no se mueve durante un trazo: lleva `touch-action: none`,
+   * así que la página tampoco se desplaza debajo. Una sola medida vale
+   * para todos los puntos.
+   */
+  const caja = useRef<DOMRect | null>(null);
+
+  /**
+   * Un punto, a partir de cualquier cosa que traiga coordenadas.
+   *
+   * Recibe el evento en crudo y no el de React porque los agrupados que
+   * devuelve `getCoalescedEvents` son nativos: no pasan por el sistema de
+   * eventos sintéticos y no tienen `currentTarget`.
+   */
+  const puntoEn = (e: { clientX: number; clientY: number; pressure?: number }): Punto => {
+    const c = caja.current;
+    if (!c) return [0, 0, 0.5];
+    return [e.clientX - c.left, e.clientY - c.top, e.pressure || 0.5];
   };
 
   const hayAlgo = trazos.length > 0;
@@ -223,8 +269,9 @@ export default function Dibujo({ textos }: Props) {
           aria-label={textos.etiqueta}
           onPointerDown={(e) => {
             e.currentTarget.setPointerCapture?.(e.pointerId);
+            caja.current = e.currentTarget.getBoundingClientRect();
             enCurso.current = {
-              puntos: [puntoDe(e)],
+              puntos: [puntoEn(e)],
               tinta: TINTAS[tinta]!,
               grosor: GROSORES[grosor]!,
             };
@@ -233,7 +280,20 @@ export default function Dibujo({ textos }: Props) {
           onPointerMove={(e) => {
             const trazo = enCurso.current;
             if (!trazo) return;
-            trazo.puntos.push(puntoDe(e));
+
+            /*
+              Todos los puntos que el aparato midió, no solo el último.
+
+              Entre dos `pointermove` que llegan a JavaScript puede haber
+              media docena de posiciones que el navegador midió y guardó
+              sin avisar. Quedarse con la última endereza las curvas
+              rápidas: el trazo sale a trozos rectos en vez de curvo.
+              `getCoalescedEvents` las devuelve todas.
+            */
+            const agrupados = e.nativeEvent.getCoalescedEvents?.() ?? [];
+            for (const bruto of agrupados.length ? agrupados : [e.nativeEvent]) {
+              trazo.puntos.push(puntoEn(bruto));
+            }
             repintar();
           }}
           onPointerUp={() => {

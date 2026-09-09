@@ -1,0 +1,26 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "1 · Tokens", "x": 0, "y": 0, "w": 520, "h": 760 },
+    { "file": "Estados.dc.html", "title": "2 · Estados", "x": 620, "y": 0, "w": 520, "h": 760 },
+    { "file": "Regex.dc.html", "title": "3 · Regex", "x": 1240, "y": 0, "w": 520, "h": 760 },
+    { "file": "Fechas.dc.html", "title": "4 · Fechas", "x": 1860, "y": 0, "w": 520, "h": 760 },
+    { "file": "Gastos.dc.html", "title": "5 · Gastos", "x": 2480, "y": 0, "w": 520, "h": 760 }
+  ],
+  "annotations": [
+    {
+      "id": "daltonismo",
+      "x": 0,
+      "y": -230,
+      "w": 520,
+      "text": "El daltonismo deja de ser herramienta.\n\nTienes razón: es una función, no una página. Encaja mejor como un interruptor dentro de Paleta —ver la rampa entera como la ve quien no distingue esos tonos— y como un tercer veredicto en Contraste, junto a WCAG y APCA.\n\nNo ocupa uno de los cinco huecos."
+    },
+    {
+      "id": "decidir",
+      "x": 1860,
+      "y": -230,
+      "w": 1140,
+      "text": "Lo que hay que decidir antes de construir\n\n· El ámbito Desarrollo, nuevo (ficha 3).\n· Dos materias nuevas, sistema y dinero, cada una con su tono derivado y medido por /acento.\n· De dónde salen los festivos y cuánto pesan (ficha 4). Es la única decisión de las cinco que puede encarecer una herramienta de verdad.\n\nY el orden que yo seguiría: Estados primero, porque toda su aritmética ya está escrita; Fechas después, porque es la que más te sirve hoy."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

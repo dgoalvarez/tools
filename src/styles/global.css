@@ -703,18 +703,47 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    animation: hoja-entra 0.18s ease;
+    translate: 0 0;
   }
 
-  @keyframes hoja-entra {
-    from {
-      transform: translateX(-100%);
+  /*
+    Entra y sale por el mismo borde.
+
+    Antes entraba deslizándose y se iba de golpe. Lo que desaparece por
+    donde vino se entiende sin pensar; lo que aparece por un lado y se
+    esfuma en el sitio deja la duda de si sigue ahí detrás.
+
+    Salir requiere que el diálogo siga pintado mientras se va, y de eso se
+    encargan las dos últimas líneas: `display` y `overlay` se transicionan
+    en discreto, así que el navegador retrasa el `display: none` y la
+    salida de la capa superior hasta que el deslizamiento termina.
+
+    El `display` sigue SIN declararse en la regla base, que es lo que
+    aquella vez pintó dos rieles a la vez. Aquí solo se pide que tarde en
+    quitarse el que pone el navegador.
+
+    Donde `allow-discrete` no exista, la entrada se anima igual y la
+    salida vuelve a ser instantánea: exactamente lo de antes.
+  */
+  .hoja {
+    translate: -100% 0;
+    transition:
+      translate 0.18s ease,
+      overlay 0.18s allow-discrete,
+      display 0.18s allow-discrete;
+  }
+
+  /* De dónde parte al abrirse. Sin esto no hay entrada: el elemento nace
+     ya en su sitio y no hay nada que transicionar. */
+  @starting-style {
+    .hoja[open] {
+      translate: -100% 0;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .hoja[open] {
-      animation: none;
+    .hoja {
+      transition: none;
     }
   }
 
@@ -838,20 +867,32 @@
     color: var(--ink);
   }
 
-  .bento[open] {
-    animation: bento-entra 160ms ease;
+  /* Lo mismo que la hoja: se va por donde vino. */
+  .bento {
+    opacity: 0;
+    translate: 0 0.5rem;
+    transition:
+      opacity 160ms ease,
+      translate 160ms ease,
+      overlay 160ms allow-discrete,
+      display 160ms allow-discrete;
   }
 
-  @keyframes bento-entra {
-    from {
+  .bento[open] {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  @starting-style {
+    .bento[open] {
       opacity: 0;
-      transform: translateY(0.5rem);
+      translate: 0 0.5rem;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .bento[open] {
-      animation: none;
+    .bento {
+      transition: none;
     }
   }
 }
@@ -4406,5 +4447,148 @@
   .campo-nota:focus-visible {
     outline: 2px solid var(--acento);
     outline-offset: 1px;
+  }
+}
+
+/* ============================================================
+   La respuesta al pulsar
+
+   Este sitio tenía veintiuna familias de controles con `:hover` y
+   **ninguna** con `:active`. En un ratón eso se nota poco; en un teléfono
+   no hay hover, así que tocar una herramienta del riel, una casilla de la
+   paleta o un botón de la libreta no devolvía absolutamente nada hasta
+   que aparecía el resultado. El caso peor era la casilla de la paleta:
+   se pulsa para copiar el color, y lo único que contestaba era el aviso
+   flotante, que llega después de escribir en el portapapeles.
+
+   ---------------------------------------------------------------------
+   La ida es instantánea y la vuelta se suaviza
+
+   Que es lo que hace que se sienta directo. Una transición en los dos
+   sentidos retrasaría la respuesta justo lo que dura la transición, y ese
+   retraso es exactamente lo que se viene a quitar. Se consigue poniendo
+   la duración en la regla de reposo y anulándola en `:active`.
+
+   ---------------------------------------------------------------------
+   Dos formas, según lo que se pulse
+
+   Las filas que ocupan todo el ancho se TIÑEN: encogerlas movería medio
+   riel y se leería como un fallo de pintado. Los blancos pequeños
+   —pastillas, iconos, casillas de color— además se HUNDEN, que es lo que
+   hace un botón de verdad.
+
+   El tinte lleva el acento de la herramienta. No es adorno: dice que el
+   control es de esta herramienta y no de la de al lado.
+   ============================================================ */
+
+@layer components {
+  .riel-item,
+  .acordeon > summary,
+  .segmento label,
+  .selector-hora .opcion,
+  .pastilla,
+  .boton-formato,
+  .disparador-color,
+  .acciones-tarea button,
+  .casilla-paleta .copiar,
+  .fila-hora button.hora {
+    transition:
+      background-color 140ms ease,
+      transform 140ms ease;
+  }
+
+  .riel-item:active,
+  .acordeon > summary:active,
+  .segmento label:active,
+  .selector-hora .opcion:active,
+  .pastilla:active,
+  .boton-formato:active,
+  .disparador-color:active,
+  .acciones-tarea button:active,
+  .casilla-paleta .copiar:active,
+  .fila-hora button.hora:active {
+    transition-duration: 0s;
+  }
+
+  /* ---------- Las filas se tiñen ---------- */
+  .riel-item:active,
+  .acordeon > summary:active,
+  .segmento label:active,
+  .selector-hora .opcion:active {
+    background: color-mix(in srgb, var(--acento) 14%, var(--surface-2));
+  }
+
+  /* ---------- Los blancos pequeños se hunden ---------- */
+  .pastilla:active,
+  .boton-formato:active,
+  .disparador-color:active,
+  .acciones-tarea button:active:not(:disabled),
+  .casilla-paleta .copiar:active,
+  .fila-hora button.hora:active {
+    transform: scale(0.94);
+  }
+
+  /* La hora está alineada a la derecha: encogiéndola desde el centro se
+     despegaría de su borde, que es contra el que se comparan las demás. */
+  .fila-hora button.hora:active {
+    transform-origin: right center;
+  }
+
+  /*
+    Con movimiento reducido se queda el tinte y se va el hundimiento.
+
+    Movimiento reducido no quiere decir sin respuesta: quiere decir sin
+    desplazamientos. Un cambio de color contesta igual de rápido y no
+    mueve nada.
+  */
+  @media (prefers-reduced-motion: reduce) {
+    .pastilla:active,
+    .boton-formato:active,
+    .disparador-color:active,
+    .acciones-tarea button:active:not(:disabled),
+    .casilla-paleta .copiar:active,
+    .fila-hora button.hora:active {
+      transform: none;
+      background: color-mix(in srgb, var(--acento) 14%, var(--surface-2));
+    }
+  }
+}
+
+/* ============================================================
+   Las otras dos preferencias del sistema
+
+   El movimiento reducido estaba atendido en cinco sitios desde hace
+   tiempo. Sus dos hermanas no estaban en ninguno, y este sitio tiene tres
+   superficies translúcidas: la barra de móvil y los fondos de la hoja y
+   del lanzador.
+
+   · **Transparencia reducida** — se pide cuando el desenfoque estorba
+     para leer. Las tres se vuelven opacas y se les quita el filtro.
+   · **Más contraste** — la palanca es una sola: la línea del sitio pasa a
+     ser la tinta suave. Sube de golpe el borde de todas las tarjetas,
+     todos los campos y todos los separadores, sin tocarlos uno a uno.
+   ============================================================ */
+
+@media (prefers-reduced-transparency: reduce) {
+  .barra-movil {
+    background: var(--bg);
+    backdrop-filter: none;
+  }
+
+  .hoja::backdrop,
+  .bento::backdrop {
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --line: var(--ink-soft);
+  }
+
+  .barra-movil {
+    background: var(--bg);
+    backdrop-filter: none;
   }
 }

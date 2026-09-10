@@ -29,7 +29,7 @@ interface Props {
 const { lang } = Astro.props;
 ---
 
-<Tool lang={lang} tool="board">
+<Tool lang={lang} tool="board" compacta>
   <Tablero client:load lang={lang} />
 
   <p class="nota-guardado">{t(TX.aviso, lang)}</p>

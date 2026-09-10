@@ -73,6 +73,55 @@ const VISTAS = [
   // verdad: es lo que ve quien llega, y donde se explica qué es esto.
   { nombre: 'tablero-vacio', ruta: 'es/tablero', ancho: 1440, alto: 900 },
   { nombre: 'tablero-estrecho', ruta: 'es/tablero', ancho: 485, alto: 900 },
+  /*
+    El panel de añadir, abierto y enseñando una herramienta.
+
+    Es la pantalla que decide qué se pone en el tablero, así que es la
+    que hay que mirar: si la muestra sale cortada o el botón de añadir
+    queda fuera, la vista previa no sirve de nada.
+  */
+  {
+    nombre: 'tablero-panel',
+    ruta: 'es/tablero',
+    ancho: 1440,
+    alto: 1000,
+    guion: `
+      await esperar(() => !document.querySelector('astro-island[ssr]'));
+
+      const abrir = await esperar(() => document.querySelector('[data-tour="tablero-anadir"]'));
+      abrir.click();
+
+      const b = await esperar(() => document.querySelector('.elegir-lista [data-widget="dibujo"]'));
+      b.click();
+
+      // Se espera a que la MUESTRA esté montada, no al reloj: el widget
+      // llega por import() dinámico y una captura a destiempo saldría con
+      // el rectángulo gris de carga en vez de la herramienta.
+      await esperar(() => document.querySelector('.muestra-widget > *:not(.cargando-pieza)'));
+      await new Promise((r) => setTimeout(r, 250));
+    `,
+  },
+  {
+    nombre: 'tablero-panel-estrecho',
+    ruta: 'es/tablero',
+    ancho: 485,
+    alto: 1000,
+    guion: `
+      await esperar(() => !document.querySelector('astro-island[ssr]'));
+
+      const abrir = await esperar(() => document.querySelector('[data-tour="tablero-anadir"]'));
+      abrir.click();
+
+      const b = await esperar(() => document.querySelector('.elegir-lista [data-widget="nota"]'));
+      b.click();
+
+      // Se espera a que la MUESTRA esté montada, no al reloj: el widget
+      // llega por import() dinámico y una captura a destiempo saldría con
+      // el rectángulo gris de carga en vez de la herramienta.
+      await esperar(() => document.querySelector('.muestra-widget > *:not(.cargando-pieza)'));
+      await new Promise((r) => setTimeout(r, 250));
+    `,
+  },
   // Y con dos piezas dentro, que es lo que de verdad hay que mirar: el
   // tablero vacío no enseña ni la rejilla ni la barra de cada pieza.
   // A 1440 salen las cuatro columnas; a 700, dos, que es el reparto
@@ -89,22 +138,41 @@ const VISTAS = [
       await esperar(() => !document.querySelector('astro-island[ssr]'));
 
       const abrir = await esperar(() => document.querySelector('[data-tour="tablero-anadir"]'));
-      // Por clave y no por posición: al llegar una herramienta a su tope,
-      // su opción se deshabilita y los índices se corren.
-      const opcion = (clave) => document.querySelector('.elegir-widget [data-widget="' + clave + '"]');
+      // Por clave y no por posición: la lista del panel se reordena sola
+      // el día que entre otra herramienta, y un índice no dice cuál es.
+      const opcion = (clave) => document.querySelector('.elegir-lista [data-widget="' + clave + '"]');
 
       // Cada widget llega por import() dinámico, así que se espera a que
       // la pieza tenga cuerpo de verdad y no al reloj: con el hueco de
       // carga puesto, un setTimeout capturaría dos rectángulos grises.
-      const poner = async (clave, cuantas) => {
+      // Ahora son dos pasos: señalar la herramienta en el panel y darle a
+      // añadir. Antes bastaba un clic porque el menú añadía al elegir.
+      const poner = async (clave, cuantas, talla) => {
         abrir.click();
         const b = await esperar(() => opcion(clave));
         b.click();
+        if (talla) {
+          const t = [...document.querySelectorAll('.elegir-pie .tallas button')].find(
+            (x) => x.textContent.trim() === talla.replace('x', '×')
+          );
+          if (t) t.click();
+        }
+        // Por clave: «data-anadir» dice QUÉ se va a añadir, y esperarlo con
+        // el nombre puesto comprueba de paso que el panel enfocó lo que se
+        // le pidió. Con el selector suelto se podía clicar en el mismo tick
+        // que elegir, antes de que React actualizara, y se añadía la
+        // herramienta anterior.
+        const anadir = await esperar(() => document.querySelector('[data-anadir="' + clave + '"]:not(:disabled)'));
+        anadir.click();
         await esperar(() => document.querySelectorAll('.cuerpo-pieza > *:not(.cargando-pieza)').length >= cuantas);
       };
 
-      await poner('nota', 1);
-      await poner('dibujo', 2);
+      // Las cuatro, y cada una en una talla distinta: es la única forma
+      // de ver de un vistazo si el reparto de la rejilla cuadra.
+      await poner('pomodoro', 1, '1x1');
+      await poner('lista', 2, '1x2');
+      await poner('nota', 3, '2x1');
+      await poner('dibujo', 4, '2x2');
       await new Promise((r) => setTimeout(r, 150));
     `,
   },
@@ -120,22 +188,41 @@ const VISTAS = [
       await esperar(() => !document.querySelector('astro-island[ssr]'));
 
       const abrir = await esperar(() => document.querySelector('[data-tour="tablero-anadir"]'));
-      // Por clave y no por posición: al llegar una herramienta a su tope,
-      // su opción se deshabilita y los índices se corren.
-      const opcion = (clave) => document.querySelector('.elegir-widget [data-widget="' + clave + '"]');
+      // Por clave y no por posición: la lista del panel se reordena sola
+      // el día que entre otra herramienta, y un índice no dice cuál es.
+      const opcion = (clave) => document.querySelector('.elegir-lista [data-widget="' + clave + '"]');
 
       // Cada widget llega por import() dinámico, así que se espera a que
       // la pieza tenga cuerpo de verdad y no al reloj: con el hueco de
       // carga puesto, un setTimeout capturaría dos rectángulos grises.
-      const poner = async (clave, cuantas) => {
+      // Ahora son dos pasos: señalar la herramienta en el panel y darle a
+      // añadir. Antes bastaba un clic porque el menú añadía al elegir.
+      const poner = async (clave, cuantas, talla) => {
         abrir.click();
         const b = await esperar(() => opcion(clave));
         b.click();
+        if (talla) {
+          const t = [...document.querySelectorAll('.elegir-pie .tallas button')].find(
+            (x) => x.textContent.trim() === talla.replace('x', '×')
+          );
+          if (t) t.click();
+        }
+        // Por clave: «data-anadir» dice QUÉ se va a añadir, y esperarlo con
+        // el nombre puesto comprueba de paso que el panel enfocó lo que se
+        // le pidió. Con el selector suelto se podía clicar en el mismo tick
+        // que elegir, antes de que React actualizara, y se añadía la
+        // herramienta anterior.
+        const anadir = await esperar(() => document.querySelector('[data-anadir="' + clave + '"]:not(:disabled)'));
+        anadir.click();
         await esperar(() => document.querySelectorAll('.cuerpo-pieza > *:not(.cargando-pieza)').length >= cuantas);
       };
 
-      await poner('nota', 1);
-      await poner('dibujo', 2);
+      // Las cuatro, y cada una en una talla distinta: es la única forma
+      // de ver de un vistazo si el reparto de la rejilla cuadra.
+      await poner('pomodoro', 1, '1x1');
+      await poner('lista', 2, '1x2');
+      await poner('nota', 3, '2x1');
+      await poner('dibujo', 4, '2x2');
       await new Promise((r) => setTimeout(r, 150));
     `,
   },

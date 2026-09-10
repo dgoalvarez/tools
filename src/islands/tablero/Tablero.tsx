@@ -34,13 +34,13 @@ import {
   XIcon,
 } from '@phosphor-icons/react';
 
-import Icono from '../../components/IconoReact';
 import { t, type Lang } from '../../i18n/config';
 import { TABLERO_TEXTOS as TX } from '../../i18n/tablero';
 import { moverA } from '../../lib/mover';
 import { TOPE_PIEZAS, nuevoId, type Pieza, type Tablero as Piezas } from '../../lib/tablero';
 import { WIDGETS, medidasDe, type Talla, type WidgetKey } from '../../lib/widgets';
-import { COMPONENTE, DISPONIBLES } from './catalogo';
+import { COMPONENTE } from './catalogo';
+import ElegirWidget from './ElegirWidget';
 import type { PropsWidget } from './tipos';
 
 interface Props {
@@ -69,16 +69,18 @@ export default function Tablero({ lang }: Props) {
     return cuenta;
   }, [piezas]);
 
-  function anadir(tipo: WidgetKey) {
+  /*
+    La talla llega desde el panel, no de fábrica.
+
+    Se elige mirando la muestra, que es cuando se sabe cuál se quiere: el
+    alto de la muestra es el alto que va a tener la pieza. Se puede
+    cambiar después en su barra, como siempre.
+  */
+  function anadir(tipo: WidgetKey, talla: Talla) {
     const widget = WIDGETS[tipo];
     setPiezas((antes) => [
       ...antes,
-      {
-        id: nuevoId(),
-        tipo,
-        talla: widget.tallas[0]!,
-        ajustes: { ...widget.ajustesIniciales },
-      },
+      { id: nuevoId(), tipo, talla, ajustes: { ...widget.ajustesIniciales } },
     ]);
     setEligiendo(false);
   }
@@ -161,35 +163,22 @@ export default function Tablero({ lang }: Props) {
           className="boton-tablero"
           data-tour="tablero-anadir"
           disabled={lleno}
-          onClick={() => setEligiendo((v) => !v)}
+          onClick={() => setEligiendo(true)}
+          aria-haspopup="dialog"
           aria-expanded={eligiendo}
         >
           <PlusIcon aria-hidden="true" size={15} />
           {tr('anadir')}
         </button>
-
-        {eligiendo && (
-          <div className="elegir-widget" role="group" aria-label={tr('elegir')}>
-            {DISPONIBLES.map((clave) => {
-              const widget = WIDGETS[clave];
-              const yaEsta = (puestos.get(clave) ?? 0) >= widget.tope;
-              return (
-                <button
-                  key={clave}
-                  type="button"
-                  data-widget={clave}
-                  disabled={yaEsta}
-                  title={yaEsta ? tr('yaPuesto') : undefined}
-                  onClick={() => anadir(clave)}
-                >
-                  <Icono nombre={widget.icono} tamano={16} />
-                  {t(widget.nombre, lang)}
-                </button>
-              );
-            })}
-          </div>
-        )}
       </div>
+
+      <ElegirWidget
+        lang={lang}
+        abierto={eligiendo}
+        onAbierto={setEligiendo}
+        puestos={puestos}
+        onAnadir={anadir}
+      />
 
       {hayPiezas ? (
         <div className="rejilla-tablero">

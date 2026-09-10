@@ -16,8 +16,8 @@
  *     hoy 56 KB de React, y un tablero que arrastrara las doce
  *     herramientas sería varias veces eso para enseñar dos.
  *
- * Los que faltan —la lista y el pomodoro— piden partir sus islas y
- * llegan en el paso siguiente.
+ * Ya están las cuatro de productividad. Las de diseño —contraste, paleta
+ * y escala— piden una versión compacta de cada una y llegan después.
  */
 import type { ComponentType } from 'react';
 
@@ -29,7 +29,11 @@ type Cargador = () => Promise<{ default: ComponentType<PropsWidget<any>> }>;
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 export const COMPONENTE: Partial<Record<WidgetKey, Cargador>> = {
+  // El orden es el que se ve en el panel de añadir: las dos de escribir
+  // primero, porque son las que comparten cuaderno y se usan juntas.
+  lista: () => import('./widgets/WidgetLista'),
   nota: () => import('./widgets/WidgetNota'),
+  pomodoro: () => import('./widgets/WidgetPomodoro'),
   dibujo: () => import('./widgets/WidgetDibujo'),
 };
 

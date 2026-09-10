@@ -4,21 +4,19 @@
 import type { T } from './config';
 
 export const TABLERO_TEXTOS = {
-  /**
-   * Lo que se ve con el tablero vacío.
-   *
-   * No es un rectángulo en blanco con un botón: es donde se explica qué
-   * es esto, porque quien llega la primera vez no tiene ninguna pista. Y
-   * de paso es lo que hace que el paso a paso tenga un ancla firme que
-   * existe en el HTML publicado, con el tablero recién estrenado.
-   */
-  vacioTitulo: { es: 'Tu tablero está vacío', en: 'Your board is empty' },
-  vacioCuerpo: {
-    es: 'Junta aquí las herramientas que uses a la vez: una lista, una nota, un dibujo, un pomodoro. Eliges cuáles, de qué tamaño y en qué orden.',
-    en: 'Put the tools you use together in one place: a list, a note, a drawing, a pomodoro. You choose which ones, what size and in what order.',
-  },
+  /*
+    El estado vacío no lleva texto, y por eso estos dos se han ido.
+
+    Se escribieron para un rectángulo con un título y un párrafo
+    explicando qué es un tablero. Lo que se publicó fue un rectángulo
+    punteado con un «+», que dice lo mismo sin decir nada, así que
+    llevaban aquí sin usarse desde entonces. Lo que hay que explicar se
+    explica en el paso a paso.
+  */
 
   anadir: { es: 'Añadir una herramienta', en: 'Add a tool' },
+  anadirAlTablero: { es: 'Añadir al tablero', en: 'Add to the board' },
+  vistaPrevia: { es: 'Así se verá', en: 'This is how it will look' },
   elegir: { es: 'Qué quieres añadir', en: 'What do you want to add' },
   cerrar: { es: 'Cerrar', en: 'Close' },
 
@@ -32,8 +30,8 @@ export const TABLERO_TEXTOS = {
    * pestaña, y no.
    */
   aviso: {
-    es: 'El reparto de tu tablero se queda en este aparato y no sale de él. Lo que escribas dentro de cada herramienta sigue viviendo donde ya vivía: la lista y la nota, mientras la pestaña siga abierta.',
-    en: 'Your board layout stays on this device and never leaves it. Whatever you write inside each tool still lives where it already did: the list and the note, for as long as this tab is open.',
+    es: 'El reparto se queda en este aparato. Lo que escribas dentro de cada herramienta sigue donde ya vivía.',
+    en: 'The layout stays on this device. Whatever you write inside each tool still lives where it did.',
   },
 
   /** El código: copiarlo, pegarlo, y qué decir cuando no vale. */

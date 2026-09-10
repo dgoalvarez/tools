@@ -48,9 +48,23 @@ interface Props {
    * `fichaDe`, que es quien sabe que hay páginas sin materia.
    */
   tool: ToolKey | 'board';
+  /**
+   * La cabecera a UNA fila, sin rótulo de materia y sin resumen.
+   *
+   * Una herramienta necesita presentarse: quien llega a «Husos horarios»
+   * no sabe qué hace hasta que lo lee. El tablero no — es una vista que
+   * construye quien la usa, y lo que hay que enseñarle es su tablero, no
+   * un texto sobre su tablero. Los tres renglones se comían 230 px antes
+   * de la primera pieza.
+   *
+   * El <h1> no desaparece, solo se hace pequeño y sube a la fila del
+   * botón de ayuda: sigue siendo el encabezado de la página para quien
+   * navegue con lector y para quien la busque.
+   */
+  compacta?: boolean;
 }
 
-const { lang, tool } = Astro.props;
+const { lang, tool, compacta = false } = Astro.props;
 const meta = fichaDe(tool);
 
 const name = t(meta.name, lang);
@@ -64,20 +78,24 @@ const description = t(meta.description, lang);
   description={description}
 >
   <div class="mx-auto max-w-[1560px] px-[var(--pad-x)]">
-    <header class="cabecera">
+    <header class:list={['cabecera', compacta && 'cabecera-plana']}>
       <div class="cabecera-fila">
-        {/* El rótulo de materia solo lo llevan las herramientas. El
-            tablero no tiene una: las contiene todas, así que en su sitio
-            va su propio nombre. */}
-        <p class="cabecera-materia">
-          {meta.materia ? t(MATERIAS[meta.materia], lang) : t(UI.navTablero, lang)}
-        </p>
+        {
+          compacta ? (
+            <h1 class="cabecera-titulo">{name}</h1>
+          ) : (
+            /* El rótulo de materia solo lo llevan las herramientas. El
+               tablero no tiene una: las contiene todas. */
+            <p class="cabecera-materia">
+              {meta.materia ? t(MATERIAS[meta.materia], lang) : t(UI.navTablero, lang)}
+            </p>
+          )
+        }
         <Tour client:load lang={lang} tool={tool} />
       </div>
 
-      <h1 class="cabecera-titulo">{name}</h1>
-
-      <p class="cabecera-resumen">{t(meta.summary, lang)}</p>
+      {!compacta && <h1 class="cabecera-titulo">{name}</h1>}
+      {!compacta && <p class="cabecera-resumen">{t(meta.summary, lang)}</p>}
     </header>
 
     <div class="pb-[clamp(2rem,4vw,4rem)]">

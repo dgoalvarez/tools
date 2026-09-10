@@ -458,24 +458,36 @@ const TABLERO_LLENO = `
 (async () => {
   const abrir = await __esperar(() => document.querySelector('[data-tour="tablero-anadir"]'));
 
-  // Por clave y no por posición: al llegar una herramienta a su tope su
-  // opción se deshabilita, y las de detrás se corren un puesto.
-  const poner = async (clave, cuantas) => {
+  // Por clave y no por posición: la lista del panel se reordena sola el
+  // día que entre otra herramienta, y un índice no dice cuál es.
+  const poner = async (clave, cuantas, talla) => {
     abrir.click();
-    const b = await __esperar(() => document.querySelector('.elegir-widget [data-widget="' + clave + '"]'));
+    const b = await __esperar(() => document.querySelector('.elegir-lista [data-widget="' + clave + '"]'));
     b.click();
+    if (talla) {
+      const bt = [...document.querySelectorAll('.elegir-pie .tallas button')].find(
+        (x) => x.textContent.trim() === talla
+      );
+      if (bt) bt.click();
+    }
+    const anadir = await __esperar(() => document.querySelector('[data-anadir="' + clave + '"]:not(:disabled)'));
+    anadir.click();
     // Cada widget llega por import() dinámico: se espera al cuerpo de
     // verdad, no al reloj, o se mediría el hueco gris de carga.
     await __esperar(() => document.querySelectorAll('.cuerpo-pieza > *:not(.cargando-pieza)').length >= cuantas);
   };
 
-  await poner('nota', 1);
-  await poner('dibujo', 2);
-
-  // Y la nota a su talla mayor, que es otro reparto.
-  const dosPorDos = document.querySelector('.pieza-tablero .tallas button:last-child');
-  if (dosPorDos) dosPorDos.click();
-  await new Promise((r) => setTimeout(r, 120));
+  // Las cuatro, cada una en una talla distinta.
+  //
+  // El pomodoro va en 1×1 a propósito: es la pieza más ESTRECHA que
+  // existe, y su barra lleva lo mismo que las demás —asa, nombre, tres
+  // tallas, dos flechas y la ✕—. Si algo no cabe, cabe ahí primero. Y a
+  // 485 px una columna entera mide lo que la ventana, así que el caso
+  // duro no es el ancho de la ventana sino el reparto de cuatro.
+  await poner('pomodoro', 1, '1×1');
+  await poner('lista', 2, '1×2');
+  await poner('nota', 3, '2×1');
+  await poner('dibujo', 4, '2×2');
 })()
 `;
 const NOTAS_DIBUJO_LLENO = `
@@ -630,7 +642,7 @@ const CASOS = [
   { nombre: 'notas · el dibujo lleno', ruta: 'es/notas', hacer: NOTAS_DIBUJO_LLENO },
   { nombre: 'notas · en inglés', ruta: 'en/notes' },
   { nombre: 'tablero · vacío', ruta: 'es/tablero' },
-  { nombre: 'tablero · con las dos piezas', ruta: 'es/tablero', hacer: TABLERO_LLENO },
+  { nombre: 'tablero · con las cuatro piezas', ruta: 'es/tablero', hacer: TABLERO_LLENO },
   { nombre: 'tablero · en inglés', ruta: 'en/board' },
   { nombre: 'portada', ruta: 'es' },
   { nombre: 'portada en inglés', ruta: 'en' },

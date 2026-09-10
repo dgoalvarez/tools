@@ -42,6 +42,11 @@ export const COMPONENTE: Partial<Record<WidgetKey, Cargador>> = {
   mundial: () => import('./widgets/WidgetMundial'),
   cronometro: () => import('./widgets/WidgetCronometro'),
   temporizador: () => import('./widgets/WidgetTemporizador'),
+  // Y las tres de diseño, que son de mirar: el veredicto, la rampa y los
+  // tamaños. La mesa de trabajo de cada una se queda en su página.
+  contraste: () => import('./widgets/WidgetContraste'),
+  paleta: () => import('./widgets/WidgetPaleta'),
+  escala: () => import('./widgets/WidgetEscala'),
 };
 
 /** Los que ya se pueden poner. El selector solo ofrece estos. */

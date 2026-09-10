@@ -168,7 +168,7 @@ Sin React ni DOM: se corre con `node`, y por eso se puede comprobar.
 **`widgets.ts`**
 - funciones · `ce`, `medidaDeTallaV1`, `porCodigo`
 - constantes · `TOPE_COLS`, `TOPE_FILAS`, `TALLAS_V1`, `POMODORO_FABRICA`, `POMODORO_LIMITES`, `WIDGETS`, `CLAVES`
-- tipos · `Medida`, `WidgetKey`, `CampoNumero`, `CampoOpcion`, `CampoZona`, `Campo`, `AjustesPomodoro`, `AjustesDibujo`, `AjustesHora`, `AjustesMundial`, `AjustesTemporizador`, `SinAjustes`, `Widget`
+- tipos · `Medida`, `WidgetKey`, `CampoNumero`, `CampoOpcion`, `CampoZona`, `CampoColor`, `Campo`, `AjustesPomodoro`, `AjustesDibujo`, `AjustesHora`, `AjustesMundial`, `AjustesTemporizador`, `AjustesContraste`, `AjustesPaleta`, `AjustesEscala`, `SinAjustes`, `Widget`
 
 **`zonas-codigo.ts`**
 - funciones · `zonaDe`, `nombreDeZona`

@@ -26,12 +26,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { XIcon } from '@phosphor-icons/react';
 
+import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
 import { Sheet, SheetClose, SheetContent, SheetTitle } from '../../components/ui/sheet';
+import SelectorColor from '../SelectorColor';
+import { leerColor } from '../../lib/contrast';
 import { t, type Lang } from '../../i18n/config';
 import { TABLERO_TEXTOS as TX } from '../../i18n/tablero';
 import {
   WIDGETS,
   type Campo,
+  type CampoColor,
   type CampoNumero,
   type CampoOpcion,
   type CampoZona,
@@ -44,7 +48,7 @@ interface Props {
   /** La pieza que se está configurando, o `null` si el panel está cerrado. */
   pieza: Pieza | null;
   onCerrar: () => void;
-  onAjustes: (id: string, parcial: Record<string, number>) => void;
+  onAjustes: (id: string, parcial: Record<string, number | string>) => void;
 }
 
 export default function PanelAjustes({ lang, pieza, onCerrar, onAjustes }: Props) {
@@ -70,7 +74,7 @@ export default function PanelAjustes({ lang, pieza, onCerrar, onAjustes }: Props
                 key={campo.clave}
                 lang={lang}
                 campo={campo}
-                valor={pieza.ajustes[campo.clave] as number}
+                valor={pieza.ajustes[campo.clave] as number | string}
                 onValor={(v) => onAjustes(pieza.id, { [campo.clave]: v })}
               />
             ))}
@@ -86,8 +90,9 @@ export default function PanelAjustes({ lang, pieza, onCerrar, onAjustes }: Props
 interface PropsCampo<C extends Campo = Campo> {
   lang: Lang;
   campo: C;
-  valor: number;
-  onValor: (v: number) => void;
+  /** Un número en casi todos; el hexadecimal en los de color. */
+  valor: number | string;
+  onValor: (v: number | string) => void;
 }
 
 /** Reparte según el tipo. Cada uno se pinta en su propia función. */
@@ -96,6 +101,7 @@ function CampoAjuste({ campo, ...resto }: PropsCampo) {
   // no estrecha nada y TypeScript sigue viendo el tipo ancho.
   if (campo.tipo === 'opcion') return <CampoDeOpcion campo={campo} {...resto} />;
   if (campo.tipo === 'zona') return <CampoDeZona campo={campo} {...resto} />;
+  if (campo.tipo === 'color') return <CampoDeColor campo={campo} {...resto} />;
   return <CampoDeNumero campo={campo} {...resto} />;
 }
 
@@ -157,7 +163,7 @@ function CampoDeZona({ lang, campo, valor, onValor }: PropsCampo<CampoZona>) {
     <div className="campo-ajuste campo-ancho">
       <label htmlFor={id}>{t(campo.rotulo, lang)}</label>
 
-      <select id={id} value={valor} onChange={(e) => onValor(Number(e.target.value))}>
+      <select id={id} value={Number(valor)} onChange={(e) => onValor(Number(e.target.value))}>
         {opciones.map((op) => (
           <option key={op.indice} value={op.indice}>
             {op.nombre}
@@ -178,6 +184,58 @@ function CampoDeZona({ lang, campo, valor, onValor }: PropsCampo<CampoZona>) {
  * qué se quiso escribir. Es el mismo patrón que ya usa `Numero` en
  * `Pomodoro.tsx`.
  */
+/**
+ * Un color, con el selector visual del sitio.
+ *
+ * No es el `<input type="color">` del sistema: ese abre el diálogo del
+ * sistema operativo, que en cada uno es distinto y en ninguno enseña la
+ * rueda OKLCH con la que están hechos los colores de aquí. El del sitio ya
+ * está escrito, probado y es el que la gente reconoce de las herramientas
+ * de color — es la misma decisión que se tomó para la tinta del dibujo.
+ */
+function CampoDeColor({ lang, campo, valor, onValor }: PropsCampo<CampoColor>) {
+  const hex = String(valor);
+  const [bruto, setBruto] = useState(hex);
+
+  return (
+    <div className="campo-ajuste">
+      <span className="rotulo-ajuste">{t(campo.rotulo, lang)}</span>
+
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="muestra-color-ajuste"
+            style={{ background: hex }}
+            aria-label={`${t(campo.rotulo, lang)}: ${hex}`}
+          />
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-auto">
+          <SelectorColor
+            lang={lang}
+            id={'color-' + campo.clave}
+            etiqueta={t(campo.rotulo, lang)}
+            bruto={bruto}
+            hex={hex}
+            valido={leerColor(bruto) !== null}
+            onCambio={(v) => {
+              setBruto(v);
+              // Solo sube lo que ES un color: mientras se escribe «#3b8»
+              // pasa por «#3», «#3b»… y cada uno de esos es válido como
+              // texto pero no como color, y guardar el intermedio dejaría
+              // la pieza parpadeando en negro.
+              const leido = leerColor(v);
+              if (leido) onValor(leido.hex);
+            }}
+          />
+        </PopoverContent>
+      </Popover>
+
+      <span className="unidad-ajuste hex-ajuste">{hex.toUpperCase()}</span>
+    </div>
+  );
+}
+
 function CampoDeNumero({ lang, campo, valor, onValor }: PropsCampo<CampoNumero>) {
   const [bruto, setBruto] = useState(String(valor));
 
@@ -188,6 +246,7 @@ function CampoDeNumero({ lang, campo, valor, onValor }: PropsCampo<CampoNumero>)
     setBruto(String(valor));
   }, [valor]);
 
+  const numero = Number(valor);
   const ceñir = (n: number) => Math.min(Math.max(n, campo.min), campo.max);
 
   function confirmar() {
@@ -195,9 +254,9 @@ function CampoDeNumero({ lang, campo, valor, onValor }: PropsCampo<CampoNumero>)
     // entiende: sin esto, «2,5» se convierte en NaN y el campo salta a su
     // mínimo delante de quien lo acaba de escribir.
     const n = Number(bruto.replace(',', '.'));
-    const bueno = Number.isFinite(n) ? redondear(ceñir(n), campo.paso) : valor;
+    const bueno = Number.isFinite(n) ? redondear(ceñir(n), campo.paso) : numero;
     setBruto(String(bueno));
-    if (bueno !== valor) onValor(bueno);
+    if (bueno !== numero) onValor(bueno);
   }
 
   const id = `ajuste-${campo.clave}`;

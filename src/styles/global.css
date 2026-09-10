@@ -5840,6 +5840,26 @@
     .mando-pieza {
       width: 1.25rem;
     }
+
+    /*
+      Y el nombre se va.
+
+      Es lo único de la barra que se puede perder sin perder nada: en una
+      pieza de una columna, lo que dice qué es lo dice su contenido —una
+      hora, una cuenta atrás, una rampa—, mientras que las flechas, la ✕,
+      la rueda y el tamaño son lo único con lo que se gobierna.
+
+      Con «min-width: 0» encogía, pero no hasta cero: el reparto del
+      espacio negativo en flex no lo lleva por debajo de lo que ocupa su
+      primera palabra recortada, y esos píxeles eran justo los que se
+      perdían. «romper» los contó tres veces: 8 px, luego 12, luego 11.
+
+      Sigue en el árbol para quien navegue con lector: la <section> de la
+      pieza lleva el mismo nombre en su «aria-label».
+    */
+    .nombre-pieza {
+      display: none;
+    }
   }
 
   /*
@@ -6276,6 +6296,163 @@
     color: var(--danger);
   }
 
+  /* ---------- los tres de diseño ---------- */
+
+  /*
+    El contraste: la muestra a la izquierda, el veredicto a la derecha.
+
+    La muestra es cuadrada y grande porque es lo que responde la
+    pregunta —¿se lee esto?—; la razón y el nivel son la confirmación
+    numérica de lo que ya se ve.
+  */
+  .contraste-widget {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 0;
+  }
+
+  .muestra-contraste {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    height: 100%;
+    max-height: 5rem;
+    min-height: 2.75rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .veredicto-contraste {
+    display: grid;
+    gap: 0.125rem;
+    min-width: 0;
+  }
+
+  .razon-contraste {
+    margin: 0;
+    font-size: clamp(1rem, 4.5cqi, 1.75rem);
+    line-height: 1;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+
+  /*
+    El veredicto va en «--danger» cuando falla y en el acento cuando
+    pasa, y no al revés de lo que parece: el rojo es lo que hay que ver
+    de reojo. Un «AA» en verde y un «No pasa» en gris se confunden a dos
+    metros, que es la distancia a la que se mira un tablero.
+  */
+  .nivel-contraste {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: var(--danger);
+  }
+
+  .nivel-contraste[data-pasa] {
+    color: var(--acento);
+  }
+
+  /*
+    La rampa: los once pasos en una tira, sin huecos entre ellos.
+
+    Sin hueco a propósito. Una rampa sirve para ver si dos pasos vecinos
+    se distinguen, y una línea de fondo entre medias inventa un borde
+    que hace que se distingan cuando no lo hacen.
+  */
+  .paleta-widget {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    min-height: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .paso-paleta {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    cursor: pointer;
+  }
+
+  /* El aviso de copiado sale ENCIMA del paso que se tocó, no en una
+     esquina de la pieza: con once pasos, un aviso suelto no dice cuál. */
+  .copiado-paleta {
+    position: absolute;
+    inset-block-end: 0.25rem;
+    padding: 0.0625rem 0.3125rem;
+    border-radius: 999px;
+    background: var(--surface);
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  /* ---------- la escala ---------- */
+
+  .escala-widget {
+    display: grid;
+    align-content: start;
+    gap: 0.125rem;
+    margin: 0;
+    padding: 0;
+    min-height: 0;
+    overflow-y: auto;
+    list-style: none;
+  }
+
+  .escala-widget button {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.125rem 0.25rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .escala-widget button:hover {
+    background: var(--surface-2);
+  }
+
+  /*
+    La muestra se recorta a la altura de su renglón.
+
+    Un «Aa» de 41 px en una pieza de dos filas empuja los demás pasos
+    fuera de la caja. Con «line-height: 1» y el desbordamiento oculto,
+    cada renglón mide lo que su glifo y no más — se ve el tamaño, que es
+    lo que importa, sin que el paso mayor se lleve la pieza entera.
+  */
+  .muestra-escala {
+    flex: none;
+    line-height: 1;
+    font-weight: 500;
+    overflow: hidden;
+  }
+
+  .px-escala {
+    flex: none;
+    font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+  }
+
   /* ---------- el panel de ajustes ---------- */
 
   /*
@@ -6411,6 +6588,24 @@
     font: inherit;
     font-size: var(--fs-small);
     color: var(--ink);
+  }
+
+  /* El disparador del selector de color: el color mismo, en un botón
+     cuadrado. Es la misma pastilla que la tinta del dibujo. */
+  .muestra-color-ajuste {
+    width: 100%;
+    height: 1.75rem;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+
+  /* El hexadecimal, en la columna de las unidades: son siete caracteres
+     y ahí caben sin empujar nada. */
+  .hex-ajuste {
+    font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
   }
 
   .unidad-ajuste {

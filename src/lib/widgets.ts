@@ -92,7 +92,10 @@ export type WidgetKey =
   | 'hora'
   | 'mundial'
   | 'cronometro'
-  | 'temporizador';
+  | 'temporizador'
+  | 'contraste'
+  | 'paleta'
+  | 'escala';
 
 /**
  * Un ajuste que se puede tocar desde el tablero.
@@ -145,7 +148,21 @@ export interface CampoZona {
   rotulo: T;
 }
 
-export type Campo = CampoNumero | CampoOpcion | CampoZona;
+/**
+ * Un color, en hexadecimal.
+ *
+ * Se pinta con el selector visual del sitio y no con el `<input
+ * type="color">` del sistema: el nativo abre el diálogo del sistema
+ * operativo, que en cada uno es distinto y en ninguno enseña la rampa
+ * OKLCH con la que están hechos los colores de aquí.
+ */
+export interface CampoColor {
+  tipo: 'color';
+  clave: string;
+  rotulo: T;
+}
+
+export type Campo = CampoNumero | CampoOpcion | CampoZona | CampoColor;
 
 /** Lo que distingue a una copia del pomodoro: sus duraciones. */
 export interface AjustesPomodoro {
@@ -197,6 +214,25 @@ export interface AjustesMundial {
 export interface AjustesTemporizador {
   /** Minutos. Admite medios, como el pomodoro. */
   minutos: number;
+}
+
+/** Los dos colores que se comparan. */
+export interface AjustesContraste {
+  texto: string;
+  fondo: string;
+}
+
+/** El color del que sale la rampa. */
+export interface AjustesPaleta {
+  semilla: string;
+}
+
+/** Los dos números que definen una escala tipográfica. */
+export interface AjustesEscala {
+  /** El tamaño del paso 0, en píxeles. */
+  base: number;
+  /** La proporción entre un paso y el siguiente, por cien. */
+  razon: number;
 }
 
 /** Los widgets que no se distinguen entre sí no llevan ajustes. */
@@ -543,6 +579,105 @@ const temporizador: Widget<AjustesTemporizador> = {
   ],
 };
 
+/*
+  Los tres de diseño.
+
+  Los tres son «de mirar y tocar poco», y por eso caben en una pieza: la
+  mesa de trabajo —los canales, los retoques, el CSS que se copia— se
+  queda en su página. Aquí está el veredicto, la rampa y los tamaños,
+  que es lo que se consulta veinte veces al día mientras se hace otra
+  cosa.
+
+  Los tres se repiten: dos parejas de colores comparadas a la vez es el
+  caso normal, y dos rampas al lado son la marca y el acento.
+*/
+const contraste: Widget<AjustesContraste> = {
+  codigo: 8,
+  // Dos columnas de mínimo: el veredicto es «AA · 4,6:1» y en una
+  // columna se parte por la mitad.
+  min: { cols: 2, filas: 1 },
+  max: { cols: 4, filas: 2 },
+  medidaInicial: { cols: 2, filas: 1 },
+  icono: 'contraste',
+  nombre: { es: 'El contraste', en: 'Contrast' },
+  ajustesIniciales: { texto: '#1a1a1a', fondo: '#ffffff' },
+  aBytes: (a, e) => {
+    e.color(a.texto).color(a.fondo);
+  },
+  deBytes: (l) => {
+    const texto = l.color();
+    const fondo = l.color();
+    return { texto, fondo };
+  },
+  tope: 4,
+  campos: [
+    { tipo: 'color' as const, clave: 'texto', rotulo: { es: 'Texto', en: 'Text' } },
+    { tipo: 'color' as const, clave: 'fondo', rotulo: { es: 'Fondo', en: 'Background' } },
+  ],
+};
+
+const paleta: Widget<AjustesPaleta> = {
+  codigo: 9,
+  // Once pasos en una columna salen a menos de un centímetro cada uno:
+  // se ven pero no se distinguen dos vecinos, que es para lo que sirve
+  // una rampa.
+  min: { cols: 2, filas: 1 },
+  max: { cols: 4, filas: 2 },
+  medidaInicial: { cols: 2, filas: 1 },
+  icono: 'paleta',
+  nombre: { es: 'La rampa', en: 'The ramp' },
+  ajustesIniciales: { semilla: '#3b82f6' },
+  aBytes: (a, e) => {
+    e.color(a.semilla);
+  },
+  deBytes: (l) => ({ semilla: l.color() }),
+  tope: 4,
+  campos: [{ tipo: 'color' as const, clave: 'semilla', rotulo: { es: 'Color', en: 'Colour' } }],
+};
+
+const escala: Widget<AjustesEscala> = {
+  codigo: 10,
+  min: { cols: 1, filas: 2 },
+  max: { cols: 2, filas: 4 },
+  medidaInicial: { cols: 1, filas: 2 },
+  icono: 'tipografia',
+  nombre: { es: 'La escala', en: 'The scale' },
+  ajustesIniciales: { base: 16, razon: 125 },
+  aBytes: (a, e) => {
+    // La razón va POR CIEN y en un byte: 1,25 se guarda como 125. En
+    // decimales no cabe, y con dos decimales de verdad no hace falta
+    // más — nadie afina una escala en la tercera cifra.
+    e.byte(a.base).byte(a.razon);
+  },
+  deBytes: (l) => {
+    const base = l.byte();
+    const razon = l.byte();
+    if (base < 8 || base > 32 || razon < 105 || razon > 200) return null;
+    return { base, razon };
+  },
+  tope: 2,
+  campos: [
+    {
+      tipo: 'numero' as const,
+      clave: 'base',
+      rotulo: { es: 'Base', en: 'Base' },
+      min: 8,
+      max: 32,
+      paso: 1,
+      unidad: { es: 'px', en: 'px' },
+    },
+    {
+      tipo: 'numero' as const,
+      clave: 'razon',
+      rotulo: { es: 'Proporción', en: 'Ratio' },
+      min: 105,
+      max: 200,
+      paso: 1,
+      unidad: { es: '%', en: '%' },
+    },
+  ],
+};
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const WIDGETS: Record<WidgetKey, Widget<any>> = {
   lista,
@@ -553,6 +688,9 @@ export const WIDGETS: Record<WidgetKey, Widget<any>> = {
   mundial,
   cronometro,
   temporizador,
+  contraste,
+  paleta,
+  escala,
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */
 

@@ -465,10 +465,13 @@ const TABLERO_LLENO = `
     const b = await __esperar(() => document.querySelector('.elegir-lista [data-widget="' + clave + '"]'));
     b.click();
     if (talla) {
-      const bt = [...document.querySelectorAll('.elegir-pie .tallas button')].find(
-        (x) => x.textContent.trim() === talla
-      );
-      if (bt) bt.click();
+      // El tamaño se crece a golpes de «+»: el botón se apaga solo al
+      // llegar al máximo del widget, así que sobra con pulsar de más.
+      const [cols, filas] = talla.split(/[x×]/).map(Number);
+      const bs = () => [...document.querySelectorAll('.elegir-pie .tamano-pieza button')];
+      const cifra = (i) => Number([...document.querySelectorAll('.elegir-pie .cifra-tamano')][i].textContent);
+      for (let k = 0; k < 4 && cifra(0) < cols; k++) bs()[1].click();
+      for (let k = 0; k < 4 && cifra(1) < filas; k++) bs()[3].click();
     }
     const anadir = await __esperar(() => document.querySelector('[data-anadir="' + clave + '"]:not(:disabled)'));
     anadir.click();
@@ -484,10 +487,17 @@ const TABLERO_LLENO = `
   // tallas, dos flechas y la ✕—. Si algo no cabe, cabe ahí primero. Y a
   // 485 px una columna entera mide lo que la ventana, así que el caso
   // duro no es el ancho de la ventana sino el reparto de cuatro.
-  await poner('pomodoro', 1, '1×1');
-  await poner('lista', 2, '1×2');
-  await poner('nota', 3, '2×1');
-  await poner('dibujo', 4, '2×2');
+  await poner('hora', 1, '1×1');
+  await poner('mundial', 2, '1×1');
+  await poner('pomodoro', 3, '1×1');
+  await poner('cronometro', 4, '1×1');
+  await poner('temporizador', 5, '1×1');
+  await poner('lista', 6, '1×2');
+  await poner('nota', 7, '2×1');
+  await poner('dibujo', 8, '2×2');
+  await poner('contraste', 9, '2×1');
+  await poner('paleta', 10, '2×1');
+  await poner('escala', 11, '1×2');
 })()
 `;
 const NOTAS_DIBUJO_LLENO = `
@@ -642,7 +652,7 @@ const CASOS = [
   { nombre: 'notas · el dibujo lleno', ruta: 'es/notas', hacer: NOTAS_DIBUJO_LLENO },
   { nombre: 'notas · en inglés', ruta: 'en/notes' },
   { nombre: 'tablero · vacío', ruta: 'es/tablero' },
-  { nombre: 'tablero · con las cuatro piezas', ruta: 'es/tablero', hacer: TABLERO_LLENO },
+  { nombre: 'tablero · con las once piezas', ruta: 'es/tablero', hacer: TABLERO_LLENO },
   { nombre: 'tablero · en inglés', ruta: 'en/board' },
   { nombre: 'portada', ruta: 'es' },
   { nombre: 'portada en inglés', ruta: 'en' },

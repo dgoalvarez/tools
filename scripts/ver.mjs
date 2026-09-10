@@ -216,14 +216,20 @@ const VISTAS = [
       await poner('lista', 6, '1x2');
       await poner('nota', 7, '2x1');
       await poner('dibujo', 8, '2x2');
+      await poner('contraste', 9, '2x1');
+      await poner('paleta', 10, '2x1');
+      await poner('escala', 11, '1x2');
       await new Promise((r) => setTimeout(r, 150));
     `,
   },
   {
+    // A 1024: el reparto de TRES columnas, donde una pieza de una
+    // columna es más estrecha que en ningún otro ancho del sitio. A 700
+    // hay dos columnas y cada pieza es más ancha.
     nombre: 'tablero-con-piezas-estrecho',
     ruta: 'es/tablero',
-    ancho: 700,
-    alto: 1000,
+    ancho: 1024,
+    alto: 1200,
     guion: `
       // Hidratar, no «astro:page-load»: ese evento sale ANTES de que
       // React monte, y un clic de entonces no hace absolutamente nada.

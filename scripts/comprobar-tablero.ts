@@ -135,9 +135,17 @@ console.log('\n2. Lo que mide, dicho en números');
   while (lleno.length < TOPE_PIEZAS) lleno.push(pieza(CLAVES[lleno.length % CLAVES.length]!));
   const largo = codificar(lleno).length;
   console.log(`        el de quince: ${largo} caracteres`);
-  // Subió de 47 a 60 al entrar los cuatro widgets de tiempo: el ciclo de
-  // quince mete ahora relojes mundiales, que llevan tres bytes de ajustes.
-  afirmar(largo <= 64, `y el tope de quince no pasa de 64 (son ${largo})`);
+  /*
+    El tope de quince ha subido dos veces con el catálogo: 47 → 60 al
+    entrar los cuatro de tiempo, y 60 → 70 al entrar los tres de diseño.
+    Es lo que cuestan los ajustes de verdad: un reloj mundial lleva tres
+    bytes y un contraste seis, dos colores.
+
+    Setenta caracteres siguen siendo un código que se pega en un chat sin
+    partirse. El día que pase de ochenta habrá que empezar a mirar qué se
+    guarda, y esta afirmación es la que obliga a venir a mirarlo.
+  */
+  afirmar(largo <= 80, `y el tope de quince no pasa de 80 (son ${largo})`);
 }
 
 // =====================================================================
@@ -437,7 +445,52 @@ console.log('\n9. Los ajustes del pomodoro, y lo que ahorra su máscara');
 }
 
 // =====================================================================
-console.log('\n10. Las columnas y el recorte, en los cinco anchos de «romper»');
+console.log('\n10. Los colores y la escala, que son ajustes de los nuevos');
+{
+  /*
+    Un color son tres bytes, y eso hay que demostrarlo con colores que NO
+    sean de fábrica: con los de fábrica, un `aBytes` que escribiera
+    siempre lo mismo pasaría igual.
+  */
+  const par = [
+    { ...pieza('contraste'), ajustes: { texto: '#0a3d62', fondo: '#f7f1e3' } },
+  ];
+  const vuelta = decodificar(codificar(par));
+  afirmar(
+    vuelta.ok &&
+      (vuelta.tablero[0]!.ajustes as Record<string, string>).texto === '#0a3d62' &&
+      (vuelta.tablero[0]!.ajustes as Record<string, string>).fondo === '#f7f1e3',
+    'los dos colores del contraste vuelven idénticos'
+  );
+
+  // La forma corta también: `#abc` es un color válido y quien lo pegue
+  // espera que funcione. Vuelve en su forma larga, que es la que se
+  // guarda.
+  const corto = [{ ...pieza('paleta'), ajustes: { semilla: '#3b8' } }];
+  const vueltaCorto = decodificar(codificar(corto));
+  afirmar(
+    vueltaCorto.ok && (vueltaCorto.tablero[0]!.ajustes as Record<string, string>).semilla === '#33bb88',
+    'un color de tres dígitos vuelve en su forma larga'
+  );
+
+  // La escala guarda la razón POR CIEN en un byte: 1,25 se escribe 125.
+  const escala = [{ ...pieza('escala'), ajustes: { base: 18, razon: 133 } }];
+  const vueltaEscala = decodificar(codificar(escala));
+  afirmar(
+    vueltaEscala.ok &&
+      (vueltaEscala.tablero[0]!.ajustes as Record<string, number>).base === 18 &&
+      (vueltaEscala.tablero[0]!.ajustes as Record<string, number>).razon === 133,
+    'la base y la proporción de la escala vuelven idénticas'
+  );
+
+  // Y una razón imposible invalida el código: 300 % no es una escala,
+  // es un dato que no salió de aquí.
+  const mala = codificar([{ ...pieza('escala'), ajustes: { base: 18, razon: 250 } }]);
+  afirmar(!decodificar(mala).ok, `una proporción fuera de rango se rechaza`);
+}
+
+// =====================================================================
+console.log('\n11. Las columnas y el recorte, en los cinco anchos de «romper»');
 {
   const esperado: [number, number][] = [
     [1440, 4],

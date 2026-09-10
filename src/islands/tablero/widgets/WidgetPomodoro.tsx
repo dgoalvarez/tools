@@ -61,7 +61,7 @@ import type { PropsWidget } from '../tipos';
 
 const AJUSTES = AJUSTES_INICIALES;
 
-export default function WidgetPomodoro({ lang, talla }: PropsWidget<SinAjustes>) {
+export default function WidgetPomodoro({ lang, medida }: PropsWidget<SinAjustes>) {
   const tr = (clave: keyof typeof POMODORO) => t(POMODORO[clave], lang);
 
   const [cuenta, setCuenta] = useState<Cuenta>({ estado: 'parado', fase: 'trabajo', hechos: 0 });
@@ -179,7 +179,7 @@ export default function WidgetPomodoro({ lang, talla }: PropsWidget<SinAjustes>)
   const andando = cuenta.estado === 'andando';
 
   return (
-    <div className="pomodoro-widget" data-talla={talla}>
+    <div className="pomodoro-widget" data-talla={medida.cols + 'x' + medida.filas}>
       <p className="fase-widget">
         {cuenta.estado === 'margen' ? tr('empiezaEn') : nombreDeFase(cuenta.fase)}
       </p>

@@ -5547,30 +5547,23 @@
     gap: 0.75rem;
   }
 
-  .elegir-pie .tallas {
-    display: flex;
+  /* En el panel el mismo mando va más holgado: aquí hay sitio, y es
+     donde se aprende para qué sirve. */
+  .elegir-pie .tamano-pieza {
     gap: 0.125rem;
-    padding: 0.1875rem;
-    border: 1px solid var(--line);
+    padding: 0.25rem 0.4375rem;
     border-radius: var(--radius);
-    background: var(--surface-2);
   }
 
-  .elegir-pie .tallas button {
-    padding: 0.25rem 0.5rem;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: none;
-    font-size: 0.75rem;
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-    color: var(--ink-soft);
-    cursor: pointer;
+  .elegir-pie .tamano-pieza button {
+    width: 1.25rem;
+    height: 1.25rem;
   }
 
-  .elegir-pie .tallas button[aria-pressed='true'] {
-    background: var(--surface);
-    color: var(--ink);
+  /* La separación entre el par del ancho y el del alto, que si no se leen
+     como cuatro botones seguidos sin relación. */
+  .elegir-pie .tamano-pieza > svg:nth-of-type(2) {
+    margin-inline-start: 0.4375rem;
   }
 
   /* Relleno «--solido» y nunca el acento: el acento se derivó para
@@ -5642,6 +5635,24 @@
     */
     grid-auto-rows: var(--fila-tablero, 11rem);
     gap: clamp(0.875rem, 1.6vw, 1.25rem);
+
+    /*
+      «dense» es lo que convierte la rejilla en un bento.
+
+      Sin él, una pieza que no cabe en lo que queda de fila salta a la
+      siguiente y deja el hueco vacío detrás. Con tamaños libres eso pasa
+      constantemente: basta una pieza de tres de ancho en un tablero de
+      cuatro columnas para que el resto de la fila se pierda.
+
+      El plan lo había descartado porque desordena: la rejilla puede
+      pintar la pieza 5 antes que la 4, y el arrastre está definido sobre
+      el orden de la lista. Se puede sostener porque el arrastre no lee
+      el orden, sino los RECTÁNGULOS de las piezas —busca aquella cuyo
+      centro está más cerca del puntero— y esos son los de verdad, estén
+      donde estén. Lo que sí cambia es que las flechas de la barra mueven
+      en la lista y el resultado visual puede ser un salto y no un paso.
+    */
+    grid-auto-flow: row dense;
   }
 
   /*
@@ -5804,19 +5815,145 @@
       padding-inline: 0.375rem 0.25rem;
     }
 
-    .barra-pieza .tallas {
+    .tamano-pieza {
       gap: 0;
-      padding: 0.0625rem;
+      padding-inline: 0.125rem;
     }
 
-    .barra-pieza .tallas button {
-      padding-inline: 0.1875rem;
-      font-size: 0.6rem;
+    .tamano-pieza button {
+      width: 0.875rem;
+    }
+
+    /* En una pieza estrecha, las flechas que dicen «ancho» y «alto» se
+       van: los dos pares de más y menos siguen en el mismo orden, y ahí
+       son once píxeles que hacen falta para otra cosa. */
+    .tamano-pieza > svg {
+      display: none;
     }
 
     .mando-pieza {
       width: 1.25rem;
     }
+  }
+
+  /*
+    El asa de la esquina.
+
+    Va superpuesta y sin fondo: un triángulo pintado en cada pieza sería
+    ruido en un tablero de quince. Aparece al pasar el puntero o con el
+    foco dentro, como la papelera de la lista, y en pantalla táctil
+    siempre —ahí no hay «pasar por encima»—.
+
+    «touch-action: none» no es opcional: sin él, el navegador se queda el
+    gesto en cuanto se mueve un pelo en vertical, que es una de las dos
+    direcciones en las que sirve.
+  */
+  .asa-tamano {
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline-end: 0;
+    width: 1.125rem;
+    height: 1.125rem;
+    opacity: 0;
+    cursor: nwse-resize;
+    touch-action: none;
+  }
+
+  /* Las dos rayitas del asa. Se dibujan con un degradado en vez de con
+     dos elementos: es una esquina, no un icono. */
+  .asa-tamano::after {
+    content: '';
+    position: absolute;
+    inset: 0.25rem 0.25rem 0.1875rem 0.1875rem;
+    background: linear-gradient(
+      135deg,
+      transparent 0 42%,
+      var(--ink-soft) 42% 54%,
+      transparent 54% 66%,
+      var(--ink-soft) 66% 78%,
+      transparent 78%
+    );
+  }
+
+  .pieza-tablero {
+    position: relative;
+  }
+
+  .pieza-tablero:hover .asa-tamano,
+  .pieza-tablero:focus-within .asa-tamano {
+    opacity: 0.75;
+  }
+
+  .asa-tamano:hover {
+    opacity: 1 !important;
+  }
+
+  @media (hover: none) {
+    .asa-tamano {
+      opacity: 0.6;
+    }
+  }
+
+  /* ---------- ancho y alto, en la barra ---------- */
+
+  /*
+    Sustituye al grupo de tallas.
+
+    Con tallas eran tres botones que decían «2×1»; con tamaño libre son
+    dos pares de más y menos, uno por eje, con su flecha delante para
+    decir cuál es cuál. Ocupa parecido y dice más: un «+» apagado enseña
+    que se ha llegado al máximo, cosa que una talla no marcada no decía.
+  */
+  .tamano-pieza {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 0.0625rem;
+    padding: 0.125rem 0.25rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--ink-soft);
+  }
+
+  .tamano-pieza button {
+    display: grid;
+    place-items: center;
+    width: 1rem;
+    height: 1rem;
+    padding: 0;
+    border: 0;
+    border-radius: calc(var(--radius-sm) * 0.7);
+    background: none;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+
+  .tamano-pieza button:hover:not(:disabled) {
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  .tamano-pieza button:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  /* La separación entre el par del ancho y el del alto: sin ella se leen
+     como cuatro botones seguidos sin relación entre sí. */
+  .tamano-pieza > svg:nth-of-type(2) {
+    margin-inline-start: 0.25rem;
+  }
+
+  /* Solo en el panel, donde hay sitio: en la barra de una pieza estrecha
+     dos cifras más no caben, y los botones apagados ya dicen el tope. */
+  .cifra-tamano {
+    min-width: 0.6875rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    color: var(--ink);
   }
 
   /* ---------- el cuerpo ---------- */

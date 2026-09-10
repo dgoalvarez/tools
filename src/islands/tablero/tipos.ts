@@ -32,19 +32,19 @@
  * importan `url-state`.
  */
 import type { Lang } from '../../i18n/config';
-import type { Talla } from '../../lib/widgets';
+import type { Medida } from '../../lib/widgets';
 
 export interface PropsWidget<A> {
   lang: Lang;
   ajustes: A;
   onAjustes: (parcial: Partial<A>) => void;
   /**
-   * La talla en la que está puesto.
+   * El tamaño en el que está puesto: columnas y filas.
    *
    * Baja como prop porque **decide el widget qué recorta**: un pomodoro
    * de 1×1 enseña la cifra y un botón, y uno de 2×2 enseña además el
    * ciclo y los cuatro mandos. El tablero no mete la mano dentro de una
    * pieza para quitarle cosas.
    */
-  talla: Talla;
+  medida: Medida;
 }

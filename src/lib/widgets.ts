@@ -28,18 +28,57 @@ import type { IconoKey } from '../components/iconos.ts';
 import type { T } from '../i18n/config.ts';
 
 /**
- * Las cuatro tallas, en dos bits.
+ * Un tamaño: cuántas columnas y cuántas filas ocupa una pieza.
  *
- * Cubren las cuatro formas que de verdad se piden: un cuadrado pequeño
- * para una cifra, una alta y estrecha para una lista, una ancha y baja
- * para una cuenta atrás, y una grande para dibujar o escribir. Cuatro
- * caben en dos bits, y más de cuatro dejarían de ser «elegir una talla»
- * para volver a ser redimensionar, que es lo que se descartó.
+ * Sustituye a las cuatro tallas fijas. Cuatro formas elegidas de una
+ * lista alcanzaban mientras la rejilla fuera un damero regular; en un
+ * bento, donde las piezas se empaquetan rellenando huecos, lo que hace
+ * falta es poder decir «esta de tres de ancho y dos de alto» sin que
+ * exista una talla llamada así.
+ *
+ * Cada widget declara su MÍNIMO y su MÁXIMO, que es lo que impide que el
+ * tamaño libre se convierta en un tablero ilegible: un dibujo de 1×1 no
+ * es un lienzo, y una cifra de 4×4 no es una cifra.
  */
-export const TALLAS = ['1x1', '1x2', '2x1', '2x2'] as const;
-export type Talla = (typeof TALLAS)[number];
+export interface Medida {
+  cols: number;
+  filas: number;
+}
 
-export function medidasDe(talla: Talla): { cols: number; filas: number } {
+/**
+ * El tope de la rejilla, en columnas y filas.
+ *
+ * Cuatro y cuatro porque es lo que cabe en los cuatro bits de cada mitad
+ * del byte de tamaño, y porque cuatro columnas es el reparto más ancho
+ * que hace el CSS. Una pieza más alta que cuatro filas deja de verse
+ * entera sin desplazarse, que es lo contrario de un tablero.
+ */
+export const TOPE_COLS = 4;
+export const TOPE_FILAS = 4;
+
+/** Deja una medida dentro de lo que el widget admite y de la rejilla. */
+export function ceñir(medida: Medida, widget: Widget<unknown>): Medida {
+  const entre = (v: number, min: number, max: number, tope: number) =>
+    Math.min(Math.max(Math.round(v) || min, min), max, tope);
+
+  return {
+    cols: entre(medida.cols, widget.min.cols, widget.max.cols, TOPE_COLS),
+    filas: entre(medida.filas, widget.min.filas, widget.max.filas, TOPE_FILAS),
+  };
+}
+
+/**
+ * Las cuatro tallas de la v1 del código, en su orden original.
+ *
+ * Ya no se elige ninguna: está aquí porque los códigos de la v1 llevan un
+ * índice de esta lista, y esos códigos tienen que seguir abriéndose. La
+ * cadena de oro de `comprobar-tablero.ts` lo comprueba.
+ */
+export const TALLAS_V1 = ['1x1', '1x2', '2x1', '2x2'] as const;
+
+export function medidaDeTallaV1(indice: number): Medida | null {
+  const talla = TALLAS_V1[indice];
+  if (!talla) return null;
   const [cols, filas] = talla.split('x').map(Number);
   return { cols: cols!, filas: filas! };
 }
@@ -58,7 +97,19 @@ export type SinAjustes = Record<string, never>;
 export interface Widget<A> {
   /** Viaja en el código. INMUTABLE. */
   codigo: number;
-  tallas: readonly Talla[];
+  /**
+   * Lo más pequeño que puede ser sin dejar de servir, y lo más grande que
+   * tiene sentido.
+   *
+   * El mínimo no es estético: por debajo, la herramienta deja de hacer su
+   * trabajo —una lista de una fila enseña una tarea—. El máximo tampoco:
+   * por encima, la pieza ocupa sitio que no usa, y en un bento el sitio
+   * que sobra en una pieza se lo quita a otra.
+   */
+  min: Medida;
+  max: Medida;
+  /** Con qué tamaño entra al tablero. Entre el mínimo y el máximo. */
+  medidaInicial: Medida;
   ajustesIniciales: A;
   aBytes(a: A, e: Escritor): void;
   /** `null` invalida el código entero: es un dato que no cuadra. */
@@ -86,7 +137,10 @@ const SIN_AJUSTES = {
 
 const lista: Widget<SinAjustes> = {
   codigo: 0,
-  tallas: ['1x2', '2x2'],
+  // Menos de dos filas enseña una tarea y media: deja de ser una lista.
+  min: { cols: 1, filas: 2 },
+  max: { cols: 2, filas: 4 },
+  medidaInicial: { cols: 1, filas: 2 },
   icono: 'tareas',
   nombre: { es: 'La lista', en: 'The list' },
   ...SIN_AJUSTES,
@@ -94,7 +148,11 @@ const lista: Widget<SinAjustes> = {
 
 const nota: Widget<SinAjustes> = {
   codigo: 1,
-  tallas: ['2x1', '2x2'],
+  // Dos columnas de mínimo: la barra de formato son seis botones y en una
+  // columna se parte en dos renglones, comiéndose el campo de escribir.
+  min: { cols: 2, filas: 1 },
+  max: { cols: 4, filas: 4 },
+  medidaInicial: { cols: 2, filas: 1 },
   icono: 'notas',
   nombre: { es: 'La nota', en: 'The note' },
   ...SIN_AJUSTES,
@@ -102,7 +160,11 @@ const nota: Widget<SinAjustes> = {
 
 const pomodoro: Widget<SinAjustes> = {
   codigo: 2,
-  tallas: ['1x1', '2x1', '2x2'],
+  // Es una cifra: cabe en la pieza más pequeña que existe, y crecer más
+  // de 2×2 solo hace la cifra más grande sin decir nada más.
+  min: { cols: 1, filas: 1 },
+  max: { cols: 2, filas: 2 },
+  medidaInicial: { cols: 1, filas: 1 },
   icono: 'cronometro',
   nombre: { es: 'El pomodoro', en: 'The pomodoro' },
   ...SIN_AJUSTES,
@@ -110,7 +172,11 @@ const pomodoro: Widget<SinAjustes> = {
 
 const dibujo: Widget<AjustesDibujo> = {
   codigo: 3,
-  tallas: ['2x2'],
+  // Un lienzo pequeño no es un lienzo: por debajo de 2×2 no cabe un trazo
+  // con la barra de mandos y el pie de descargar.
+  min: { cols: 2, filas: 2 },
+  max: { cols: 4, filas: 4 },
+  medidaInicial: { cols: 2, filas: 2 },
   ajustesIniciales: { tinta: 0 },
   aBytes: (a, e) => {
     e.byte(a.tinta);

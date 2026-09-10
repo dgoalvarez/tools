@@ -29,7 +29,10 @@ import { Suspense, lazy, useMemo, useRef, useState, type ComponentType } from 'r
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
+  ArrowsHorizontalIcon,
+  ArrowsVerticalIcon,
   DotsSixVerticalIcon,
+  MinusIcon,
   PlusIcon,
   XIcon,
 } from '@phosphor-icons/react';
@@ -38,7 +41,14 @@ import { t, type Lang } from '../../i18n/config';
 import { TABLERO_TEXTOS as TX } from '../../i18n/tablero';
 import { moverA } from '../../lib/mover';
 import { TOPE_PIEZAS, nuevoId, type Pieza, type Tablero as Piezas } from '../../lib/tablero';
-import { WIDGETS, medidasDe, type Talla, type WidgetKey } from '../../lib/widgets';
+import {
+  TOPE_COLS,
+  TOPE_FILAS,
+  WIDGETS,
+  ceñir,
+  type Medida,
+  type WidgetKey,
+} from '../../lib/widgets';
 import { COMPONENTE } from './catalogo';
 import ElegirWidget from './ElegirWidget';
 import type { PropsWidget } from './tipos';
@@ -76,13 +86,32 @@ export default function Tablero({ lang }: Props) {
     alto de la muestra es el alto que va a tener la pieza. Se puede
     cambiar después en su barra, como siempre.
   */
-  function anadir(tipo: WidgetKey, talla: Talla) {
+  function anadir(tipo: WidgetKey, medida: Medida) {
     const widget = WIDGETS[tipo];
     setPiezas((antes) => [
       ...antes,
-      { id: nuevoId(), tipo, talla, ajustes: { ...widget.ajustesIniciales } },
+      { id: nuevoId(), tipo, medida: ceñir(medida, widget), ajustes: { ...widget.ajustesIniciales } },
     ]);
     setEligiendo(false);
+  }
+
+  /*
+    Crecer y encoger, un paso cada vez.
+
+    El tamaño se ciñe SIEMPRE al pasar por «ceñir», así que un botón no
+    puede sacar la pieza de lo que su widget admite ni de la rejilla. Eso
+    permite tenerlos siempre pintados y apagados en su tope, en vez de
+    hacerlos aparecer y desaparecer: un botón que desaparece mueve los de
+    al lado justo cuando se está pulsando.
+  */
+  function redimensionar(id: string, eje: 'cols' | 'filas', paso: 1 | -1) {
+    setPiezas((antes) =>
+      antes.map((p) => {
+        if (p.id !== id) return p;
+        const pedido = { ...p.medida, [eje]: p.medida[eje] + paso };
+        return { ...p, medida: ceñir(pedido, WIDGETS[p.tipo]) };
+      })
+    );
   }
 
   const cambiar = (id: string, parcial: Partial<Pieza>) =>
@@ -152,6 +181,81 @@ export default function Tablero({ lang }: Props) {
     if (a && a.hasta !== a.desde) setPiezas((antes) => moverA(antes, a.id, a.hasta));
   }
 
+  /*
+    Redimensionar arrastrando la esquina.
+
+    El tamaño se calcula contra la CELDA, no contra el puntero: se mide
+    una vez el ancho de una columna y el alto de una fila al empezar, y
+    a partir de ahí cuántas celdas se ha movido el dedo. Siguiendo al
+    puntero en píxeles la pieza cambiaría de tamaño a mitad de celda y
+    volvería atrás, que es el temblor que tienen los redimensionados
+    mal hechos.
+
+    Y el estado va en una REF, no en `useState`: React confirma cuando
+    le viene bien y un arrastre rápido soltaría con el valor de antes
+    del último movimiento. Ya costó un fallo medido en la libreta.
+  */
+  const midiendo = useRef<{
+    id: string;
+    x: number;
+    y: number;
+    cols: number;
+    filas: number;
+    anchoCelda: number;
+    altoCelda: number;
+  } | null>(null);
+
+  function empezarTamano(evento: React.PointerEvent, pieza: Pieza) {
+    const caja = (evento.currentTarget as HTMLElement).closest('.pieza-tablero');
+    const rejilla = caja?.closest('.rejilla-tablero');
+    if (!caja || !rejilla) return;
+
+    evento.preventDefault();
+    evento.currentTarget.setPointerCapture?.(evento.pointerId);
+
+    const r = caja.getBoundingClientRect();
+    const estilo = getComputedStyle(rejilla);
+    const hueco = parseFloat(estilo.columnGap) || 0;
+
+    midiendo.current = {
+      id: pieza.id,
+      x: evento.clientX,
+      y: evento.clientY,
+      cols: pieza.medida.cols,
+      filas: pieza.medida.filas,
+      // El ancho de UNA columna sale de la pieza y no de la rejilla:
+      // así no hay que saber cuántas columnas hay ni cuánto suman los
+      // huecos, que es justo lo que cambia con la ventana.
+      anchoCelda: (r.width + hueco) / pieza.medida.cols,
+      altoCelda: (r.height + hueco) / pieza.medida.filas,
+    };
+  }
+
+  function seguirTamano(evento: React.PointerEvent) {
+    const m = midiendo.current;
+    if (!m) return;
+
+    const pedido = {
+      cols: m.cols + Math.round((evento.clientX - m.x) / m.anchoCelda),
+      filas: m.filas + Math.round((evento.clientY - m.y) / m.altoCelda),
+    };
+
+    setPiezas((antes) =>
+      antes.map((p) => {
+        if (p.id !== m.id) return p;
+        const ceñida = ceñir(pedido, WIDGETS[p.tipo]);
+        // Se devuelve el MISMO objeto si no cambia nada: sin esto, cada
+        // píxel del arrastre vuelve a pintar la rejilla entera.
+        if (ceñida.cols === p.medida.cols && ceñida.filas === p.medida.filas) return p;
+        return { ...p, medida: ceñida };
+      })
+    );
+  }
+
+  const soltarTamano = () => {
+    midiendo.current = null;
+  };
+
   const hayPiezas = piezas.length > 0;
   const lleno = piezas.length >= TOPE_PIEZAS;
 
@@ -185,7 +289,11 @@ export default function Tablero({ lang }: Props) {
           {piezas.map((pieza, i) => {
             const Widget = componenteDe(pieza.tipo);
             const widget = WIDGETS[pieza.tipo];
-            const { cols, filas } = medidasDe(pieza.talla);
+            const { cols, filas } = pieza.medida;
+            const tope = {
+              cols: Math.min(widget.max.cols, TOPE_COLS),
+              filas: Math.min(widget.max.filas, TOPE_FILAS),
+            };
 
             return (
               <section
@@ -211,25 +319,73 @@ export default function Tablero({ lang }: Props) {
 
                   <span className="nombre-pieza">{t(widget.nombre, lang)}</span>
 
-                  {/* Las tallas solo salen si el widget declara más de una:
-                      un grupo de un solo botón no es una elección. */}
-                  {widget.tallas.length > 1 && (
+                  {/*
+                    Ancho y alto, un paso cada vez.
+
+                    Son lo que hace el asa de la esquina, pero con el
+                    teclado. No es un extra: el proyecto ya se comprometió
+                    en el paso a paso de notas con que arrastrar no puede
+                    ser la única forma de hacer algo.
+
+                    Un eje solo sale si de verdad se puede mover: un widget
+                    cuyo mínimo y máximo coinciden en anchura no tiene nada
+                    que elegir ahí, y dos botones muertos ocupan el sitio
+                    que en una pieza pequeña hace falta.
+                  */}
+                  {(tope.cols > widget.min.cols || tope.filas > widget.min.filas) && (
                     <div
-                      className="tallas"
+                      className="tamano-pieza"
                       role="group"
-                      aria-label={tr('talla')}
+                      aria-label={tr('tamano')}
                       data-tour={i === 0 ? 'tablero-talla' : undefined}
                     >
-                      {widget.tallas.map((talla: Talla) => (
-                        <button
-                          key={talla}
-                          type="button"
-                          aria-pressed={pieza.talla === talla}
-                          onClick={() => cambiar(pieza.id, { talla })}
-                        >
-                          {talla.replace('x', '×')}
-                        </button>
-                      ))}
+                      {tope.cols > widget.min.cols && (
+                        <>
+                          <ArrowsHorizontalIcon aria-hidden="true" size={11} />
+                          <button
+                            type="button"
+                            disabled={cols <= widget.min.cols}
+                            aria-label={tr('menosAncho')}
+                            title={tr('menosAncho')}
+                            onClick={() => redimensionar(pieza.id, 'cols', -1)}
+                          >
+                            <MinusIcon aria-hidden="true" size={10} weight="bold" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={cols >= tope.cols}
+                            aria-label={tr('masAncho')}
+                            title={tr('masAncho')}
+                            onClick={() => redimensionar(pieza.id, 'cols', 1)}
+                          >
+                            <PlusIcon aria-hidden="true" size={10} weight="bold" />
+                          </button>
+                        </>
+                      )}
+
+                      {tope.filas > widget.min.filas && (
+                        <>
+                          <ArrowsVerticalIcon aria-hidden="true" size={11} />
+                          <button
+                            type="button"
+                            disabled={filas <= widget.min.filas}
+                            aria-label={tr('menosAlto')}
+                            title={tr('menosAlto')}
+                            onClick={() => redimensionar(pieza.id, 'filas', -1)}
+                          >
+                            <MinusIcon aria-hidden="true" size={10} weight="bold" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={filas >= tope.filas}
+                            aria-label={tr('masAlto')}
+                            title={tr('masAlto')}
+                            onClick={() => redimensionar(pieza.id, 'filas', 1)}
+                          >
+                            <PlusIcon aria-hidden="true" size={10} weight="bold" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
 
@@ -276,7 +432,7 @@ export default function Tablero({ lang }: Props) {
                   <Suspense fallback={<div className="cargando-pieza" />}>
                     <Widget
                       lang={lang}
-                      talla={pieza.talla}
+                      medida={pieza.medida}
                       ajustes={pieza.ajustes}
                       onAjustes={(parcial) =>
                         cambiar(pieza.id, { ajustes: { ...pieza.ajustes, ...parcial } })
@@ -284,6 +440,30 @@ export default function Tablero({ lang }: Props) {
                     />
                   </Suspense>
                 </div>
+
+                {/*
+                  El asa de la esquina.
+
+                  Es lo que hace que esto se sienta un bento y no un
+                  formulario de tamaños. Va con `touch-action: none` en
+                  el CSS porque sin eso el navegador se queda el gesto en
+                  cuanto se mueve un pelo en vertical, que es justo una
+                  de las dos direcciones en las que sirve.
+
+                  `aria-hidden`: lo que hace ya lo hacen los botones de
+                  la barra, con nombre y accesibles con teclado. Un asa
+                  anunciada sin poder usarse sería ruido.
+                */}
+                {(tope.cols > widget.min.cols || tope.filas > widget.min.filas) && (
+                  <span
+                    className="asa-tamano"
+                    aria-hidden="true"
+                    onPointerDown={(e) => empezarTamano(e, pieza)}
+                    onPointerMove={seguirTamano}
+                    onPointerUp={soltarTamano}
+                    onPointerCancel={soltarTamano}
+                  />
+                )}
               </section>
             );
           })}

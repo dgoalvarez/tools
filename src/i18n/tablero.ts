@@ -65,7 +65,11 @@ export const TABLERO_TEXTOS = {
   },
 
   /** Los mandos de cada pieza. */
-  talla: { es: 'Tamaño', en: 'Size' },
+  tamano: { es: 'Tamaño', en: 'Size' },
+  masAncho: { es: 'Más ancho', en: 'Wider' },
+  menosAncho: { es: 'Menos ancho', en: 'Narrower' },
+  masAlto: { es: 'Más alto', en: 'Taller' },
+  menosAlto: { es: 'Menos alto', en: 'Shorter' },
   quitar: { es: 'Quitar del tablero', en: 'Remove from the board' },
   moverAntes: { es: 'Mover antes', en: 'Move earlier' },
   moverDespues: { es: 'Mover después', en: 'Move later' },

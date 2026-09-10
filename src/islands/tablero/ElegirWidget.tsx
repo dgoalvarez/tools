@@ -39,13 +39,26 @@
  * la muestra es el alto que va a tener en el tablero.
  */
 import { Suspense, lazy, useEffect, useState, type ComponentType } from 'react';
-import { XIcon } from '@phosphor-icons/react';
+import {
+  ArrowsHorizontalIcon,
+  ArrowsVerticalIcon,
+  MinusIcon,
+  PlusIcon,
+  XIcon,
+} from '@phosphor-icons/react';
 
 import Icono from '../../components/IconoReact';
 import { Sheet, SheetClose, SheetContent, SheetTitle } from '../../components/ui/sheet';
 import { t, type Lang } from '../../i18n/config';
 import { TABLERO_TEXTOS as TX } from '../../i18n/tablero';
-import { WIDGETS, medidasDe, type Talla, type WidgetKey } from '../../lib/widgets';
+import {
+  TOPE_COLS,
+  TOPE_FILAS,
+  WIDGETS,
+  ceñir,
+  type Medida,
+  type WidgetKey,
+} from '../../lib/widgets';
 import { COMPONENTE, DISPONIBLES } from './catalogo';
 import type { PropsWidget } from './tipos';
 
@@ -64,14 +77,14 @@ interface Props {
   onAbierto: (v: boolean) => void;
   /** Cuántas copias hay ya de cada tipo, para saber cuál llegó a su tope. */
   puestos: Map<WidgetKey, number>;
-  onAnadir: (tipo: WidgetKey, talla: Talla) => void;
+  onAnadir: (tipo: WidgetKey, medida: Medida) => void;
 }
 
 export default function ElegirWidget({ lang, abierto, onAbierto, puestos, onAnadir }: Props) {
   const tr = (clave: keyof typeof TX) => t(TX[clave], lang);
 
   const [enfocado, setEnfocado] = useState<WidgetKey>(DISPONIBLES[0]!);
-  const [talla, setTalla] = useState<Talla>(WIDGETS[DISPONIBLES[0]!].tallas[0]!);
+  const [medida, setMedida] = useState<Medida>(WIDGETS[DISPONIBLES[0]!].medidaInicial);
 
   /*
     Al abrir se enfoca la primera que se pueda añadir.
@@ -85,7 +98,7 @@ export default function ElegirWidget({ lang, abierto, onAbierto, puestos, onAnad
     const libre =
       DISPONIBLES.find((c) => (puestos.get(c) ?? 0) < WIDGETS[c].tope) ?? DISPONIBLES[0]!;
     setEnfocado(libre);
-    setTalla(WIDGETS[libre].tallas[0]!);
+    setMedida(WIDGETS[libre].medidaInicial);
     // `puestos` cambia con cada pieza que se añade; lo que dispara esto es
     // ABRIR, no que cambie el tablero por detrás.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,13 +106,21 @@ export default function ElegirWidget({ lang, abierto, onAbierto, puestos, onAnad
 
   const widget = WIDGETS[enfocado];
   const Muestra = componenteDe(enfocado);
-  const { filas } = medidasDe(talla);
+  const { cols, filas } = medida;
   const yaEsta = (puestos.get(enfocado) ?? 0) >= widget.tope;
+
+  const tope = {
+    cols: Math.min(widget.max.cols, TOPE_COLS),
+    filas: Math.min(widget.max.filas, TOPE_FILAS),
+  };
 
   function elegir(clave: WidgetKey) {
     setEnfocado(clave);
-    setTalla(WIDGETS[clave].tallas[0]!);
+    setMedida(WIDGETS[clave].medidaInicial);
   }
+
+  const cambiarTamano = (eje: 'cols' | 'filas', paso: 1 | -1) =>
+    setMedida((m) => ceñir({ ...m, [eje]: m[eje] + paso }, widget));
 
   return (
     <Sheet open={abierto} onOpenChange={onAbierto}>
@@ -155,24 +176,57 @@ export default function ElegirWidget({ lang, abierto, onAbierto, puestos, onAnad
                   lang={lang}
                   ajustes={{ ...widget.ajustesIniciales }}
                   onAjustes={() => {}}
-                  talla={talla}
+                  medida={medida}
                 />
               </Suspense>
             </div>
 
             <div className="elegir-pie">
-              {widget.tallas.length > 1 && (
-                <div className="tallas" role="group" aria-label={tr('talla')}>
-                  {widget.tallas.map((op) => (
-                    <button
-                      key={op}
-                      type="button"
-                      aria-pressed={op === talla}
-                      onClick={() => setTalla(op)}
-                    >
-                      {op.replace('x', '×')}
-                    </button>
-                  ))}
+              {/*
+                El mismo mando que en la barra de la pieza, y a propósito:
+                lo que se aprende aquí sirve allí. Enseña la cifra porque
+                aquí hay sitio y porque es lo que dice de un vistazo cuánto
+                va a ocupar.
+              */}
+              {(tope.cols > widget.min.cols || tope.filas > widget.min.filas) && (
+                <div className="tamano-pieza" role="group" aria-label={tr('tamano')}>
+                  <ArrowsHorizontalIcon aria-hidden="true" size={12} />
+                  <button
+                    type="button"
+                    disabled={cols <= widget.min.cols}
+                    aria-label={tr('menosAncho')}
+                    onClick={() => cambiarTamano('cols', -1)}
+                  >
+                    <MinusIcon aria-hidden="true" size={11} weight="bold" />
+                  </button>
+                  <span className="cifra-tamano">{cols}</span>
+                  <button
+                    type="button"
+                    disabled={cols >= tope.cols}
+                    aria-label={tr('masAncho')}
+                    onClick={() => cambiarTamano('cols', 1)}
+                  >
+                    <PlusIcon aria-hidden="true" size={11} weight="bold" />
+                  </button>
+
+                  <ArrowsVerticalIcon aria-hidden="true" size={12} />
+                  <button
+                    type="button"
+                    disabled={filas <= widget.min.filas}
+                    aria-label={tr('menosAlto')}
+                    onClick={() => cambiarTamano('filas', -1)}
+                  >
+                    <MinusIcon aria-hidden="true" size={11} weight="bold" />
+                  </button>
+                  <span className="cifra-tamano">{filas}</span>
+                  <button
+                    type="button"
+                    disabled={filas >= tope.filas}
+                    aria-label={tr('masAlto')}
+                    onClick={() => cambiarTamano('filas', 1)}
+                  >
+                    <PlusIcon aria-hidden="true" size={11} weight="bold" />
+                  </button>
                 </div>
               )}
 
@@ -181,7 +235,7 @@ export default function ElegirWidget({ lang, abierto, onAbierto, puestos, onAnad
                 className="boton-anadir"
                 data-anadir={enfocado}
                 disabled={yaEsta}
-                onClick={() => onAnadir(enfocado, talla)}
+                onClick={() => onAnadir(enfocado, medida)}
               >
                 {yaEsta ? tr('yaPuesto') : tr('anadirAlTablero')}
               </button>

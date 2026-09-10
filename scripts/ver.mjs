@@ -151,11 +151,14 @@ const VISTAS = [
         abrir.click();
         const b = await esperar(() => opcion(clave));
         b.click();
+        // El tamaño ya no se elige de una lista: se crece a golpes de
+        // «+». Se pulsa hasta llegar, y el botón se apaga solo en el tope.
         if (talla) {
-          const t = [...document.querySelectorAll('.elegir-pie .tallas button')].find(
-            (x) => x.textContent.trim() === talla.replace('x', '×')
-          );
-          if (t) t.click();
+          const [cols, filas] = talla.split(/[x×]/).map(Number);
+          const mas = (i) => [...document.querySelectorAll('.elegir-pie .tamano-pieza button')][i];
+          const cifra = (i) => Number([...document.querySelectorAll('.elegir-pie .cifra-tamano')][i].textContent);
+          for (let k = 0; k < 4 && cifra(0) < cols; k++) mas(1).click();
+          for (let k = 0; k < 4 && cifra(1) < filas; k++) mas(3).click();
         }
         // Por clave: «data-anadir» dice QUÉ se va a añadir, y esperarlo con
         // el nombre puesto comprueba de paso que el panel enfocó lo que se
@@ -201,11 +204,14 @@ const VISTAS = [
         abrir.click();
         const b = await esperar(() => opcion(clave));
         b.click();
+        // El tamaño ya no se elige de una lista: se crece a golpes de
+        // «+». Se pulsa hasta llegar, y el botón se apaga solo en el tope.
         if (talla) {
-          const t = [...document.querySelectorAll('.elegir-pie .tallas button')].find(
-            (x) => x.textContent.trim() === talla.replace('x', '×')
-          );
-          if (t) t.click();
+          const [cols, filas] = talla.split(/[x×]/).map(Number);
+          const mas = (i) => [...document.querySelectorAll('.elegir-pie .tamano-pieza button')][i];
+          const cifra = (i) => Number([...document.querySelectorAll('.elegir-pie .cifra-tamano')][i].textContent);
+          for (let k = 0; k < 4 && cifra(0) < cols; k++) mas(1).click();
+          for (let k = 0; k < 4 && cifra(1) < filas; k++) mas(3).click();
         }
         // Por clave: «data-anadir» dice QUÉ se va a añadir, y esperarlo con
         // el nombre puesto comprueba de paso que el panel enfocó lo que se

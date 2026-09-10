@@ -166,9 +166,9 @@ Sin React ni DOM: se corre con `node`, y por eso se puede comprobar.
 - funciones · `cn`
 
 **`widgets.ts`**
-- funciones · `medidasDe`, `porCodigo`
-- constantes · `TALLAS`, `WIDGETS`, `CLAVES`
-- tipos · `Talla`, `WidgetKey`, `AjustesDibujo`, `SinAjustes`, `Widget`
+- funciones · `ce`, `medidaDeTallaV1`, `porCodigo`
+- constantes · `TOPE_COLS`, `TOPE_FILAS`, `TALLAS_V1`, `WIDGETS`, `CLAVES`
+- tipos · `Medida`, `WidgetKey`, `AjustesDibujo`, `SinAjustes`, `Widget`
 
 ## Las alarmas
 

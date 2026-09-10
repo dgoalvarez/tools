@@ -7,14 +7,24 @@
  * que es aritmética.
  */
 import { Escritor, Lector, VERSION, aBase64url, deBase64url, sumaDeControl } from './codigo.ts';
-import { TALLAS, WIDGETS, medidasDe, porCodigo, type Talla, type WidgetKey } from './widgets.ts';
+import {
+  TOPE_COLS,
+  TOPE_FILAS,
+  WIDGETS,
+  ceñir,
+  medidaDeTallaV1,
+  porCodigo,
+  type Medida,
+  type WidgetKey,
+} from './widgets.ts';
 
 /** Una pieza puesta en el tablero. */
 export interface Pieza {
   /** Solo vive en memoria: no viaja en el código, se recrea al leer. */
   id: string;
   tipo: WidgetKey;
-  talla: Talla;
+  /** Cuántas columnas y cuántas filas ocupa. Entre el mínimo y el máximo. */
+  medida: Medida;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ajustes: any;
 }
@@ -31,7 +41,14 @@ export type Tablero = Pieza[];
 export const TOPE_PIEZAS = 15;
 
 export type Motivo =
-  'formato' | 'version' | 'checksum' | 'widget' | 'talla' | 'ajustes' | 'sobra' | 'falta';
+  | 'formato'
+  | 'version'
+  | 'checksum'
+  | 'widget'
+  | 'medida'
+  | 'ajustes'
+  | 'sobra'
+  | 'falta';
 
 export type Lectura = { ok: true; tablero: Tablero } | { ok: false; motivo: Motivo };
 
@@ -46,10 +63,20 @@ export function nuevoId(): string {
  *
  * ```
  * byte 0      : VVVVNNNN   versión · cuántas piezas
- * por pieza   : TTTTTTSS   código de widget · índice de talla
+ * por pieza   : TTTTTTTT   código de widget
+ *               CCCCFFFF   columnas−1 · filas−1
  *               + sus ajustes, de largo variable
  * último byte : suma de control
  * ```
+ *
+ * La v1 metía el widget en seis bits y la talla en los otros dos. Al
+ * pasar a un tamaño libre esos dos bits ya no llegaban —un tamaño son
+ * dos números, no un índice de una lista de cuatro—, así que el tamaño
+ * se lleva un byte propio y el widget se queda con los ocho suyos, que
+ * de paso suben el catálogo de 64 a 256.
+ *
+ * Cuesta un byte por pieza: un tablero de cinco pasa de 7 bytes a 12, de
+ * 10 caracteres a 16. Sale barato para lo que compra.
  *
  * **No hay byte de largo por pieza**, y es una decisión. Costaría un byte
  * de cada seis para que un lector viejo pudiera saltarse un widget que no
@@ -65,8 +92,9 @@ export function codificar(tablero: Tablero): string {
 
   for (const pieza of piezas) {
     const widget = WIDGETS[pieza.tipo];
-    const talla = Math.max(0, TALLAS.indexOf(pieza.talla));
-    e.byte((widget.codigo << 2) | talla);
+    const { cols, filas } = ceñir(pieza.medida, widget);
+    e.byte(widget.codigo);
+    e.byte(((cols - 1) << 4) | (filas - 1));
     widget.aBytes(pieza.ajustes, e);
   }
 
@@ -96,7 +124,15 @@ export function decodificar(texto: string): Lectura {
   const version = cabecera >> 4;
   const cuantas = cabecera & 0x0f;
 
-  if (version !== VERSION) return { ok: false, motivo: 'version' };
+  /*
+    Se leen esta versión y las anteriores.
+
+    Una versión MÁS NUEVA sí se rechaza, y con su motivo propio: «este
+    código es de un tablero más nuevo» y «este código no se puede leer»
+    son problemas distintos para quien lo tiene en la mano. Con el primero
+    hay algo que hacer.
+  */
+  if (version < 1 || version > VERSION) return { ok: false, motivo: 'version' };
 
   const tablero: Tablero = [];
 
@@ -104,17 +140,39 @@ export function decodificar(texto: string): Lectura {
     const marca = l.byte();
     if (l.agotado) return { ok: false, motivo: 'falta' };
 
-    const tipo = porCodigo(marca >> 2);
+    // El widget ocupaba seis bits en la v1 y ocho desde la v2.
+    const tipo = porCodigo(version === 1 ? marca >> 2 : marca);
     if (!tipo) return { ok: false, motivo: 'widget' };
 
-    const talla = TALLAS[marca & 0x03];
-    if (!talla || !WIDGETS[tipo].tallas.includes(talla)) return { ok: false, motivo: 'talla' };
+    let medida: Medida | null;
+    if (version === 1) {
+      medida = medidaDeTallaV1(marca & 0x03);
+    } else {
+      const tamano = l.byte();
+      if (l.agotado) return { ok: false, motivo: 'falta' };
+      medida = { cols: (tamano >> 4) + 1, filas: (tamano & 0x0f) + 1 };
+    }
+
+    if (!medida) return { ok: false, motivo: 'medida' };
+    if (medida.cols > TOPE_COLS || medida.filas > TOPE_FILAS) {
+      return { ok: false, motivo: 'medida' };
+    }
 
     const ajustes = WIDGETS[tipo].deBytes(l);
     if (l.agotado) return { ok: false, motivo: 'falta' };
     if (ajustes === null) return { ok: false, motivo: 'ajustes' };
 
-    tablero.push({ id: nuevoId(), tipo, talla, ajustes });
+    /*
+      La medida se CIÑE en vez de rechazarse.
+
+      Un código de la v1 puede traer una talla que hoy queda fuera del
+      mínimo de su widget —el dibujo admitía 2×2 y solo 2×2, pero la
+      lista venía en 1×2 y hoy su mínimo sigue siendo ese—, y también un
+      catálogo futuro puede estrechar un máximo. Rechazar el código
+      entero por eso tiraría un tablero que se puede abrir perfectamente
+      con la pieza un poco más grande o más pequeña.
+    */
+    tablero.push({ id: nuevoId(), tipo, medida: ceñir(medida, WIDGETS[tipo]), ajustes });
   }
 
   // Que sobren bytes significa que lo leído no era lo que se escribió:
@@ -148,7 +206,7 @@ export function validar(tablero: Tablero): Tablero {
     salida.push({
       id: pieza.id || nuevoId(),
       tipo: pieza.tipo,
-      talla: widget.tallas.includes(pieza.talla) ? pieza.talla : widget.tallas[0]!,
+      medida: ceñir(pieza.medida ?? widget.medidaInicial, widget),
       ajustes: { ...widget.ajustesIniciales, ...(pieza.ajustes ?? {}) },
     });
   }
@@ -171,13 +229,12 @@ export function columnasPara(ancho: number): 1 | 2 | 3 | 4 {
 }
 
 /**
- * La talla recortada a las columnas que hay.
+ * La medida recortada a las columnas que hay.
  *
  * Es el espejo en TypeScript del `min()` que hace el CSS. Existe para
  * poder comprobar que los dos dicen lo mismo: si un día divergen, el
  * tablero se vería de una forma y se mediría de otra.
  */
-export function piezaCabe(talla: Talla, columnas: number): { cols: number; filas: number } {
-  const { cols, filas } = medidasDe(talla);
-  return { cols: Math.min(cols, columnas), filas };
+export function piezaCabe(medida: Medida, columnas: number): Medida {
+  return { cols: Math.min(medida.cols, columnas), filas: medida.filas };
 }

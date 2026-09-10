@@ -19,7 +19,13 @@
  */
 
 /** Va por delante de todo y dice cómo leer lo que sigue. */
-export const VERSION = 1;
+/**
+ * La versión que se ESCRIBE. Se leen esta y todas las anteriores.
+ *
+ * Subió a 2 al pasar de cuatro tallas fijas a un tamaño libre entre un
+ * mínimo y un máximo: la talla cabía en dos bits y un tamaño no.
+ */
+export const VERSION = 2;
 
 /**
  * Escribe bytes uno detrás de otro.

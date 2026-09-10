@@ -73,6 +73,72 @@ const VISTAS = [
   // verdad: es lo que ve quien llega, y donde se explica qué es esto.
   { nombre: 'tablero-vacio', ruta: 'es/tablero', ancho: 1440, alto: 900 },
   { nombre: 'tablero-estrecho', ruta: 'es/tablero', ancho: 485, alto: 900 },
+  // Y con dos piezas dentro, que es lo que de verdad hay que mirar: el
+  // tablero vacío no enseña ni la rejilla ni la barra de cada pieza.
+  // A 1440 salen las cuatro columnas; a 700, dos, que es el reparto
+  // apretado donde una pieza de 2×1 ocupa la fila entera.
+  {
+    nombre: 'tablero-con-piezas',
+    ruta: 'es/tablero',
+    ancho: 1440,
+    alto: 1000,
+    guion: `
+      // Hidratar, no «astro:page-load»: ese evento sale ANTES de que
+      // React monte, y un clic de entonces no hace absolutamente nada.
+      // Fue el fallo intermitente de la libreta en «navegar».
+      await esperar(() => !document.querySelector('astro-island[ssr]'));
+
+      const abrir = await esperar(() => document.querySelector('[data-tour="tablero-anadir"]'));
+      // Por clave y no por posición: al llegar una herramienta a su tope,
+      // su opción se deshabilita y los índices se corren.
+      const opcion = (clave) => document.querySelector('.elegir-widget [data-widget="' + clave + '"]');
+
+      // Cada widget llega por import() dinámico, así que se espera a que
+      // la pieza tenga cuerpo de verdad y no al reloj: con el hueco de
+      // carga puesto, un setTimeout capturaría dos rectángulos grises.
+      const poner = async (clave, cuantas) => {
+        abrir.click();
+        const b = await esperar(() => opcion(clave));
+        b.click();
+        await esperar(() => document.querySelectorAll('.cuerpo-pieza > *:not(.cargando-pieza)').length >= cuantas);
+      };
+
+      await poner('nota', 1);
+      await poner('dibujo', 2);
+      await new Promise((r) => setTimeout(r, 150));
+    `,
+  },
+  {
+    nombre: 'tablero-con-piezas-estrecho',
+    ruta: 'es/tablero',
+    ancho: 700,
+    alto: 1000,
+    guion: `
+      // Hidratar, no «astro:page-load»: ese evento sale ANTES de que
+      // React monte, y un clic de entonces no hace absolutamente nada.
+      // Fue el fallo intermitente de la libreta en «navegar».
+      await esperar(() => !document.querySelector('astro-island[ssr]'));
+
+      const abrir = await esperar(() => document.querySelector('[data-tour="tablero-anadir"]'));
+      // Por clave y no por posición: al llegar una herramienta a su tope,
+      // su opción se deshabilita y los índices se corren.
+      const opcion = (clave) => document.querySelector('.elegir-widget [data-widget="' + clave + '"]');
+
+      // Cada widget llega por import() dinámico, así que se espera a que
+      // la pieza tenga cuerpo de verdad y no al reloj: con el hueco de
+      // carga puesto, un setTimeout capturaría dos rectángulos grises.
+      const poner = async (clave, cuantas) => {
+        abrir.click();
+        const b = await esperar(() => opcion(clave));
+        b.click();
+        await esperar(() => document.querySelectorAll('.cuerpo-pieza > *:not(.cargando-pieza)').length >= cuantas);
+      };
+
+      await poner('nota', 1);
+      await poner('dibujo', 2);
+      await new Promise((r) => setTimeout(r, 150));
+    `,
+  },
   { nombre: 'portada', ruta: 'es', ancho: 1440, alto: 900 },
   // El índice es superficie nueva: hay que verlo en los dos temas y
   // apilado, que es donde el nombre y la frase dejan de compartir línea.

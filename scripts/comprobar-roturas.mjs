@@ -158,6 +158,69 @@ window.__romperse = function () {
   }
 
   /*
+   * Cuarta pregunta, y entró por lo mismo que las otras tres: porque las
+   * anteriores daban por bueno algo que estaba mal.
+   *
+   * La primera se SALTA a cualquier hijo cuyo padre recorte, y tiene
+   * razón mientras el recorte sea «auto» o «scroll»: ahí lo que sobra
+   * sigue estando y se llega desplazándose. Con «hidden» no. Lo que
+   * sobra se borra de la pantalla y no hay forma de alcanzarlo.
+   *
+   * Lo destapó el tablero. Sus piezas llevan «overflow: hidden» —lo
+   * necesitan: una herramienta entera dentro de una celda de alto fijo
+   * tiene que quedarse dentro—, y al apretarle la barra a propósito las
+   * flechas y la ✕ de la pieza DESAPARECIERON. Sin ellas la pieza no se
+   * puede ni mover ni quitar. Las tres preguntas de arriba lo dieron por
+   * bueno cinco anchos seguidos, incluso con el estropicio subido a
+   * 200 rem.
+   *
+   * Se mira solo un nivel —el hijo contra el padre que recorta— y no el
+   * «scrollWidth» del padre, que cuenta también lo que ya estaba
+   * posicionado a propósito fuera.
+   */
+  for (const el of document.querySelectorAll('body *')) {
+    const padre = el.parentElement;
+    if (!padre || padre === document.body) continue;
+
+    const cp = getComputedStyle(padre);
+    const recorta = (v) => v === 'hidden' || v === 'clip';
+    if (!recorta(cp.overflowX) && !recorta(cp.overflowY)) continue;
+
+    /*
+      Un padre con elipsis recorta A PROPÓSITO y lo dice: quien mira ve
+      los tres puntos y sabe que hay más. Eso no es perder nada.
+
+      Sin esta salida la pregunta cantaba el «truncate» del origen de los
+      husos en tres anchos —200 px, 200 px y 101 px— y eran los tres
+      correctos: es un nombre de ciudad largo dentro de un renglón que
+      nunca prometió enseñarlo entero. Una alarma que grita en un caso
+      bien resuelto enseña a no hacerle caso.
+
+      Y no tapa lo que la pregunta viene a cazar: en el tablero quien
+      recorta es la pieza, que no tiene elipsis ninguna, y lo recortado
+      son sus mandos.
+    */
+    if (cp.textOverflow && cp.textOverflow !== 'clip') continue;
+
+    const ce = getComputedStyle(el);
+    if (ce.position === 'absolute' || ce.position === 'fixed' || ce.display === 'none') continue;
+
+    const r = el.getBoundingClientRect();
+    const rp = padre.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0 || rp.width === 0) continue;
+
+    let fuera = 0;
+    if (recorta(cp.overflowX)) fuera = Math.max(fuera, rp.left - r.left, r.right - rp.right);
+    if (recorta(cp.overflowY)) fuera = Math.max(fuera, rp.top - r.top, r.bottom - rp.bottom);
+
+    // Dos píxeles, no uno: un borde de 1 px por lado más el redondeo del
+    // subpíxel marcaba cajas que no tienen nada mal.
+    if (fuera > 2) {
+      if (rotos.some((x) => x.el.contains(el))) continue;
+      rotos.push({ el, que: 'lo recorta su padre y se pierden ' + Math.round(fuera) + 'px' });
+    }
+  }
+  /*
    * Tercera pregunta, y no es ninguna de las dos anteriores: cada campo,
    * ¿reserva más ancho del que usa?
    *
@@ -378,6 +441,43 @@ const NOTAS_TRES_BOTONES = `
   grosor en la cabecera. La tarjeta tiene alto fijo, así que un renglón
   de más no crece: se sale.
 */
+/*
+  El tablero con piezas dentro, que es el único estado suyo que puede
+  romperse.
+
+  Vacío no comprueba nada: es un rectángulo punteado con un signo. Lo que
+  aprieta es una herramienta entera metida en una celda de alto FIJO, y a
+  1024 y 700 —los dos repartos apretados— cada pieza es más estrecha que
+  la tarjeta para la que se dibujó su barra de mandos.
+
+  Se ponen las dos que hay hoy, y se pone la nota en 2×2: cambiar de talla
+  es lo que reparte de otra forma, y una pieza que no cabe en su fila se
+  sale por abajo sin que nadie lo vea —la fila no crece, para eso es fija—.
+*/
+const TABLERO_LLENO = `
+(async () => {
+  const abrir = await __esperar(() => document.querySelector('[data-tour="tablero-anadir"]'));
+
+  // Por clave y no por posición: al llegar una herramienta a su tope su
+  // opción se deshabilita, y las de detrás se corren un puesto.
+  const poner = async (clave, cuantas) => {
+    abrir.click();
+    const b = await __esperar(() => document.querySelector('.elegir-widget [data-widget="' + clave + '"]'));
+    b.click();
+    // Cada widget llega por import() dinámico: se espera al cuerpo de
+    // verdad, no al reloj, o se mediría el hueco gris de carga.
+    await __esperar(() => document.querySelectorAll('.cuerpo-pieza > *:not(.cargando-pieza)').length >= cuantas);
+  };
+
+  await poner('nota', 1);
+  await poner('dibujo', 2);
+
+  // Y la nota a su talla mayor, que es otro reparto.
+  const dosPorDos = document.querySelector('.pieza-tablero .tallas button:last-child');
+  if (dosPorDos) dosPorDos.click();
+  await new Promise((r) => setTimeout(r, 120));
+})()
+`;
 const NOTAS_DIBUJO_LLENO = `
 (async () => {
   const lienzo = await __esperar(() => document.querySelector('.lienzo'));
@@ -530,6 +630,7 @@ const CASOS = [
   { nombre: 'notas · el dibujo lleno', ruta: 'es/notas', hacer: NOTAS_DIBUJO_LLENO },
   { nombre: 'notas · en inglés', ruta: 'en/notes' },
   { nombre: 'tablero · vacío', ruta: 'es/tablero' },
+  { nombre: 'tablero · con las dos piezas', ruta: 'es/tablero', hacer: TABLERO_LLENO },
   { nombre: 'tablero · en inglés', ruta: 'en/board' },
   { nombre: 'portada', ruta: 'es' },
   { nombre: 'portada en inglés', ruta: 'en' },
@@ -549,6 +650,24 @@ const CASOS = [
 */
 const ANCHOS = [1440, 1024, 869, 700, 485];
 
+/*
+  Se puede pedir un trozo: «node scripts/comprobar-roturas.mjs tablero».
+
+  Sin argumentos salen los casos enteros, que es lo que hay que pasar
+  antes de subir. Con uno se miran solo los que llevan ese texto en el
+  nombre, que mientras se está afinando UNA pantalla evita arrancar
+  Chrome ciento y pico veces para mirar la misma.
+*/
+const filtro = process.argv.slice(2).filter((a) => !a.startsWith('-'));
+const pedidos = filtro.length
+  ? CASOS.filter((c) => filtro.some((f) => c.nombre.includes(f)))
+  : CASOS;
+
+if (pedidos.length === 0) {
+  console.error(`✗ Ningún caso se llama así. Hay ${CASOS.length}:`);
+  console.error('   ' + CASOS.map((c) => c.nombre).join(', '));
+  process.exit(1);
+}
 /** Chrome descuenta el marco de la ventana y tiene un mínimo por abajo. */
 const MARCO = 31;
 
@@ -563,7 +682,7 @@ let fallos = 0;
 let mirados = 0;
 
 try {
-  for (const caso of CASOS) {
+  for (const caso of pedidos) {
     const archivo = join(dist, `_rot_${caso.nombre.replace(/[^a-z0-9]+/gi, '_')}.html`);
     const guion =
       SONDA +

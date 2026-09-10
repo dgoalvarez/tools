@@ -87,7 +87,7 @@ const SIN_AJUSTES = {
 const lista: Widget<SinAjustes> = {
   codigo: 0,
   tallas: ['1x2', '2x2'],
-  icono: 'notas',
+  icono: 'tareas',
   nombre: { es: 'La lista', en: 'The list' },
   ...SIN_AJUSTES,
 };
@@ -122,7 +122,7 @@ const dibujo: Widget<AjustesDibujo> = {
     return tinta > 3 ? null : { tinta };
   },
   tope: 1,
-  icono: 'notas',
+  icono: 'pincel',
   nombre: { es: 'El dibujo', en: 'The drawing' },
 };
 

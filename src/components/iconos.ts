@@ -31,6 +31,15 @@ import barras from '@phosphor-icons/core/regular/list.svg?raw';
 // mismo dibujo que `list`, que ya usa la hamburguesa: en el riel plegado
 // se verían dos iconos iguales con destinos distintos.
 import notas from '@phosphor-icons/core/regular/note-pencil.svg?raw';
+// Los dos del tablero. Nacen aquí porque el menú de añadir enseña las
+// cuatro herramientas juntas, y ahí tres iconos iguales no distinguen
+// nada: la lista, la nota y el dibujo salían las tres con `note-pencil`.
+// La casilla marcada se elige antes que `list-checks` por lo mismo que
+// dice el comentario de arriba: `list-checks` es casi el dibujo de
+// `list`, que ya es la hamburguesa del riel, y en el tablero los dos se
+// ven a la vez.
+import tareas from '@phosphor-icons/core/regular/check-square-offset.svg?raw';
+import pincel from '@phosphor-icons/core/regular/paint-brush.svg?raw';
 
 /**
  * Se queda solo lo de dentro del `<svg>`: la envoltura la pone
@@ -51,6 +60,8 @@ export const ICONOS = {
   paleta: interior(paleta),
   tipografia: interior(tipografia),
   notas: interior(notas),
+  tareas: interior(tareas),
+  pincel: interior(pincel),
 
   // --- de la propia interfaz ---
   rejilla: interior(rejilla),

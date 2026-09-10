@@ -121,31 +121,14 @@ export function mover(tareas: Tarea[], id: string, paso: -1 | 1): Tarea[] {
   return copia;
 }
 
-/**
- * Lleva una línea a una posición cualquiera, no de una en una.
- *
- * Es lo que hace falta para arrastrar: `mover` intercambia con el vecino
- * y sirve para las flechas, pero arrastrando se salta de la 1 a la 9 de
- * un tirón y hacerlo a base de ocho intercambios daría otra lista —los
- * de en medio acabarían corridos en el orden equivocado.
- *
- * `destino` es la posición FINAL, ya sin la línea que se mueve. Se
- * recorta a los extremos: soltar por encima de la primera la deja
- * primera, y por debajo de la última, última. Y si no cambia nada
- * devuelve el MISMO array, para que la isla sepa que no ha pasado nada.
- */
-export function moverA(tareas: Tarea[], id: string, destino: number): Tarea[] {
-  const desde = tareas.findIndex((t) => t.id === id);
-  if (desde === -1) return tareas;
+/*
+  Reordenar libre vive en `src/lib/mover.ts`, genérica.
 
-  const hasta = Math.min(Math.max(destino, 0), tareas.length - 1);
-  if (hasta === desde) return tareas;
-
-  const copia = [...tareas];
-  const [linea] = copia.splice(desde, 1);
-  copia.splice(hasta, 0, linea!);
-  return copia;
-}
+  Subió allí porque el tablero necesita exactamente lo mismo para sus
+  piezas, y dos copias de una función de reordenar se separan en
+  silencio. Se reexporta para que quien ya la usaba no note el cambio.
+*/
+export { moverA } from './mover.ts';
 
 export function borrar(tareas: Tarea[], id: string): Tarea[] {
   return tareas.filter((t) => t.id !== id);

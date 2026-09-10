@@ -121,8 +121,12 @@ Sin React ni DOM: se corre con `node`, y por eso se puede comprobar.
 - constantes · `ESPACIOS`
 - tipos · `Color`, `Texto`, `ResultadoWcag`, `EstadoApca`, `ResultadoApca`, `Sugerencia`, `Espacio`, `Canal`, `Visual`
 
+**`mover.ts`**
+- funciones · `moverA`
+- tipos · `ConId`
+
 **`notas.ts`**
-- funciones · `limpiarLinea`, `nuevaTarea`, `anadir`, `marcar`, `escribir`, `mover`, `moverA`, `borrar`, `borrarHechas`, `retiradas`, `restaurar`, `cuantasHechas`, `cajaDePixeles`, `rellenar`, `aProporcion`, `aMarkdown`, `sanearNota`, `textoDeNota`, `notaAMarkdown`, `guardar`, `leer`
+- funciones · `limpiarLinea`, `nuevaTarea`, `anadir`, `marcar`, `escribir`, `mover`, `borrar`, `borrarHechas`, `retiradas`, `restaurar`, `cuantasHechas`, `cajaDePixeles`, `rellenar`, `aProporcion`, `aMarkdown`, `sanearNota`, `textoDeNota`, `notaAMarkdown`, `guardar`, `leer`
 - constantes · `VACIO`, `VERSION`, `CLAVE`, `LIMITE_TAREAS`, `LIMITE_LINEA`, `LIMITE_NOTA`
 - tipos · `Tarea`, `Cuaderno`, `Retirada`, `Caja`
 

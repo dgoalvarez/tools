@@ -48,10 +48,10 @@ export interface PasoTour {
 export const TOUR: Record<ToolKey | 'board', PasoTour[]> = {
   // --------------------------------------------------------- tablero
   /*
-    Tres pasos firmes y dos opcionales, y el reparto no es casual.
+    Dos pasos firmes y dos opcionales, y el reparto no es casual.
 
-    Los firmes señalan al MARCO —el estado vacío, el botón de añadir y el
-    código—, que existen en el HTML publicado con el tablero recién
+    Los firmes señalan al MARCO —el hueco vacío y el botón de añadir—,
+    que existen en el HTML publicado con el tablero recién
     estrenado, que es lo que «check-tour.mjs» va a buscar. Los de las
     piezas van con «opcional», que es literalmente para lo que se inventó
     esa marca: solo salen cuando hay algo puesto.
@@ -71,14 +71,6 @@ export const TOUR: Record<ToolKey | 'board', PasoTour[]> = {
       cuerpo: {
         es: 'Cada herramienta entra en su versión compacta y se usa entera desde aquí: el pomodoro se arranca y se para, la lista se marca. Lo que se queda en su página son los ajustes finos.',
         en: 'Each tool comes in its compact form and you use it in full from here: the pomodoro starts and stops, the list gets ticked. What stays on its own page are the fine settings.',
-      },
-    },
-    {
-      ancla: 'tablero-codigo',
-      titulo: { es: 'Tu tablero cabe en un código', en: 'Your board fits in a code' },
-      cuerpo: {
-        es: 'Unas pocas letras que llevan dentro el tablero entero: qué hay, de qué tamaño y en qué orden. No apuntan a ningún servidor, porque no hay ninguno. Cópialas para llevártelo a otro navegador.',
-        en: 'A handful of letters carrying the whole board inside: what is on it, at what size, in what order. They point at no server, because there is none. Copy them to take it to another browser.',
       },
     },
     {

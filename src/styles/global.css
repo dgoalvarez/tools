@@ -5301,97 +5301,395 @@
 /* ============================================================
    El tablero
 
-   La rejilla de piezas llega en el paso siguiente. Esto es lo que se ve
-   con el tablero recién estrenado, que es el primer estado de verdad:
-   quien llega la primera vez no tiene ninguna pista de qué es esta
-   página, y un rectángulo en blanco con un botón no se la da.
-
-   Además es lo que hace posible el paso a paso. «check-tour» exige que
-   cada ancla firme exista en el HTML publicado, y un tablero vacío no
-   tiene piezas donde colgarlas: las tres viven aquí, en el marco.
+   La rejilla NO se ve. No hay líneas ni celdas pintadas: las piezas son
+   las tarjetas y el hueco entre ellas es todo lo que se percibe. Solo
+   aparece un contorno al arrastrar, para decir dónde va a caer. Un
+   tablero con la cuadrícula dibujada parece una hoja de cálculo, y esto
+   tiene que parecer una mesa vacía.
    ============================================================ */
 
 @layer components {
   .tablero {
     display: grid;
-    gap: clamp(1.25rem, 2.5vw, 2rem);
-    padding-block-end: clamp(2rem, 4vw, 4rem);
+    gap: clamp(0.875rem, 1.6vw, 1.25rem);
+  }
+
+  /* ---------- la barra de arriba ---------- */
+
+  .barra-tablero {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .boton-tablero {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4375rem;
+    padding: 0.4375rem 0.8125rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    font-size: var(--fs-small);
+    font-weight: 500;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .boton-tablero:hover:not(:disabled) {
+    border-color: var(--ink-soft);
+  }
+
+  .boton-tablero:disabled {
+    opacity: 0.45;
+    cursor: default;
   }
 
   /*
-    El estado vacío ocupa sitio de verdad y no se encoge a dos líneas.
+    El menú de qué añadir sale FLOTANDO sobre la rejilla.
 
-    Un hueco alto dice «aquí va a haber algo» mejor que cualquier frase, y
-    de paso el tablero no da un salto de altura cuando se añade la primera
-    pieza — que es el mismo tirón que ya se quitó de la libreta.
+    Empujando, abrirlo movería todo el tablero hacia abajo y cerrarlo lo
+    subiría — un salto entero de la página por mirar una lista de cuatro
+    cosas.
+  */
+  .elegir-widget {
+    position: absolute;
+    z-index: 5;
+    inset-block-start: calc(100% + 0.375rem);
+    inset-inline-start: 0;
+    display: grid;
+    gap: 0.125rem;
+    min-width: 12rem;
+    padding: 0.3125rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+  }
+
+  .elegir-widget button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4375rem 0.5rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    font-size: var(--fs-small);
+    color: var(--ink);
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .elegir-widget button:hover:not(:disabled) {
+    background: var(--surface-2);
+  }
+
+  .elegir-widget button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  /* ---------- el hueco vacío ---------- */
+
+  /*
+    Es él mismo el botón, y solo lleva un «+».
+
+    En una vista sin texto, un rectángulo punteado con un signo dice lo
+    que hay que hacer sin decirlo. Y ocupa alto de verdad para que el
+    tablero no dé un salto al entrar la primera pieza — el mismo tirón
+    que ya se quitó de la libreta, evitado antes de que exista.
   */
   .tablero-vacio {
     display: grid;
-    align-content: center;
-    justify-items: start;
-    gap: 0.625rem;
-    min-height: clamp(14rem, 34vh, 22rem);
-    padding: clamp(1.5rem, 3vw, 2.5rem);
+    place-items: center;
+    width: 100%;
+    min-height: clamp(12rem, 32vh, 20rem);
     border: 1px dashed var(--line);
     border-radius: var(--radius-xl);
-    background: var(--surface);
+    background: none;
+    color: var(--ink-soft);
+    cursor: pointer;
   }
 
-  .tablero-vacio .titulo {
-    margin: 0;
-    font-size: var(--fs-h3);
-    font-weight: 600;
-    color: var(--ink);
+  .tablero-vacio:hover {
+    border-color: var(--acento);
+    color: var(--acento);
   }
 
-  .tablero-vacio .cuerpo {
-    margin: 0;
-    max-width: 44rem;
-    font-size: var(--fs-body);
-    line-height: 1.55;
-    color: var(--ink-muted);
-    text-wrap: pretty;
+  /* ---------- la rejilla ---------- */
+
+  .rejilla-tablero {
+    display: grid;
+    grid-template-columns: repeat(var(--columnas, 4), minmax(0, 1fr));
+    /*
+      Alto de fila FIJO, no «auto» ni «minmax».
+
+      Es la trampa apuntada en CLAUDE.md: contra una fila de alto
+      indefinido, el «height: 100%» de dentro se resuelve como «auto», la
+      caja crece con su contenido y el desplazamiento interior no aparece
+      nunca. Una lista de cuarenta líneas en una pieza de 1×2 tiene que
+      ceñirse a su hueco, no estirar la fila y con ella el tablero.
+    */
+    grid-auto-rows: var(--fila-tablero, 11rem);
+    gap: clamp(0.875rem, 1.6vw, 1.25rem);
   }
 
   /*
-    De momento es un rótulo y no un botón, y por una razón: hasta que el
-    selector exista, un botón que no abre nada es peor que un texto que
-    dice lo que va a haber. El paso 3 lo convierte en el botón de verdad,
-    con la misma ancla.
-  */
-  .tablero-vacio .marca-anadir {
-    margin: 0.375rem 0 0;
-    padding: 0.5rem 0.875rem;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    font-size: var(--fs-small);
-    font-weight: 500;
-    color: var(--ink-soft);
-  }
+    El recorte va en CSS y no en JavaScript.
 
-  .tablero-codigo {
+    Una pieza de tres de ancho en un tablero de dos columnas se recorta en
+    el PRIMER pintado, sin esperar a que hidrate la isla. Calculándolo en
+    JavaScript, el HTML del servidor saldría con el ancho equivocado y se
+    vería corregirse.
+  */
+  .pieza-tablero {
     display: grid;
-    gap: 0.375rem;
-    padding: clamp(1rem, 2vw, 1.375rem);
+    grid-template-rows: auto 1fr;
+    grid-column: span min(var(--cols), var(--columnas, 4));
+    grid-row: span var(--filas);
+    min-height: 0;
     border: 1px solid var(--line);
     border-radius: var(--radius-xl);
     background: var(--surface);
+    overflow: hidden;
   }
 
-  .tablero-codigo .titulo {
-    margin: 0;
-    font-size: var(--fs-small);
-    font-weight: 600;
-    letter-spacing: 0.02em;
+  .pieza-tablero[data-arrastrada] {
+    opacity: 0.5;
+  }
+
+  /* El único momento en que la rejilla se deja ver: dónde va a caer. */
+  .pieza-tablero[data-hueco] {
+    outline: 2px solid var(--acento);
+    outline-offset: -2px;
+  }
+
+  /* ---------- la barra de cada pieza ---------- */
+
+  .barra-pieza {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.5rem 0.375rem 0.25rem;
+    border-block-end: 1px solid var(--line);
+  }
+
+  .nombre-pieza {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--ink-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .asa-pieza {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 1.25rem;
+    height: 1.5rem;
+    color: var(--ink-soft);
+    opacity: 0.4;
+    cursor: grab;
+    /* Sin esto, el navegador se queda el gesto en cuanto se mueve un pelo
+       en vertical, que es justo la dirección en la que se reordena. */
+    touch-action: none;
+  }
+
+  .pieza-tablero:hover .asa-pieza,
+  .pieza-tablero:focus-within .asa-pieza {
+    opacity: 1;
+  }
+
+  .asa-pieza:active {
+    cursor: grabbing;
+  }
+
+  .mando-pieza {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+
+  .mando-pieza:hover:not(:disabled) {
+    border-color: var(--line);
     color: var(--ink);
   }
 
-  .tablero-codigo .ayuda {
-    margin: 0;
-    max-width: 46rem;
+  .mando-pieza:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  /* Las tallas: el mismo grupo compacto que la proporción del dibujo. */
+  .barra-pieza .tallas {
+    display: flex;
+    gap: 0.125rem;
+    padding: 0.125rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+  }
+
+  .barra-pieza .tallas button {
+    padding: 0.125rem 0.3125rem;
+    border: 0;
+    border-radius: calc(var(--radius-sm) * 0.8);
+    background: none;
+    font-size: 0.65rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+
+  .barra-pieza .tallas button[aria-pressed='true'] {
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  /* ---------- el cuerpo ---------- */
+
+  /*
+    «min-height: 0» es lo que permite que lo de dentro se desplace en vez
+    de estirar la pieza. Sin él, un hijo con mucho contenido impone su
+    alto y el recorte de la fila deja de significar nada.
+
+    Y es una rejilla de una casilla, no un bloque: así el widget se
+    ESTIRA hasta el borde de la pieza. Como bloque, la nota se quedaba
+    con su alto natural y dejaba seis centímetros muertos debajo — el
+    mismo hueco que ya se quitó de la tarjeta de la libreta, reaparecido
+    aquí porque su «flex: 1» no tenía contra qué crecer.
+  */
+  .cuerpo-pieza {
+    display: grid;
+    min-height: 0;
+    overflow: auto;
+    padding: 0.5rem;
+  }
+
+  /*
+    Dentro de una pieza, la tarjeta de una herramienta deja de ser
+    tarjeta.
+
+    El marco y el nombre los pone ya la barra de la pieza, así que la
+    tarjeta los repetía: un marco redondeado dentro de otro y «El
+    dibujo» escrito dos veces a cuatro centímetros de distancia. Se
+    quita aquí y no en el componente porque el componente es el MISMO
+    que el de su página, donde el marco y el título sí hacen falta.
+  */
+  .cuerpo-pieza > .tarjeta-control {
+    height: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+
+  /*
+    El título se esconde de la VISTA, no del lector.
+
+    El lienzo se anuncia con «aria-labelledby» apuntando a este párrafo;
+    con «display: none» saldría del árbol y el <canvas> se quedaría sin
+    nombre. Quien navegue con lector seguiría oyendo «El dibujo», que es
+    justo lo que la barra de la pieza le dice a quien mira.
+  */
+  /*
+    Dentro de una pieza, el lienzo se CIÑE al hueco que le sobra.
+
+    En su página lleva alto fijo, y con razón: es el que hace que las
+    tres tarjetas de la libreta acaben en la misma línea. Aquí ese mismo
+    alto no cabía en una pieza de 2×2 y empujaba el pie fuera de la
+    caja, así que descargar y elegir proporción desaparecían — el dibujo
+    se podía hacer pero no llevárselo.
+
+    El «height: 100%» funciona porque el padre tiene alto DEFINIDO: es un
+    ítem flexible con base 0 dentro de una tarjeta que mide lo que la
+    pieza. Contra un alto indefinido se resolvería como «auto» y el
+    lienzo volvería a crecer sin que nadie lo parase, que es la trampa
+    apuntada en CLAUDE.md.
+  */
+  .cuerpo-pieza .caja-lienzo {
+    flex: 1 1 0;
+  }
+
+  .cuerpo-pieza .lienzo {
+    height: 100%;
+  }
+  .cuerpo-pieza .cabecera-modo > .titulo {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* El hueco mientras carga mide lo que la celda, no cero: si no, montar
+     un widget empujaría la rejilla y «navegar» lo cazaría como tirón. */
+  .cargando-pieza {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius);
+    background: var(--surface-2);
+  }
+
+  /* ---------- la línea de dónde se guarda ---------- */
+
+  .nota-guardado {
+    margin: 0.5rem 0 clamp(2rem, 4vw, 4rem);
+    max-width: 52rem;
     font-size: var(--fs-small);
-    line-height: 1.55;
-    color: var(--ink-muted);
+    line-height: 1.5;
+    color: var(--ink-soft);
     text-wrap: pretty;
+  }
+
+  /* ---------- cuántas columnas, a cada ancho ---------- */
+
+  /*
+    Los cortes son los mismos que sabe «columnasPara» en
+    «src/lib/tablero.ts», y eso no es casualidad: la aritmética que se
+    comprueba sin navegador y lo que hace el CSS tienen que hablar de los
+    mismos números, o el tablero se vería de una forma y se mediría de
+    otra.
+  */
+  .rejilla-tablero {
+    --columnas: 4;
+  }
+
+  @media (width < 75rem) {
+    .rejilla-tablero {
+      --columnas: 3;
+    }
+  }
+
+  @media (width < 64rem) {
+    .rejilla-tablero {
+      --columnas: 2;
+    }
+  }
+
+  @media (width < 43.75rem) {
+    .rejilla-tablero {
+      --columnas: 1;
+      --fila-tablero: 9rem;
+    }
   }
 }

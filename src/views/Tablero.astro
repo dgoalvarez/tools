@@ -2,17 +2,22 @@
 /**
  * El tablero.
  *
- * El aviso de dónde se guarda va AQUÍ y no dentro de la isla, por lo
- * mismo que el de notas: es texto fijo, sale del servidor en el primer
- * pintado, y quien llega tiene que poder leerlo antes de montar nada.
+ * Casi no hay texto, y es la idea: esta vista la construye quien la usa,
+ * así que lo que hay que explicar se explica en el paso a paso y no en la
+ * pantalla.
  *
- * Y hay una razón más, esta de la maquinaria: `check-tour.mjs` exige que
- * cada ancla no opcional del paso a paso exista en el HTML publicado. Un
- * tablero recién estrenado está VACÍO, así que las tres anclas firmes
- * tienen que vivir en el marco —el estado vacío, el botón de añadir y el
- * código— y no dentro de las piezas, que a esas alturas no hay.
+ * Lo único escrito que se queda es la línea de dónde se guarda, y esa no
+ * es opcional: la regla de la casa dice que si el sitio guarda algo, la
+ * pantalla lo dice. Va abajo y en pequeño —no es una advertencia, es una
+ * ficha técnica— y sale del servidor, así que se puede leer antes de que
+ * la isla monte nada.
+ *
+ * Las dos anclas firmes del paso a paso —el hueco vacío y el botón de
+ * añadir— las pinta la isla y existen desde el primer render, que es lo
+ * que `check-tour` va a buscar en el HTML publicado.
  */
 import Tool from '../layouts/Tool.astro';
+import Tablero from '../islands/tablero/Tablero';
 import { TABLERO_TEXTOS as TX } from '../i18n/tablero';
 import { UI } from '../i18n/ui';
 import { t, type Lang } from '../i18n/config';
@@ -25,21 +30,9 @@ const { lang } = Astro.props;
 ---
 
 <Tool lang={lang} tool="board">
-  <p class="aviso-sesion">{t(TX.aviso, lang)}</p>
+  <Tablero client:load lang={lang} />
 
-  <div class="tablero">
-    <section class="tablero-vacio" data-tour="tablero-vacio">
-      <p class="titulo">{t(TX.vacioTitulo, lang)}</p>
-      <p class="cuerpo">{t(TX.vacioCuerpo, lang)}</p>
-
-      <p class="marca-anadir" data-tour="tablero-anadir">{t(TX.anadir, lang)}</p>
-    </section>
-
-    <section class="tablero-codigo" data-tour="tablero-codigo">
-      <p class="titulo">{t(TX.codigo, lang)}</p>
-      <p class="ayuda">{t(TX.codigoAyuda, lang)}</p>
-    </section>
-  </div>
+  <p class="nota-guardado">{t(TX.aviso, lang)}</p>
 
   <noscript>
     <p

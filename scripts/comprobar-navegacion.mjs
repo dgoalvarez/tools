@@ -447,6 +447,148 @@ const GUION_LIBRETA = [
   '});',
 ].join('\n');
 
+/**
+ * Montar un widget no puede mover nada, ni la rejilla ni la pieza.
+ *
+ * Cada widget llega por `import()` dinámico, así que entre el clic y el
+ * componente hay un rato con un hueco puesto.
+ *
+ * Se miden DOS cosas, y la segunda entró corrigiendo a la primera. La
+ * primera —que el alto de la rejilla es el mismo con el hueco y con el
+ * widget— resultó no poder fallar: las filas tienen alto FIJO, así que la
+ * rejilla mide lo mismo pase lo que pase dentro. Se probó bajando el
+ * hueco a cero y siguió en verde. Se queda igualmente, porque afirma algo
+ * cierto y barato, pero no es la que vigila el hueco.
+ *
+ * La que lo vigila es la segunda: que el hueco MIDA lo que su celda
+ * mientras existe. Eso es lo que evita que la pieza se vea hundida por
+ * dentro y luego se rellene de golpe, y es lo que se rompe si alguien le
+ * quita el `height: 100%` a `.cargando-pieza`.
+ */
+const GUION_TABLERO_MONTA = [
+  COMUN,
+  "__cuandoListo(1, function () {",
+  "  var t0 = Date.now();",
+  "  var esperando = setInterval(function () {",
+  "    if (document.querySelector(\"astro-island[ssr]\") && Date.now() - t0 < 5000) return;",
+  "    clearInterval(esperando);",
+  "    __montar();",
+  "  }, 40);",
+  "});",
+  "function __alto() {",
+  "  var r = document.querySelector(\".rejilla-tablero\");",
+  "  return r ? Math.round(r.getBoundingClientRect().height) : 0;",
+  "}",
+  "function __montar() {",
+  "  var abrir = document.querySelector(\"[data-tour=tablero-anadir]\");",
+  "  if (!abrir) { __decir(\"no hay boton de anadir\"); return; }",
+  "  abrir.click();",
+  "  setTimeout(function () {",
+  "    var b = document.querySelector(\".elegir-widget [data-widget=dibujo]\");",
+  "    if (!b) { __decir(\"no hay opcion de dibujo\"); return; }",
+  "    b.click();",
+  "    // El hueco de carga puede durar un suspiro: se mira cada cuadro y se",
+  "    // guarda el alto MIENTRAS existe, que es el unico momento en que se",
+  "    // puede medir.",
+  "    var conHueco = 0;",
+  "    var vistoElHueco = false;",
+  "    var hueco = 0;",
+  "    var celda = 0;",
+  "    var mirar = function () {",
+  "      var h = document.querySelector(\".cargando-pieza\");",
+  "      if (h) {",
+  "        vistoElHueco = true;",
+  "        conHueco = __alto();",
+  "        hueco = Math.round(h.getBoundingClientRect().height);",
+  "        var c = h.closest(\".cuerpo-pieza\");",
+  "        if (c) {",
+  "          var cs = getComputedStyle(c);",
+  "          celda = Math.round(",
+  "            c.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)",
+  "          );",
+  "        } else { celda = 0; }",
+  "        requestAnimationFrame(mirar);",
+  "        return;",
+  "      }",
+  "      if (!conHueco) { conHueco = __alto(); requestAnimationFrame(mirar); return; }",
+  "      setTimeout(function () {",
+  "        var males = [];",
+  "        var puesto = __alto();",
+  "        if (!puesto) males.push(\"no hay rejilla despues de anadir\");",
+  "        if (!vistoElHueco) males.push(\"no llego a verse el hueco de carga\");",
+  "        else if (!celda) males.push(\"el hueco no estaba dentro de un cuerpo de pieza\");",
+  "        else if (celda - hueco > 2) {",
+  "          males.push(\"el hueco de carga no llena su celda: \" + hueco + \" de \" + celda);",
+  "        }",
+  "        if (Math.abs(puesto - conHueco) > 2) {",
+  "          males.push(\"la rejilla dio un tiron al montar: \" + conHueco + \" -> \" + puesto);",
+  "        }",
+  "        __decir(males.length ? males.join(\" ;; \") : \"quieto\");",
+  "      }, 400);",
+  "    };",
+  "    requestAnimationFrame(mirar);",
+  "  }, 60);",
+  "}",
+].join('\n');
+
+/**
+ * La nota del tablero y la de su página son LA MISMA.
+ *
+ * Es la promesa de `useCuaderno`, y la única del tablero que no se puede
+ * comprobar mirando: hay que escribir aquí e ir a verlo allí. Si un día
+ * el widget se quedara con una copia propia, el tablero tendría una
+ * segunda libreta que nadie pidió y esto sería lo único que lo diría.
+ */
+const GUION_TABLERO_NOTA = [
+  COMUN,
+  "var __texto = \"escrito desde el tablero\";",
+  "__cuandoListo(1, function () {",
+  "  var t0 = Date.now();",
+  "  var esperando = setInterval(function () {",
+  "    if (document.querySelector(\"astro-island[ssr]\") && Date.now() - t0 < 5000) return;",
+  "    clearInterval(esperando);",
+  "    __ponerLaNota();",
+  "  }, 40);",
+  "});",
+  "function __ponerLaNota() {",
+  "  var abrir = document.querySelector(\"[data-tour=tablero-anadir]\");",
+  "  if (!abrir) { __decir(\"no hay boton de anadir\"); return; }",
+  "  abrir.click();",
+  "  setTimeout(function () {",
+  "    var b = document.querySelector(\".elegir-widget [data-widget=nota]\");",
+  "    if (!b) { __decir(\"no hay opcion de nota\"); return; }",
+  "    b.click();",
+  "    setTimeout(__escribir, 700);",
+  "  }, 60);",
+  "}",
+  "function __escribir() {",
+  "  var campo = document.querySelector(\".cuerpo-pieza .campo-nota\");",
+  "  if (!campo) { __decir(\"no hay campo de nota en la pieza\"); return; }",
+  "  // La nota es un contenteditable: no tiene «value», y llamarle al setter",
+  "  // nativo de un input lanza «Illegal invocation». Ya mordio en «romper».",
+  "  campo.textContent = __texto;",
+  "  campo.dispatchEvent(new Event(\"input\", { bubbles: true }));",
+  "  setTimeout(function () {",
+  "    if (String(sessionStorage.getItem(\"dgo-tools-notas\")).indexOf(__texto) === -1) {",
+  "      __decir(\"lo escrito en el tablero no llego al almacenamiento\"); return;",
+  "    }",
+  "    var enlace = document.querySelector(\".riel-lista a[href$='/es/notas']\");",
+  "    if (!enlace) { __decir(\"no hay enlace a notas\"); return; }",
+  "    enlace.click();",
+  "  }, 600);",
+  "}",
+  "__alLlegar(\"/es/notas\", function () {",
+  "  var males = [];",
+  "  if (!window.__vivo) males.push(\"hubo recarga: se perdio la marca de window\");",
+  "  var campo = document.querySelector(\".campo-nota\");",
+  "  if (!campo) males.push(\"no hay campo de nota en su pagina\");",
+  "  else if (campo.textContent.indexOf(__texto) === -1) {",
+  "    males.push(\"la nota del tablero no llego a su pagina: \" + campo.textContent.slice(0, 40));",
+  "  }",
+  "  __decir(males.length ? males.join(\" ;; \") : \"quieto\");",
+  "});",
+].join('\n');
+
 /** Doce líneas y una nota, para mirar el tirón al restaurar. */
 const LIBRETA_SEMBRADA = {
   clave: 'dgo-tools-notas',
@@ -524,12 +666,45 @@ const CASOS = [
     ancho: 1440,
     guion: GUION_LIBRETA,
   },
+  {
+    nombre: 'el tablero monta sin tiron',
+    pagina: 'es/tablero.html',
+    ancho: 1440,
+    guion: GUION_TABLERO_MONTA,
+  },
+  {
+    nombre: 'la nota del tablero es la de su pagina',
+    pagina: 'es/tablero.html',
+    ancho: 1440,
+    guion: GUION_TABLERO_NOTA,
+  },
 ];
 
+/*
+  Se puede pedir un trozo: «node scripts/comprobar-navegacion.mjs tablero».
+
+  Cada caso arranca su propio Chrome con el reloj de VERDAD —aquí no vale
+  el tiempo virtual, porque hay que esperar a la red—, así que la pasada
+  entera son trece navegadores. Mientras se afina UNA pantalla, doce de
+  ellos contestan lo mismo que la vez anterior.
+
+  Sin argumentos salen los trece, que es lo que hay que pasar antes de
+  subir.
+*/
+const filtro = process.argv.slice(2).filter((a) => !a.startsWith('-'));
+const pedidos = filtro.length
+  ? CASOS.filter((c) => filtro.some((f) => c.nombre.includes(f)))
+  : CASOS;
+
+if (pedidos.length === 0) {
+  console.error(`✗ Ningún caso se llama así. Hay ${CASOS.length}:`);
+  console.error('   ' + CASOS.map((c) => c.nombre).join(', '));
+  process.exit(1);
+}
 let fallos = 0;
 
 try {
-  for (const caso of CASOS) {
+  for (const caso of pedidos) {
     sonda = caso;
     process.stdout.write(`  ...   ${caso.nombre}\r`);
 
@@ -585,8 +760,8 @@ try {
 
 console.log(
   fallos === 0
-    ? `\n✓ la navegación no salta ni recarga (${CASOS.length} comprobaciones)\n`
-    : `\n✗ ${fallos} de ${CASOS.length} mal\n`
+    ? `\n✓ la navegación no salta ni recarga (${pedidos.length} comprobaciones)\n`
+    : `\n✗ ${fallos} de ${pedidos.length} mal\n`
 );
 
 process.exit(fallos === 0 ? 0 : 1);

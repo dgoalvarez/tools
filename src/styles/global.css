@@ -5809,7 +5809,7 @@
     a 1024 px y 301 a 1440. Sobran 3 px por arriba y 24 por abajo, y los
     dos anchos los visita `romper`.
   */
-  @container (width < 19rem) {
+  @container (width < 24rem) {
     .barra-pieza {
       gap: 0.125rem;
       padding-inline: 0.375rem 0.25rem;
@@ -6199,6 +6199,89 @@
      de la lista: sin ellos la pieza no hace nada. */
   .mandos-widget .mando-pieza {
     border-color: var(--line);
+  }
+
+  /* ---------- el panel de ajustes ---------- */
+
+  /*
+    Más estrecho que el de añadir, y a propósito.
+
+    Aquel tiene que enseñar una herramienta entera al lado de su lista;
+    este son cinco renglones de rótulo y cifra. Con los mismos 46 rem, los
+    campos quedarían perdidos en una columna de texto de un palmo.
+
+    Y se ve el tablero por detrás: cambiar el trabajo a 50 mueve la cifra
+    de la pieza mientras se mira, que es lo que hace que no haga falta un
+    botón de guardar.
+  */
+  .hoja-ajustes {
+    width: min(24rem, 100vw);
+  }
+
+  .lista-ajustes {
+    display: grid;
+    align-content: start;
+    gap: 0.125rem;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /*
+    Rejilla y no flex, para que las cinco cifras caigan en la MISMA
+    vertical.
+
+    Con «space-between» el ancho de la unidad empujaba su campo: «min» y
+    «pomodoros» no miden lo mismo, así que la fila del ciclo dejaba su
+    cifra desplazada respecto a las otras cuatro. Es la tercera pregunta
+    de «romper» —una cifra despegada de donde debería— aplicada antes de
+    que salte.
+  */
+  .campo-ajuste {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 4.25rem 5rem;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.125rem;
+  }
+
+  .campo-ajuste + .campo-ajuste {
+    border-block-start: 1px solid var(--line);
+  }
+
+  .campo-ajuste label {
+    font-size: var(--fs-small);
+    color: var(--ink-muted);
+  }
+
+
+  /*
+    El campo mide lo que la cifra más larga y no lo que le den.
+
+    Es la tercera pregunta de «romper» aplicada antes de que salte: un
+    campo que reserva más ancho del que usa deja la cifra despegada de su
+    borde, y con cinco en columna las cinco caen en verticales distintas.
+  */
+  .campo-ajuste input {
+    width: 100%;
+    padding: 0.3125rem 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    font: inherit;
+    font-size: var(--fs-small);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    text-align: end;
+  }
+
+  .campo-ajuste input:focus-visible {
+    border-color: var(--acento);
+    outline: none;
+  }
+
+  .unidad-ajuste {
+    font-size: 0.75rem;
+    color: var(--ink-soft);
   }
 
   /* ---------- la línea de dónde se guarda ---------- */

@@ -74,6 +74,39 @@ const VISTAS = [
   { nombre: 'tablero-vacio', ruta: 'es/tablero', ancho: 1440, alto: 900 },
   { nombre: 'tablero-estrecho', ruta: 'es/tablero', ancho: 485, alto: 900 },
   /*
+    El panel de ajustes del pomodoro, abierto.
+
+    Es la pantalla que no existía: un widget con cinco números que se
+    pueden tocar. Y el formulario no está escrito a mano, se deriva de lo
+    que el widget declara, así que mirarlo es lo único que dice si esa
+    derivación sale bien.
+  */
+  {
+    nombre: 'tablero-ajustes',
+    ruta: 'es/tablero',
+    ancho: 1440,
+    alto: 1000,
+    guion: `
+      await esperar(() => !document.querySelector('astro-island[ssr]'));
+
+      const abrir = await esperar(() => document.querySelector('[data-tour="tablero-anadir"]'));
+      abrir.click();
+
+      const b = await esperar(() => document.querySelector('.elegir-lista [data-widget="pomodoro"]'));
+      b.click();
+
+      const anadir = await esperar(() => document.querySelector('[data-anadir="pomodoro"]:not(:disabled)'));
+      anadir.click();
+
+      // La rueda dentada solo existe si el widget declara campos: que
+      // esta espera se cumpla ya dice que el pomodoro los tiene.
+      const rueda = await esperar(() => document.querySelector('.barra-pieza button[aria-label="Configurar"]'));
+      rueda.click();
+      await esperar(() => document.querySelector('.campo-ajuste'));
+      await new Promise((r) => setTimeout(r, 200));
+    `,
+  },
+  /*
     El panel de añadir, abierto y enseñando una herramienta.
 
     Es la pantalla que decide qué se pone en el tablero, así que es la

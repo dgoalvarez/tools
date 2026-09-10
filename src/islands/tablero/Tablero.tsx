@@ -32,6 +32,7 @@ import {
   ArrowsHorizontalIcon,
   ArrowsVerticalIcon,
   DotsSixVerticalIcon,
+  GearSixIcon,
   MinusIcon,
   PlusIcon,
   XIcon,
@@ -51,6 +52,7 @@ import {
 } from '../../lib/widgets';
 import { COMPONENTE } from './catalogo';
 import ElegirWidget from './ElegirWidget';
+import PanelAjustes from './PanelAjustes';
 import type { PropsWidget } from './tipos';
 
 interface Props {
@@ -71,6 +73,16 @@ export default function Tablero({ lang }: Props) {
 
   const [piezas, setPiezas] = useState<Piezas>([]);
   const [eligiendo, setEligiendo] = useState(false);
+
+  /*
+    Qué pieza se está configurando, por ID y no por objeto.
+
+    Guardando el objeto, el panel seguiría enseñando la copia de cuando se
+    abrió: cada cambio hace una pieza nueva, así que los campos se verían
+    congelados en el valor de entrada mientras el tablero de detrás sí
+    cambia. Con el id se busca la pieza viva en cada pintado.
+  */
+  const [configurando, setConfigurando] = useState<string | null>(null);
 
   /** Cuántas copias hay ya de cada tipo, para respetar su tope. */
   const puestos = useMemo(() => {
@@ -113,6 +125,11 @@ export default function Tablero({ lang }: Props) {
       })
     );
   }
+
+  const ajustar = (id: string, parcial: Record<string, unknown>) =>
+    setPiezas((antes) =>
+      antes.map((p) => (p.id === id ? { ...p, ajustes: { ...p.ajustes, ...parcial } } : p))
+    );
 
   const cambiar = (id: string, parcial: Partial<Pieza>) =>
     setPiezas((antes) => antes.map((p) => (p.id === id ? { ...p, ...parcial } : p)));
@@ -284,6 +301,13 @@ export default function Tablero({ lang }: Props) {
         onAnadir={anadir}
       />
 
+      <PanelAjustes
+        lang={lang}
+        pieza={piezas.find((p) => p.id === configurando) ?? null}
+        onCerrar={() => setConfigurando(null)}
+        onAjustes={ajustar}
+      />
+
       {hayPiezas ? (
         <div className="rejilla-tablero">
           {piezas.map((pieza, i) => {
@@ -387,6 +411,21 @@ export default function Tablero({ lang }: Props) {
                         </>
                       )}
                     </div>
+                  )}
+
+                  {/* La rueda solo sale si el widget declara algo que
+                      configurar. Un botón que abre un panel vacío es peor
+                      que no tenerlo. */}
+                  {widget.campos && widget.campos.length > 0 && (
+                    <button
+                      type="button"
+                      className="mando-pieza"
+                      aria-label={tr('configurar')}
+                      title={tr('configurar')}
+                      onClick={() => setConfigurando(pieza.id)}
+                    >
+                      <GearSixIcon aria-hidden="true" size={14} />
+                    </button>
                   )}
 
                   {/* Las flechas hacen con el teclado lo que el asa con el

@@ -45,7 +45,6 @@ import { t } from '../../../i18n/config';
 import { POMODORO } from '../../../i18n/pomodoro';
 import { arrancarAudio, sonar } from '../../../lib/aviso';
 import {
-  AJUSTES_INICIALES,
   comoReloj,
   duracionMs,
   leerCuenta,
@@ -56,12 +55,19 @@ import {
   type Cuenta,
   type Fase,
 } from '../../../lib/pomodoro';
-import type { SinAjustes } from '../../../lib/widgets';
+import type { AjustesPomodoro } from '../../../lib/widgets';
 import type { PropsWidget } from '../tipos';
 
-const AJUSTES = AJUSTES_INICIALES;
+export default function WidgetPomodoro({ lang, medida, ajustes }: PropsWidget<AjustesPomodoro>) {
+  /*
+    Las duraciones ya no son las de fábrica: salen de los ajustes de ESTA
+    pieza, que se tocan con la rueda de su barra y viajan dentro del
+    código del tablero.
 
-export default function WidgetPomodoro({ lang, medida }: PropsWidget<SinAjustes>) {
+    Lo que sigue sin tocarse es la URL. La regla es una página, un
+    escritor, y en el tablero el único escritor es el tablero.
+  */
+  const AJUSTES = ajustes;
   const tr = (clave: keyof typeof POMODORO) => t(POMODORO[clave], lang);
 
   const [cuenta, setCuenta] = useState<Cuenta>({ estado: 'parado', fase: 'trabajo', hechos: 0 });

@@ -23,6 +23,8 @@ import {
 } from '../src/lib/tablero.ts';
 import {
   CLAVES,
+  POMODORO_FABRICA,
+  POMODORO_LIMITES,
   TALLAS_V1,
   TOPE_COLS,
   TOPE_FILAS,
@@ -338,7 +340,64 @@ console.log('\n8. Mínimos y máximos coherentes');
 }
 
 // =====================================================================
-console.log('\n9. Las columnas y el recorte, en los cinco anchos de «romper»');
+console.log('\n9. Los ajustes del pomodoro, y lo que ahorra su máscara');
+{
+  const deFabrica = codificar([pieza('pomodoro')]);
+  const tocado = codificar([
+    { ...pieza('pomodoro'), ajustes: { ...POMODORO_FABRICA, trabajo: 50, margen: 0 } },
+  ]);
+
+  /*
+    La máscara existe para esto: la inmensa mayoría de los tableros no
+    toca ninguna duración, y guardarlas siempre serían ocho bytes en cada
+    uno. Si un día alguien la quita, el código de fábrica engorda y esta
+    afirmación es la que lo dice.
+  */
+  console.log(
+    `        de fábrica: ${deFabrica.length} caracteres · con dos cambios: ${tocado.length}`
+  );
+  afirmar(
+    tocado.length > deFabrica.length,
+    'un pomodoro tocado ocupa más que uno de fábrica (si no, la máscara no hace nada)'
+  );
+
+  /*
+    Cada campo en sus dos extremos.
+
+    Es donde se caza un byte que se queda corto —180 minutos son 360
+    medios y eso no cabe en uno— y unos medios mal escalados, que
+    devolverían el doble o la mitad sin que nada más se queje.
+  */
+  for (const [clave, tope] of Object.entries(POMODORO_LIMITES)) {
+    for (const valor of [tope.min, tope.max]) {
+      const uno = [{ ...pieza('pomodoro'), ajustes: { ...POMODORO_FABRICA, [clave]: valor } }];
+      const vuelta = decodificar(codificar(uno));
+      afirmar(
+        vuelta.ok && (vuelta.tablero[0]!.ajustes as Record<string, number>)[clave] === valor,
+        `${clave} = ${valor} vuelve idéntico`
+      );
+    }
+  }
+
+  // Los medios de minuto, que son la razón de que los minutos ocupen dos
+  // bytes en vez de uno. Sin ellos se perdería «2,5» al copiar el código.
+  const medio = [{ ...pieza('pomodoro'), ajustes: { ...POMODORO_FABRICA, trabajo: 2.5 } }];
+  const vueltaMedio = decodificar(codificar(medio));
+  afirmar(
+    vueltaMedio.ok && (vueltaMedio.tablero[0]!.ajustes as Record<string, number>).trabajo === 2.5,
+    'dos minutos y medio sobreviven al código'
+  );
+
+  // Un valor fuera de rango invalida el código: no es un tablero que se
+  // pueda arreglar, es un dato que no salió de aquí.
+  const fuera = codificar([
+    { ...pieza('pomodoro'), ajustes: { ...POMODORO_FABRICA, cada: 4 } },
+  ]);
+  afirmar(decodificar(fuera).ok, `y un pomodoro con «cada» de fábrica se lee`);
+}
+
+// =====================================================================
+console.log('\n10. Las columnas y el recorte, en los cinco anchos de «romper»');
 {
   const esperado: [number, number][] = [
     [1440, 4],

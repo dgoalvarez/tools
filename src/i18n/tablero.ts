@@ -69,6 +69,8 @@ export const TABLERO_TEXTOS = {
   masAncho: { es: 'Más ancho', en: 'Wider' },
   menosAncho: { es: 'Menos ancho', en: 'Narrower' },
   masAlto: { es: 'Más alto', en: 'Taller' },
+  ajustes: { es: 'Ajustes', en: 'Settings' },
+  configurar: { es: 'Configurar', en: 'Configure' },
   menosAlto: { es: 'Menos alto', en: 'Shorter' },
   quitar: { es: 'Quitar del tablero', en: 'Remove from the board' },
   moverAntes: { es: 'Mover antes', en: 'Move earlier' },

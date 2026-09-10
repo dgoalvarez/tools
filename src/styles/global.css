@@ -5825,10 +5825,16 @@
     }
 
     /* En una pieza estrecha, las flechas que dicen «ancho» y «alto» se
-       van: los dos pares de más y menos siguen en el mismo orden, y ahí
-       son once píxeles que hacen falta para otra cosa. */
+       van: son once píxeles que hacen falta para otra cosa. */
     .tamano-pieza > svg {
       display: none;
+    }
+
+    /* Pero la separación entre los dos pares se queda, y ahora es lo
+       ÚNICO que dice dónde acaba el ancho y empieza el alto: sin las
+       flechas y sin ella son cuatro botones seguidos sin relación. */
+    .tamano-pieza button:nth-of-type(3) {
+      margin-inline-start: 0.3125rem;
     }
 
     .mando-pieza {
@@ -6201,6 +6207,75 @@
     border-color: var(--line);
   }
 
+  /* ---------- los cuatro que salen del reloj ---------- */
+
+  /*
+    Los cuatro comparten forma: una cifra grande, un pie y —los que se
+    manejan— sus mandos. Comparten clase a propósito: cuatro piezas de
+    tiempo en un tablero tienen que leerse como una familia, no como
+    cuatro herramientas que acabaron juntas.
+  */
+  .reloj-widget {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 0.1875rem;
+    min-height: 0;
+    text-align: center;
+  }
+
+  .pie-widget {
+    display: flex;
+    align-items: baseline;
+    gap: 0.375rem;
+    margin: 0;
+    max-width: 100%;
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+    /* El nombre de una ciudad puede ser largo y la pieza medir una
+       columna: se recorta con puntos en vez de partir la pieza. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /*
+    La diferencia con la hora de aquí, en una pastilla.
+
+    Va pegada al nombre y no en otro renglón: son dos datos de la misma
+    cosa —qué ciudad y cuánto se lleva con la mía— y separarlos obliga a
+    leer dos veces.
+  */
+  .diferencia-widget {
+    flex: none;
+    padding: 0.0625rem 0.3125rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-muted);
+  }
+
+  /*
+    El cronómetro lleva centésimas, así que su cifra tiene dos caracteres
+    más que la del reloj. Encoge para caber en la misma pieza: sin esto,
+    un cronómetro de 1×1 se sale por los lados.
+  */
+  .cifra-crono {
+    font-size: clamp(1.25rem, 5cqi, 2.5rem);
+  }
+
+  /*
+    El temporizador pasado de cero.
+
+    Se pinta en «--danger» y no solo con el signo «+»: es lo único de un
+    tablero que reclama atención de verdad, y a dos metros el color se ve
+    y un signo no.
+  */
+  .reloj-widget[data-sonando] .cifra-widget {
+    color: var(--danger);
+  }
+
   /* ---------- el panel de ajustes ---------- */
 
   /*
@@ -6277,6 +6352,65 @@
   .campo-ajuste input:focus-visible {
     border-color: var(--acento);
     outline: none;
+  }
+
+  /* El rótulo de un campo que no es un <input> no puede ser <label>: no
+     hay un control único al que apuntar, sino un grupo de botones. */
+  .rotulo-ajuste {
+    font-size: var(--fs-small);
+    color: var(--ink-muted);
+  }
+
+  /* Un grupo de opciones ocupa las dos columnas de la derecha: dos
+     botones no caben en el ancho de un campo de cifra. */
+  .opciones-ajuste {
+    grid-column: 2 / -1;
+    display: flex;
+    gap: 0.125rem;
+    padding: 0.1875rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+  }
+
+  .opciones-ajuste button {
+    flex: 1;
+    padding: 0.25rem 0.4375rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+
+  .opciones-ajuste button[aria-pressed='true'] {
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  /*
+    La ciudad va en su propio renglón, debajo del rótulo.
+
+    «Buenos Aires · hora estándar de Argentina» no cabe en la columna de
+    una cifra, y recortarlo dejaría todas las opciones empezando igual y
+    cortadas por donde se diferencian.
+  */
+  .campo-ancho {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.375rem;
+  }
+
+  .campo-ancho select {
+    width: 100%;
+    padding: 0.375rem 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    font: inherit;
+    font-size: var(--fs-small);
+    color: var(--ink);
   }
 
   .unidad-ajuste {

@@ -24,8 +24,17 @@
  *
  * Subió a 2 al pasar de cuatro tallas fijas a un tamaño libre entre un
  * mínimo y un máximo: la talla cabía en dos bits y un tamaño no.
+ *
+ * Y a 3 cuando el pomodoro estrenó duraciones configurables. No es un
+ * capricho: hasta la v2 el pomodoro no escribía NINGÚN byte de ajustes, y
+ * desde la v3 escribe al menos su máscara. Un lector nuevo abriendo un
+ * código v2 se comería un byte que no está y el resto del tablero saldría
+ * corrido — que fue exactamente lo que cazó la cadena de oro.
+ *
+ * Por eso `deBytes` recibe la versión: cada widget sabe qué escribía él
+ * en cada una.
  */
-export const VERSION = 2;
+export const VERSION = 3;
 
 /**
  * Escribe bytes uno detrás de otro.

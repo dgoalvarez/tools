@@ -21,6 +21,7 @@ import {
   validar,
   type Tablero,
 } from '../src/lib/tablero.ts';
+import { ZONAS } from '../src/lib/zonas-codigo.ts';
 import {
   CLAVES,
   POMODORO_FABRICA,
@@ -134,7 +135,9 @@ console.log('\n2. Lo que mide, dicho en números');
   while (lleno.length < TOPE_PIEZAS) lleno.push(pieza(CLAVES[lleno.length % CLAVES.length]!));
   const largo = codificar(lleno).length;
   console.log(`        el de quince: ${largo} caracteres`);
-  afirmar(largo <= 56, `y el tope de quince no pasa de 56 (son ${largo})`);
+  // Subió de 47 a 60 al entrar los cuatro widgets de tiempo: el ciclo de
+  // quince mete ahora relojes mundiales, que llevan tres bytes de ajustes.
+  afirmar(largo <= 64, `y el tope de quince no pasa de 64 (son ${largo})`);
 }
 
 // =====================================================================
@@ -215,9 +218,9 @@ console.log('\n5. Una versión más nueva se distingue del resto de fallos');
     return texto;
   };
 
-  // Una versión 3, que todavía no existe: la cabecera lleva 3 arriba y el
+  // Una versión 4, que todavía no existe: la cabecera lleva 4 arriba y el
   // checksum se recalcula, así que el código es válido salvo por eso.
-  const leido = decodificar(enTexto([(3 << 4) | 0]));
+  const leido = decodificar(enTexto([(4 << 4) | 0]));
   afirmar(
     !leido.ok && leido.motivo === 'version',
     'un código de una versión más nueva dice «version»'
@@ -240,6 +243,7 @@ console.log('\n6. Las cadenas de oro: los códigos viejos valen para siempre');
   */
   const ORO_V1 = 'EwEKDwAz';
   const ORO_V2 = 'JAACASACEQMRALg';
+  const ORO_V3 = 'NAQAAgUAACIABwAZAhEBAGSN';
 
   afirmar(
     WIDGETS.lista.codigo === 0 &&
@@ -261,7 +265,11 @@ console.log('\n6. Las cadenas de oro: los códigos viejos valen para siempre');
   */
   const v1 = decodificar(ORO_V1);
   afirmar(
-    v1.ok && forma(v1.tablero) === 'lista:1x2:{} | pomodoro:2x1:{} | dibujo:2x2:{"tinta":0}',
+    v1.ok &&
+      forma(v1.tablero) ===
+        'lista:1x2:{} | ' +
+          'pomodoro:2x1:{"trabajo":25,"corto":5,"largo":15,"cada":4,"margen":5} | ' +
+          'dibujo:2x2:{"tinta":0}',
     'la cadena de oro de la v1 sigue abriendo el mismo tablero'
   );
 
@@ -269,8 +277,40 @@ console.log('\n6. Las cadenas de oro: los códigos viejos valen para siempre');
   afirmar(
     v2.ok &&
       forma(v2.tablero) ===
-        'lista:1x3:{} | nota:3x1:{} | pomodoro:2x2:{} | dibujo:2x2:{"tinta":0}',
+        'lista:1x3:{} | nota:3x1:{} | ' +
+          'pomodoro:2x2:{"trabajo":25,"corto":5,"largo":15,"cada":4,"margen":5} | ' +
+          'dibujo:2x2:{"tinta":0}',
     'la cadena de oro de la v2 sigue abriendo el mismo tablero'
+  );
+
+  /*
+    La v3 lleva los cuatro widgets de tiempo y ajustes CAMBIADOS a
+    propósito: una zona que no es la de fábrica, un temporizador con
+    medios minutos y un pomodoro con la máscara encendida. Es lo que
+    protege de verdad a los códigos que empiezan a circular ahora, y lo
+    que cazaría que alguien reordenara «zonas-codigo.ts».
+  */
+  const v3 = decodificar(ORO_V3);
+  afirmar(
+    v3.ok &&
+      forma(v3.tablero) ===
+        'hora:1x1:{"segundos":0,"doce":1} | ' +
+          'mundial:1x1:{"zona":34,"doce":0} | ' +
+          'temporizador:1x1:{"minutos":12.5} | ' +
+          'pomodoro:2x2:{"trabajo":50,"corto":5,"largo":15,"cada":4,"margen":5}',
+    'la cadena de oro de la v3 sigue abriendo el mismo tablero'
+  );
+
+  /*
+    La zona 34 de la lista congelada tiene que seguir siendo Madrid.
+
+    Sin esto, reordenar «zonas-codigo.ts» cambiaría la ciudad de todos los
+    relojes que circulen y el código seguiría siendo válido: el checksum
+    no puede cazar un dato que cuadra pero significa otra cosa.
+  */
+  afirmar(
+    ZONAS[34] === 'Europe/Paris',
+    `la zona 34 sigue siendo París (es ${ZONAS[34]})`
   );
 }
 

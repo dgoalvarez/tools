@@ -205,10 +205,17 @@ const VISTAS = [
 
       // Las cuatro, y cada una en una talla distinta: es la única forma
       // de ver de un vistazo si el reparto de la rejilla cuadra.
-      await poner('pomodoro', 1, '1x1');
-      await poner('lista', 2, '1x2');
-      await poner('nota', 3, '2x1');
-      await poner('dibujo', 4, '2x2');
+      // Las ocho, con tamaños mezclados: es lo único que enseña si el
+      // relleno del bento cuadra de verdad. Con cuatro piezas y todas
+      // grandes no queda hueco que rellenar, así que no probaba nada.
+      await poner('hora', 1, '1x1');
+      await poner('mundial', 2, '1x1');
+      await poner('pomodoro', 3, '1x1');
+      await poner('cronometro', 4, '1x1');
+      await poner('temporizador', 5, '1x1');
+      await poner('lista', 6, '1x2');
+      await poner('nota', 7, '2x1');
+      await poner('dibujo', 8, '2x2');
       await new Promise((r) => setTimeout(r, 150));
     `,
   },
@@ -258,10 +265,17 @@ const VISTAS = [
 
       // Las cuatro, y cada una en una talla distinta: es la única forma
       // de ver de un vistazo si el reparto de la rejilla cuadra.
-      await poner('pomodoro', 1, '1x1');
-      await poner('lista', 2, '1x2');
-      await poner('nota', 3, '2x1');
-      await poner('dibujo', 4, '2x2');
+      // Las ocho, con tamaños mezclados: es lo único que enseña si el
+      // relleno del bento cuadra de verdad. Con cuatro piezas y todas
+      // grandes no queda hueco que rellenar, así que no probaba nada.
+      await poner('hora', 1, '1x1');
+      await poner('mundial', 2, '1x1');
+      await poner('pomodoro', 3, '1x1');
+      await poner('cronometro', 4, '1x1');
+      await poner('temporizador', 5, '1x1');
+      await poner('lista', 6, '1x2');
+      await poner('nota', 7, '2x1');
+      await poner('dibujo', 8, '2x2');
       await new Promise((r) => setTimeout(r, 150));
     `,
   },

@@ -4,14 +4,14 @@
  * ---------------------------------------------------------------------
  * El formulario no está escrito: se deriva
  *
- * Cada widget declara sus campos en `src/lib/widgets.ts` —tipo, rótulo,
- * mínimo, máximo, salto y unidad— y este panel los pinta. Nadie escribe
- * un formulario por widget, que es lo que garantiza que los cinco números
- * del pomodoro y los que vengan después se comporten igual: mismos topes,
- * mismo teclado, mismo aspecto.
+ * Cada widget declara sus campos en `src/lib/widgets.ts` —tipo, rótulo y
+ * lo que necesite cada tipo— y este panel los pinta. Nadie escribe un
+ * formulario por widget, que es lo que garantiza que los cinco números
+ * del pomodoro, el formato de los relojes y la ciudad del reloj mundial
+ * se comporten igual: mismos topes, mismo teclado, mismo aspecto.
  *
  * El precio es que un ajuste raro no se puede pintar hasta que exista su
- * tipo de campo. Sale barato: la alternativa era siete formularios que se
+ * tipo de campo. Sale barato: la alternativa era ocho formularios que se
  * separan en silencio.
  *
  * ---------------------------------------------------------------------
@@ -19,27 +19,24 @@
  *
  * Un botón de guardar obligaría a llevar una copia del estado y a decidir
  * qué pasa si alguien cierra sin pulsarlo. Aquí cada cambio va derecho a
- * la pieza y se ve detrás del panel — con el pomodoro, cambiar el trabajo
- * a 50 mueve la cifra mientras se mira. Y deshacer es volver a poner el
- * número, que es lo que se acaba de hacer.
- *
- * ---------------------------------------------------------------------
- * El campo NO gobierna su valor mientras se escribe
- *
- * Un `<input type="number">` atado a un estado ceñido a mínimo y máximo
- * es imposible de escribir: al teclear el «5» de «50» el valor se ciñe a
- * su mínimo y el cursor se va. Se guarda el texto en bruto mientras la
- * mano está encima y se ciñe al salir del campo, que es cuando ya se sabe
- * qué se quiso escribir. Es el mismo patrón que ya usa `Numero` en
- * `Pomodoro.tsx`.
+ * la pieza y se ve detrás del panel — cambiar la ciudad mueve la hora
+ * mientras se mira. Y deshacer es volver a poner el valor, que es lo que
+ * se acaba de hacer.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { XIcon } from '@phosphor-icons/react';
 
 import { Sheet, SheetClose, SheetContent, SheetTitle } from '../../components/ui/sheet';
 import { t, type Lang } from '../../i18n/config';
 import { TABLERO_TEXTOS as TX } from '../../i18n/tablero';
-import { WIDGETS, type Campo } from '../../lib/widgets';
+import {
+  WIDGETS,
+  type Campo,
+  type CampoNumero,
+  type CampoOpcion,
+  type CampoZona,
+} from '../../lib/widgets';
+import { ZONAS, nombreDeZona } from '../../lib/zonas-codigo';
 import type { Pieza } from '../../lib/tablero';
 
 interface Props {
@@ -59,46 +56,134 @@ export default function PanelAjustes({ lang, pieza, onCerrar, onAjustes }: Props
   return (
     <Sheet open={pieza !== null} onOpenChange={(v) => !v && onCerrar()}>
       <SheetContent aria-describedby={undefined} className="hoja-ajustes">
-      <div className="fila-hoja-lateral">
-        <SheetTitle>{widget ? t(widget.nombre, lang) : tr('ajustes')}</SheetTitle>
-        <SheetClose className="cerrar-hoja-lateral" aria-label={tr('cerrar')}>
-          <XIcon aria-hidden="true" size={16} />
-        </SheetClose>
-      </div>
+        <div className="fila-hoja-lateral">
+          <SheetTitle>{widget ? t(widget.nombre, lang) : tr('ajustes')}</SheetTitle>
+          <SheetClose className="cerrar-hoja-lateral" aria-label={tr('cerrar')}>
+            <XIcon aria-hidden="true" size={16} />
+          </SheetClose>
+        </div>
 
-      <div className="lista-ajustes">
-        {pieza &&
-          campos.map((campo) => (
-            <CampoAjuste
-              key={campo.clave}
-              lang={lang}
-              campo={campo}
-              valor={pieza.ajustes[campo.clave] as number}
-              onValor={(v) => onAjustes(pieza.id, { [campo.clave]: v })}
-            />
-          ))}
-      </div>
+        <div className="lista-ajustes">
+          {pieza &&
+            campos.map((campo) => (
+              <CampoAjuste
+                key={campo.clave}
+                lang={lang}
+                campo={campo}
+                valor={pieza.ajustes[campo.clave] as number}
+                onValor={(v) => onAjustes(pieza.id, { [campo.clave]: v })}
+              />
+            ))}
+        </div>
       </SheetContent>
     </Sheet>
   );
 }
 
-function CampoAjuste({
-  lang,
-  campo,
-  valor,
-  onValor,
-}: {
+/* El tipo del campo va como parámetro: así cada subcomponente recibe el
+   suyo ya estrechado y TypeScript ve sus propiedades dentro de los
+   manejadores, no solo en el cuerpo. */
+interface PropsCampo<C extends Campo = Campo> {
   lang: Lang;
-  campo: Campo;
+  campo: C;
   valor: number;
   onValor: (v: number) => void;
-}) {
+}
+
+/** Reparte según el tipo. Cada uno se pinta en su propia función. */
+function CampoAjuste({ campo, ...resto }: PropsCampo) {
+  // Se desestructura y se vuelve a pasar: con «{...props}» el discriminante
+  // no estrecha nada y TypeScript sigue viendo el tipo ancho.
+  if (campo.tipo === 'opcion') return <CampoDeOpcion campo={campo} {...resto} />;
+  if (campo.tipo === 'zona') return <CampoDeZona campo={campo} {...resto} />;
+  return <CampoDeNumero campo={campo} {...resto} />;
+}
+
+/**
+ * Un grupo de botones, no un desplegable.
+ *
+ * Son dos o tres opciones: se ven todas a la vez y se elige de un toque.
+ * Un desplegable con dos entradas esconde una de las dos detrás de un
+ * clic y no ahorra nada de sitio.
+ */
+function CampoDeOpcion({ lang, campo, valor, onValor }: PropsCampo<CampoOpcion>) {
+  return (
+    <div className="campo-ajuste">
+      <span className="rotulo-ajuste">{t(campo.rotulo, lang)}</span>
+
+      <div className="opciones-ajuste" role="group" aria-label={t(campo.rotulo, lang)}>
+        {campo.opciones.map((op) => (
+          <button
+            key={op.valor}
+            type="button"
+            aria-pressed={op.valor === valor}
+            onClick={() => onValor(op.valor)}
+          >
+            {t(op.nombre, lang)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * La ciudad, en un desplegable nativo.
+ *
+ * Aquí sí, y por lo contrario que arriba: son noventa y tantas. Un
+ * `<select>` del sistema trae gratis la búsqueda por teclado —se escribe
+ * «mad» y salta a Madrid—, el desplegable a pantalla completa del móvil y
+ * el desplazamiento con el dedo. Escribir un buscador propio sería
+ * reimplementar todo eso peor.
+ *
+ * Las opciones se ordenan por su NOMBRE en el idioma de quien mira, no
+ * por su posición en la lista congelada: esa está ordenada por franja
+ * horaria, que sirve para el código y no para buscar una ciudad.
+ */
+function CampoDeZona({ lang, campo, valor, onValor }: PropsCampo<CampoZona>) {
+  const id = `ajuste-${campo.clave}`;
+
+  // Se calcula una vez por idioma: son noventa llamadas a `Intl` y
+  // rehacerlas en cada pintado se nota al tocar otro campo.
+  const opciones = useMemo(
+    () =>
+      ZONAS.map((zona, indice) => ({ indice, nombre: nombreDeZona(zona, lang) })).sort((a, b) =>
+        a.nombre.localeCompare(b.nombre, lang)
+      ),
+    [lang]
+  );
+
+  return (
+    <div className="campo-ajuste campo-ancho">
+      <label htmlFor={id}>{t(campo.rotulo, lang)}</label>
+
+      <select id={id} value={valor} onChange={(e) => onValor(Number(e.target.value))}>
+        {opciones.map((op) => (
+          <option key={op.indice} value={op.indice}>
+            {op.nombre}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+/**
+ * Un número, y el campo NO gobierna su valor mientras se escribe.
+ *
+ * Un `<input type="number">` atado a un estado ceñido a mínimo y máximo
+ * es imposible de escribir: al teclear el «5» de «50» el valor se ciñe a
+ * su mínimo y el cursor se va. Se guarda el texto en bruto mientras la
+ * mano está encima y se ciñe al salir del campo, que es cuando ya se sabe
+ * qué se quiso escribir. Es el mismo patrón que ya usa `Numero` en
+ * `Pomodoro.tsx`.
+ */
+function CampoDeNumero({ lang, campo, valor, onValor }: PropsCampo<CampoNumero>) {
   const [bruto, setBruto] = useState(String(valor));
 
-  // Si el valor cambia por fuera —al abrir otra pieza, o al restablecer—
-  // el campo tiene que enterarse. Mientras se escribe no pasa: `valor`
-  // solo se mueve cuando el propio campo lo mueve.
+  // Si el valor cambia por fuera —al abrir otra pieza— el campo tiene que
+  // enterarse. Mientras se escribe no pasa: `valor` solo se mueve cuando
+  // el propio campo lo mueve.
   useEffect(() => {
     setBruto(String(valor));
   }, [valor]);

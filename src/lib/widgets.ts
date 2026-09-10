@@ -26,6 +26,7 @@
 import { Escritor, Lector } from './codigo.ts';
 import type { IconoKey } from '../components/iconos.ts';
 import type { T } from '../i18n/config.ts';
+import { ZONA_INICIAL, zonaDe } from './zonas-codigo.ts';
 
 /**
  * Un tamaño: cuántas columnas y cuántas filas ocupa una pieza.
@@ -83,7 +84,15 @@ export function medidaDeTallaV1(indice: number): Medida | null {
   return { cols: cols!, filas: filas! };
 }
 
-export type WidgetKey = 'lista' | 'nota' | 'pomodoro' | 'dibujo';
+export type WidgetKey =
+  | 'lista'
+  | 'nota'
+  | 'pomodoro'
+  | 'dibujo'
+  | 'hora'
+  | 'mundial'
+  | 'cronometro'
+  | 'temporizador';
 
 /**
  * Un ajuste que se puede tocar desde el tablero.
@@ -109,7 +118,34 @@ export interface CampoNumero {
   unidad: T;
 }
 
-export type Campo = CampoNumero;
+/**
+ * Una elección entre unas pocas posibilidades con nombre.
+ *
+ * Se pinta como un grupo de botones y no como un desplegable: son dos o
+ * tres, se ven todas a la vez y se elige de un toque. Un desplegable con
+ * dos opciones esconde una de las dos detrás de un clic.
+ */
+export interface CampoOpcion {
+  tipo: 'opcion';
+  clave: string;
+  rotulo: T;
+  opciones: readonly { valor: number; nombre: T }[];
+}
+
+/**
+ * Una zona horaria, de la lista congelada de `zonas-codigo.ts`.
+ *
+ * Es su propio tipo y no una `opcion` con noventa entradas: con esas
+ * son un buscador, no un grupo de botones, y el nombre de cada una lo
+ * da `Intl` en el idioma de quien mira en vez de venir escrito aquí.
+ */
+export interface CampoZona {
+  tipo: 'zona';
+  clave: string;
+  rotulo: T;
+}
+
+export type Campo = CampoNumero | CampoOpcion | CampoZona;
 
 /** Lo que distingue a una copia del pomodoro: sus duraciones. */
 export interface AjustesPomodoro {
@@ -143,6 +179,26 @@ export interface AjustesDibujo {
   tinta: number;
 }
 
+/** Lo que distingue a una copia del reloj: si enseña los segundos. */
+export interface AjustesHora {
+  /** 0 sin segundos, 1 con ellos. */
+  segundos: number;
+  /** 0 de 24 horas, 1 de 12 con am/pm. */
+  doce: number;
+}
+
+/** Lo que distingue a un reloj mundial de otro: su ciudad. */
+export interface AjustesMundial {
+  zona: number;
+  doce: number;
+}
+
+/** Lo que distingue a un temporizador: cuánto cuenta. */
+export interface AjustesTemporizador {
+  /** Minutos. Admite medios, como el pomodoro. */
+  minutos: number;
+}
+
 /** Los widgets que no se distinguen entre sí no llevan ajustes. */
 export type SinAjustes = Record<string, never>;
 
@@ -164,8 +220,17 @@ export interface Widget<A> {
   medidaInicial: Medida;
   ajustesIniciales: A;
   aBytes(a: A, e: Escritor): void;
-  /** `null` invalida el código entero: es un dato que no cuadra. */
-  deBytes(l: Lector): A | null;
+  /**
+   * Lee los ajustes que escribió `aBytes`, en la versión que sea.
+   *
+   * La versión importa porque un widget puede haber estrenado ajustes: el
+   * pomodoro no escribía nada hasta la v2 y desde la v3 escribe su
+   * máscara. Sin saber quién escribió el código, un lector nuevo se come
+   * un byte que no está y todo lo que viene detrás sale corrido.
+   *
+   * `null` invalida el código entero: es un dato que no cuadra.
+   */
+  deBytes(l: Lector, version: number): A | null;
   /**
    * Cuántas copias caben en un tablero.
    *
@@ -285,7 +350,12 @@ const pomodoro: Widget<AjustesPomodoro> = {
     });
   },
 
-  deBytes: (l) => {
+  deBytes: (l, version) => {
+    // Hasta la v2 el pomodoro no escribía nada: sus duraciones eran las de
+    // fábrica y no había forma de cambiarlas. Leer una máscara de un
+    // código de entonces se comería el byte de la pieza siguiente.
+    if (version < 3) return { ...POMODORO_FABRICA };
+
     const mascara = l.byte();
     // Los bits de arriba no significan nada todavía: encendidos, el
     // código viene de un catálogo que no es este.
@@ -339,8 +409,151 @@ const dibujo: Widget<AjustesDibujo> = {
   nombre: { es: 'El dibujo', en: 'The drawing' },
 };
 
+/** El formato de la hora, que lo piden los tres relojes. */
+const CAMPO_DOCE = {
+  tipo: 'opcion' as const,
+  clave: 'doce',
+  rotulo: { es: 'Formato', en: 'Format' },
+  opciones: [
+    { valor: 0, nombre: { es: '24 h', en: '24 h' } },
+    { valor: 1, nombre: { es: '12 h', en: '12 h' } },
+  ],
+};
+
+/*
+  El reloj de aquí.
+
+  Lleva ajustes y aun así su tope es uno: dos relojes de la MISMA hora
+  con formatos distintos no son dos cosas, son la misma dos veces. La
+  regla de «lo que lleva ajustes se repite» vale cuando los ajustes
+  cambian QUÉ se mira, no cómo se escribe.
+*/
+const hora: Widget<AjustesHora> = {
+  codigo: 4,
+  min: { cols: 1, filas: 1 },
+  max: { cols: 2, filas: 2 },
+  medidaInicial: { cols: 1, filas: 1 },
+  icono: 'reloj',
+  nombre: { es: 'La hora', en: 'The time' },
+  ajustesIniciales: { segundos: 0, doce: 0 },
+  aBytes: (a, e) => {
+    // Dos banderas en un byte: son dos bits y un byte es lo mínimo que
+    // se puede escribir, así que caben de sobra.
+    e.byte((a.segundos ? 1 : 0) | (a.doce ? 2 : 0));
+  },
+  deBytes: (l) => {
+    const b = l.byte();
+    if (b > 3) return null;
+    return { segundos: b & 1, doce: (b >> 1) & 1 };
+  },
+  tope: 1,
+  campos: [
+    {
+      tipo: 'opcion' as const,
+      clave: 'segundos',
+      rotulo: { es: 'Segundos', en: 'Seconds' },
+      opciones: [
+        { valor: 0, nombre: { es: 'No', en: 'No' } },
+        { valor: 1, nombre: { es: 'Sí', en: 'Yes' } },
+      ],
+    },
+    CAMPO_DOCE,
+  ],
+};
+
+/*
+  El reloj de otra ciudad.
+
+  Este SÍ se repite, y hasta seis veces: cada copia enseña una hora
+  distinta, que es exactamente lo que hace útil tener varias. Es el
+  widget que sustituye a la herramienta de husos en compacto — en una
+  pieza, husos ES un reloj mundial.
+*/
+const mundial: Widget<AjustesMundial> = {
+  codigo: 5,
+  min: { cols: 1, filas: 1 },
+  max: { cols: 2, filas: 2 },
+  medidaInicial: { cols: 1, filas: 1 },
+  icono: 'globo',
+  nombre: { es: 'Otra ciudad', en: 'Another city' },
+  ajustesIniciales: { zona: ZONA_INICIAL, doce: 0 },
+  aBytes: (a, e) => {
+    // Dos bytes para la zona: la lista pasa de 64 entradas y va a seguir
+    // creciendo por el final.
+    e.doble(a.zona).byte(a.doce ? 1 : 0);
+  },
+  deBytes: (l) => {
+    const zona = l.doble();
+    const doce = l.byte();
+    // Una zona fuera de la lista viene de un catálogo que no es este, y
+    // enseñar otra ciudad en silencio sería peor que rechazar el código.
+    if (zonaDe(zona) === null || doce > 1) return null;
+    return { zona, doce };
+  },
+  tope: 6,
+  campos: [{ tipo: 'zona' as const, clave: 'zona', rotulo: { es: 'Ciudad', en: 'City' } }, CAMPO_DOCE],
+};
+
+/* El cronómetro. Sin nada que configurar: cuenta hacia arriba y ya. */
+const cronometro: Widget<SinAjustes> = {
+  codigo: 6,
+  min: { cols: 1, filas: 1 },
+  max: { cols: 2, filas: 2 },
+  medidaInicial: { cols: 1, filas: 1 },
+  icono: 'cuentaAtras',
+  nombre: { es: 'El cronómetro', en: 'The stopwatch' },
+  ...SIN_AJUSTES,
+};
+
+/*
+  El temporizador.
+
+  Uno solo, como el pomodoro y por lo mismo: la cuenta en marcha vive en
+  el almacenamiento de la pestaña y dos copias se la pisarían.
+*/
+const temporizador: Widget<AjustesTemporizador> = {
+  codigo: 7,
+  min: { cols: 1, filas: 1 },
+  max: { cols: 2, filas: 2 },
+  medidaInicial: { cols: 1, filas: 1 },
+  icono: 'arena',
+  nombre: { es: 'El temporizador', en: 'The timer' },
+  ajustesIniciales: { minutos: 5 },
+  aBytes: (a, e) => {
+    // En medios de minuto, como el pomodoro: 90 minutos son 180 medios y
+    // caben en un byte.
+    e.byte(Math.round(a.minutos * 2));
+  },
+  deBytes: (l) => {
+    const minutos = l.byte() / 2;
+    if (minutos < 0.5 || minutos > 90) return null;
+    return { minutos };
+  },
+  tope: 1,
+  campos: [
+    {
+      tipo: 'numero' as const,
+      clave: 'minutos',
+      rotulo: { es: 'Cuenta', en: 'Counts' },
+      min: 0.5,
+      max: 90,
+      paso: 0.5,
+      unidad: { es: 'min', en: 'min' },
+    },
+  ],
+};
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export const WIDGETS: Record<WidgetKey, Widget<any>> = { lista, nota, pomodoro, dibujo };
+export const WIDGETS: Record<WidgetKey, Widget<any>> = {
+  lista,
+  nota,
+  pomodoro,
+  dibujo,
+  hora,
+  mundial,
+  cronometro,
+  temporizador,
+};
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 export const CLAVES = Object.keys(WIDGETS) as WidgetKey[];

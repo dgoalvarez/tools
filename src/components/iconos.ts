@@ -40,6 +40,13 @@ import notas from '@phosphor-icons/core/regular/note-pencil.svg?raw';
 // ven a la vez.
 import tareas from '@phosphor-icons/core/regular/check-square-offset.svg?raw';
 import pincel from '@phosphor-icons/core/regular/paint-brush.svg?raw';
+// Los tres del tablero que cuentan tiempo. Con el mismo icono los tres,
+// el panel de añadir enseñaba «El pomodoro», «El cronómetro» y «El
+// temporizador» con el mismo dibujo, que es no distinguir nada. Y la
+// hora llevaba un despertador, que es otra cosa.
+import reloj from '@phosphor-icons/core/regular/clock.svg?raw';
+import cuentaAtras from '@phosphor-icons/core/regular/clock-countdown.svg?raw';
+import arena from '@phosphor-icons/core/regular/hourglass-medium.svg?raw';
 
 /**
  * Se queda solo lo de dentro del `<svg>`: la envoltura la pone
@@ -62,6 +69,9 @@ export const ICONOS = {
   notas: interior(notas),
   tareas: interior(tareas),
   pincel: interior(pincel),
+  reloj: interior(reloj),
+  cuentaAtras: interior(cuentaAtras),
+  arena: interior(arena),
 
   // --- de la propia interfaz ---
   rejilla: interior(rejilla),

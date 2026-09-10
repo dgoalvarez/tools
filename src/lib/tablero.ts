@@ -158,7 +158,7 @@ export function decodificar(texto: string): Lectura {
       return { ok: false, motivo: 'medida' };
     }
 
-    const ajustes = WIDGETS[tipo].deBytes(l);
+    const ajustes = WIDGETS[tipo].deBytes(l, version);
     if (l.agotado) return { ok: false, motivo: 'falta' };
     if (ajustes === null) return { ok: false, motivo: 'ajustes' };
 

@@ -168,7 +168,12 @@ Sin React ni DOM: se corre con `node`, y por eso se puede comprobar.
 **`widgets.ts`**
 - funciones · `ce`, `medidaDeTallaV1`, `porCodigo`
 - constantes · `TOPE_COLS`, `TOPE_FILAS`, `TALLAS_V1`, `POMODORO_FABRICA`, `POMODORO_LIMITES`, `WIDGETS`, `CLAVES`
-- tipos · `Medida`, `WidgetKey`, `CampoNumero`, `Campo`, `AjustesPomodoro`, `AjustesDibujo`, `SinAjustes`, `Widget`
+- tipos · `Medida`, `WidgetKey`, `CampoNumero`, `CampoOpcion`, `CampoZona`, `Campo`, `AjustesPomodoro`, `AjustesDibujo`, `AjustesHora`, `AjustesMundial`, `AjustesTemporizador`, `SinAjustes`, `Widget`
+
+**`zonas-codigo.ts`**
+- funciones · `zonaDe`, `nombreDeZona`
+- constantes · `ZONAS`, `ZONA_INICIAL`
+- tipos · `ZonaIndice`
 
 ## Las alarmas
 

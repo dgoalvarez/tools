@@ -35,6 +35,13 @@ export const COMPONENTE: Partial<Record<WidgetKey, Cargador>> = {
   nota: () => import('./widgets/WidgetNota'),
   pomodoro: () => import('./widgets/WidgetPomodoro'),
   dibujo: () => import('./widgets/WidgetDibujo'),
+  // Y las cuatro que salen del reloj. Van juntas al final porque son las
+  // que se miran de reojo: la hora, la de otra ciudad y los dos que
+  // cuentan.
+  hora: () => import('./widgets/WidgetHora'),
+  mundial: () => import('./widgets/WidgetMundial'),
+  cronometro: () => import('./widgets/WidgetCronometro'),
+  temporizador: () => import('./widgets/WidgetTemporizador'),
 };
 
 /** Los que ya se pueden poner. El selector solo ofrece estos. */

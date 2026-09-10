@@ -131,6 +131,29 @@ sonado no es una alarma.
 
 ---
 
+## El mapa del proyecto, para volver dentro de un tiempo
+
+Hay un grafo del proyecto entero en `graphify-out/`, construido con
+`/graphify`. No sustituye a `docs/MAPA.md` —ese es el registro exacto de
+qué hay— sino que responde lo otro: **por qué está así**.
+
+- `GRAPH_REPORT.md` es lo que se lee primero: 62 comunidades con nombre,
+  los nodos más conectados y las conexiones que nadie buscó.
+- `graph.json` es lo que se consulta: `graphify query "..."` contesta
+  desde él, sin volver a extraer nada.
+- `graphify export html` regenera el HTML navegable cuando haga falta.
+
+Se versiona porque construirlo costó 215.000 tokens: 1080 nodos salieron
+del AST —gratis y deterministas— y 130 de leer los documentos, que es la
+parte cara. Después de una tanda grande, `graphify . --update` reextrae
+solo lo que cambió.
+
+Dos cosas que el informe dice de sí mismo y conviene creerle: 36 archivos
+`.astro` se extrajeron a medias —su analizador no entiende el bloque de
+delante— y hay 91 aristas con un extremo que no existe, casi todas de los
+documentos apuntando a símbolos con un nombre ligeramente distinto. El
+grafo sirve; no es un inventario.
+
 ## Dónde vive cada cosa
 
 ```

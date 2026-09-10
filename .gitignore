@@ -42,3 +42,14 @@ dgo-tools-editorial-oscuro.html
 
 # Capturas de verificación (se regeneran con npm run ver)
 capturas/
+
+# El grafo de graphify.
+#
+# Se versiona lo que evita repetir la extracción —el informe, el grafo, el
+# manifiesto y la caché— porque construirlo costó 215.000 tokens y sin eso
+# cada revisión lo pagaría otra vez. Fuera se quedan el HTML, que sale de
+# graph.json con `graphify export html`, y los dos sidecars, que llevan
+# rutas de ESTA máquina.
+graphify-out/graph.html
+graphify-out/.graphify_python
+graphify-out/.graphify_root

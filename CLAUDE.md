@@ -133,6 +133,10 @@ sonado no es una alarma.
 
 ## El mapa del proyecto, para volver dentro de un tiempo
 
+**Lo que falta y en qué orden está en `docs/ROADMAP.md`.** Antes de
+empezar algo nuevo, se mira en qué fase va y qué decisiones siguen
+abiertas; al cerrar una fase, se marca allí con su fecha y su commit.
+
 Hay un grafo del proyecto entero en `graphify-out/`, construido con
 `/graphify`. No sustituye a `docs/MAPA.md` —ese es el registro exacto de
 qué hay— sino que responde lo otro: **por qué está así**.

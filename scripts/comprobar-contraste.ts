@@ -64,6 +64,23 @@ console.log('\n3. APCA distingue la polaridad y WCAG no');
     `APCA no: ${oscuroSobreClaro.lc.toFixed(1)} Lc contra ${claroSobreOscuro.lc.toFixed(1)} Lc`
   );
   afirmar(claroSobreOscuro.lc < 0, 'el signo negativo marca texto claro sobre fondo oscuro');
+
+  // Las cifras exactas, no solo el signo. Se clavaron el 15 de octubre de
+  // 2026 al dejar `calcAPCA`, que arrastraba código AGPL al navegador, por
+  // `APCAcontrast(sRGBtoY())`: las dos vías dieron el mismo número en
+  // 20.006 pares. Si un cambio mueve el Lc, aunque sea en el cuarto
+  // decimal, esto salta.
+  for (const [t, b, lc] of [
+    ['#767676', '#ffffff', 71.5724],
+    ['#ffffff', '#767676', -77.036],
+    ['#123456', '#abcdef', 67.4958],
+  ] as const) {
+    const a = medirApca(t, b, normal);
+    afirmar(
+      Math.abs(a.lc - lc) < 0.0001,
+      `${t} sobre ${b} = ${a.lc.toFixed(4)} Lc (clavado: ${lc})`
+    );
+  }
 }
 
 console.log('\n4. La sugerencia pasa de verdad, y conserva el tono');

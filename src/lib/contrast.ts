@@ -11,7 +11,8 @@
  *
  * Aquí no se reimplementa ninguno de los dos:
  *   · culori.wcagContrast para WCAG 2.x, comprobado contra WebAIM.
- *   · apca-w3, que es la implementación oficial de APCA.
+ *   · apca-w3, que es la implementación oficial de APCA. Pero NUNCA su
+ *     `calcAPCA`: ver `lcApca`.
  */
 import {
   parse,
@@ -22,13 +23,36 @@ import {
   wcagContrast,
   type Oklch,
 } from 'culori';
-import { calcAPCA, fontLookupAPCA } from 'apca-w3';
+import { APCAcontrast, fontLookupAPCA, sRGBtoY } from 'apca-w3';
 
 const aOklch = converter('oklch');
 const enGamaSrgb = inGamut('rgb');
 
 /** Redondeo a dos decimales, que es como se enseña y como se juzga. */
 const dosDecimales = (n: number) => Math.round(n * 100) / 100;
+
+/** Un canal de un hexadecimal de seis cifras, de 0 a 255. */
+const canal = (hex: string, i: number) => parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16);
+
+/**
+ * El Lc de APCA, sin pasar por `calcAPCA`.
+ *
+ * `calcAPCA` lee los colores con `colorparsley`, que es AGPL-3.0, y con él
+ * el paquete de Contraste llevaba código AGPL al navegador de cada visita:
+ * justo la licencia que la regla del sitio prohíbe. Aquí no hace falta
+ * ningún lector de colores, porque todo llega ya como `#rrggbb` opaco
+ * (`componerSobre` resuelve la transparencia antes), así que se leen los
+ * tres canales y se llama a las dos funciones que `calcAPCA` llamaba por
+ * dentro. Da el mismo número sin redondear: se comprobó en 20.006 pares.
+ *
+ * La alarma de licencias salta si `colorparsley` vuelve a aparecer en lo
+ * que se publica, y `calcAPCA` no está declarada en `src/types/apca-w3.d.ts`
+ * para que ni siquiera compile.
+ */
+function lcApca(textoHex: string, fondoHex: string): number {
+  const y = (hex: string) => sRGBtoY([0, 1, 2].map((i) => canal(hex, i)));
+  return Number(APCAcontrast(y(textoHex), y(fondoHex)));
+}
 
 // ---------------------------------------------------------------- colores
 
@@ -70,7 +94,6 @@ export function leerColor(entrada: string): Color | null {
 export function componerSobre(color: Color, fondoHex: string): string {
   if (color.alpha >= 1) return color.hex;
 
-  const canal = (hex: string, i: number) => parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16);
   const mezcla = [0, 1, 2].map((i) => {
     const frente = canal(color.hex, i);
     const fondo = canal(fondoHex, i);
@@ -154,7 +177,7 @@ export interface ResultadoApca {
  *   777 — solo para texto decorativo, nunca para leer.
  */
 export function medirApca(textoHex: string, fondoHex: string, texto: Texto): ResultadoApca {
-  const lc = Number(calcAPCA(textoHex, fondoHex));
+  const lc = lcApca(textoHex, fondoHex);
   const tabla = fontLookupAPCA(lc) as Array<string | number>;
 
   // El índice 0 es el propio Lc; del 1 al 9, los grosores de 100 a 900.
@@ -231,7 +254,7 @@ export function sugerirColor(
       const distancia = n * paso;
       if (distancia < mejorDistancia) {
         mejorDistancia = distancia;
-        mejor = { hex, direccion, razon, lc: Number(calcAPCA(hex, fondoHex)), cromaAjustado };
+        mejor = { hex, direccion, razon, lc: lcApca(hex, fondoHex), cromaAjustado };
       }
       // Dentro de una dirección, el primero que pasa es el más cercano.
       break;
